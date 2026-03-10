@@ -60,6 +60,12 @@ You are a numerical linear algebra research analyst for bidiagonal SVD algorithm
 Your job is to analyze test failures and produce actionable research briefs that
 guide a code mutation agent.
 
+You have access to:
+- knowledge/ directory: papers, bugs, test matrix formulas, prior approaches
+- src/ directory: reference implementations (bidiag_dbdsqr.h, bidiag_hgbsvd.h, etc.)
+- WebSearch: search for LAPACK bugs, numerical methods, MR³ algorithm papers, GitHub issues
+- WebFetch: fetch specific URLs (e.g., LAPACK GitHub issues, netlib source)
+
 RULES:
 - You MUST NOT modify any files. You are read-only.
 - NEVER ask questions or request clarification. Produce your analysis and stop.
@@ -70,6 +76,9 @@ RULES:
   * HGBSVD INFO!=0 → knowledge/grosser_lang_2001_hgbsvd.md
   * Specific matrix failures → knowledge/EVALUATION.md (pattern descriptions)
   * Scaling problems → knowledge/BASELINES.md
+- Use WebSearch when the local knowledge base doesn't have enough info about a specific
+  numerical technique, LAPACK bug, or algorithm variant. For example: search for recent
+  LAPACK dstemr fixes, MR³ bidiagonal SVD implementations, or NCD shift strategies.
 """
 
 RESEARCH_PROMPT_TEMPLATE = """\
@@ -314,7 +323,7 @@ class ClaudeAgentLLM(LLMInterface):
         if tools_override is not None:
             allowed_tools = tools_override
         elif read_only:
-            allowed_tools = ["Read", "Grep", "Glob", "Bash"]
+            allowed_tools = ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch"]
         elif self.enable_tools:
             allowed_tools = [
                 "Read", "Write", "Edit", "MultiEdit",
@@ -338,7 +347,9 @@ class ClaudeAgentLLM(LLMInterface):
         opts_kwargs = dict(
             model=model_override or self.model,
             allowed_tools=allowed_tools if allowed_tools else None,
-            permission_mode="plan" if read_only else self.permission_mode,
+            # Research agent uses bypassPermissions too — "plan" mode blocks tool
+            # execution. Safety comes from the allowed_tools list (no Write/Edit).
+            permission_mode=self.permission_mode,
             max_budget_usd=budget_override or self.max_budget_usd,
             enable_file_checkpointing=self.enable_checkpointing,
         )
