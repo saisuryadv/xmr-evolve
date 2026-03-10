@@ -81,34 +81,38 @@ Scaling measured on patterns that **pass at all sizes**. Worst ratio used for sc
 ## Algorithm Details
 
 ### DBDSQR (reference baseline, 379/379)
-- LAPACK QR iteration for bidiagonal SVD. O(n²) typical, O(n³) worst case.
-- Perfect accuracy on all matrices. This is the gold standard.
+- **Method**: LAPACK QR iteration for bidiagonal SVD. Implicit zero-shift QR with convergence tests.
+- **Complexity**: O(n²) typical (few iterations), O(n³) worst case (n iterations for convergence). Empirically O(n³) on adversarial patterns — worst ratio 8.53x.
+- **Accuracy**: Perfect on all 379 matrices. Gold standard: avg res=0.43, ortU=0.37, ortV=0.35.
+- **Why it's reliable**: Direct bidiagonal algorithm — no reduction to tridiagonal, no extraction step. U and V updated simultaneously per QR step, maintaining coupling.
 - Source: `src/bidiag_dbdsqr.h`
 
 ### DBDSVDX (371/379)
-- LAPACK bidiagonal SVD via DSTEVX (bisection + inverse iteration) on TGK.
-- 8 failures (chkbd, checkerboard variants).
-- Known DBDSVDX post-extraction reorthogonalization bug (INDEX.md Bug #7).
+- **Method**: LAPACK bidiagonal SVD via DSTEVX (bisection + inverse iteration) on the 2n×2n TGK tridiagonal. After DSTEIN computes TGK eigenvectors, DBDSVDX extracts u/v parts.
+- **Complexity**: O(n²) for eigenvalues (bisection), O(n³) worst case for eigenvectors (DSTEIN reortho). Empirically O(n³) — worst ratio 13.21x.
+- **Failures**: 8 tests fail — all from chkbd and checkerboard families. Root cause: DBDSVDX's post-extraction reorthogonalization trigger is norm-based (`ABS(NRMU-ORTOL)*SQRT2.GT.ONE`) and never fires for these matrices even though orthogonality is O(10^13). This is INDEX.md Bug #7, unfixed in LAPACK 3.12.1.
+- **Not the same as DSTEIN's bug**: DSTEIN itself uses eigenvalue-separation-based reortho and works correctly. The bug is in DBDSVDX's own post-processing.
 - Source: `src/bidiag_dbdsvdx.h`
 
 ### HGBSVD (174/379)
-- Großer-Lang coupling-based bidiagonal SVD (DBDSGR).
-- Directly computes SVD of bidiagonal using B^TB representation and coupling transforms.
-- Excellent accuracy on passing tests (pass max res=2.18, ortU=4.0).
-- Many info!=0 failures from internal MR³ on pathological matrices (205/379 fail).
-- **O(n²) on passing matrices** (worst 4.35x).
+- **Method**: Großer-Lang (2001) coupling-based bidiagonal SVD via DBDSGR. Works on B^TB tridiagonal using MR³ (dstemr_ internally) with coupling transforms to simultaneously compute U and V. Avoids TGK entirely.
+- **Complexity**: O(n²) on passing matrices (worst 4.35x).
+- **Accuracy on passing tests**: Excellent — pass max res=2.18, ortU=4.0.
+- **Failures**: 205/379 fail with INFO!=0. DBDSGR returns INFO=3/4/5 for deep recursion, tight clusters, or MGS-requiring clusters. Only positive definite couplings implemented. Splittings not supported (INFO=33). DLARRI (eigenvalue refinement) missing from XMR distribution.
+- **f2c calling convention**: Requires `ftnlen` args `1, 1` at end for CHARACTER*1 parameters.
 - Source: `src/bidiag_hgbsvd.h`
 
 ### TGK+DSTEMR (93/379)
-- LAPACK MR³ (DSTEMR) on the 2n×2n TGK tridiagonal, with post-processing.
-- **O(n²) confirmed** (worst 4.82x on passing matrices).
-- Fails 75% of tests — eigenvector extraction destroys orthogonality.
+- **Method**: LAPACK MR³ (DSTEMR) on the 2n×2n TGK tridiagonal, then extract U from odd rows (1,3,5,...) and V from even rows (0,2,4,...) of eigenvectors.
+- **Complexity**: O(n²) confirmed (worst 4.82x on passing matrices).
+- **Failures**: 75% fail. Eigenvector extraction destroys orthogonality because DSTEMR's representation tree doesn't know about GK structure — shifts can cluster +σ and -σ eigenvalues, producing eigenvectors whose u/v parts lack the equal-norm property.
+- **Post-processing**: Normalization, sign consistency, one-sided recovery (U=BV/σ for small σ), chunked MGS reortho. Helps some cases but can't fix fundamental extraction failures.
 - Source: `src/bidiag_tgk_stemr.h`
 
 ### TGK+DSTEXR (61/379)
-- Willems XMR improved MR³ (DSTEXR) on TGK.
-- Worst pass scaling 5.73x — mostly O(n²), one outlier (`constant` at 5.73x).
-- Worse pass rate than DSTEMR (GK-form support deactivated, INDEX.md Bug #10).
+- **Method**: Willems XMR improved MR³ (DSTEXR) on TGK. Same extraction as DSTEMR.
+- **Complexity**: Mostly O(n²), one outlier at 5.73x (`constant` pattern).
+- **Failures**: Worse pass rate than DSTEMR despite theoretically better eigensolver. GK-form support deactivated in dlaxre.f (INDEX.md Bug #10). AVGAPFAC bug fixed (INDEX.md Bug #1) but graded-spectrum failures persist (Bug #2).
 - Source: `src/bidiag_tgk_stexr.h`
 
 ### DSTEGR = DSTEMR
@@ -142,5 +146,5 @@ All in `src/`:
 - `bidiag_tgk_stemr.h` — TGK + DSTEMR with post-processing
 - `bidiag_tgk_stexr.h` — TGK + DSTEXR with post-processing
 - `bidiag_tgk_common.h` — Shared: TGK construction, U/V extraction, normalization, sign fix, one-sided recovery, chunked MGS reorthogonalization
-- `bidiag_svd.h` — **THE FILE BEING EVOLVED** (currently = TGK+DSTEXR variant)
+- `bidiag_svd.h` — **THE FILE BEING EVOLVED** (hybrid HGBSVD + TGK+DSTEMR fallback)
 - `fortran_interface.h` — C++ extern "C" declarations for all routines
