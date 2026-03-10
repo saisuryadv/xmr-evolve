@@ -188,26 +188,47 @@ Baseline source code (read to understand their techniques):
 You have a single unified session with no budget limit. Research deeply, implement,
 test, iterate, and document — in whatever order makes sense.
 
-1. **READ THE KEY PAPERS FIRST** — Before doing anything else, read the 3 must-read
-   papers listed in the "WHAT TO READ" section (Willems-Lang 2012, Großer-Lang 2001,
-   Willems-Lang 2013). These contain the algorithms you're implementing. Also read
-   knowledge/PRIOR_APPROACHES.md so you don't repeat failed approaches.
+### STEP 0: READ THE PAPERS (MANDATORY — DO THIS BEFORE ANYTHING ELSE)
 
-2. **IDENTIFY FAILING TESTS** — Compile and run the current code. Group failures
-   by mode (INFO!=0, residual blow-up, orthoU/V blow-up). Note WHICH specific
-   matrices fail and at WHICH sizes.
+This is not optional. You MUST read these papers before writing any code, running any
+tests, or even looking at the source code. The papers contain the algorithms, theorems,
+and mathematical foundations you need. Without reading them, you will waste time
+reinventing approaches that have already been tried and failed.
 
-3. **COMPARE AGAINST BASELINES AND TOP VARIANTS** — For the failing matrices, run
-   the baselines AND the top evolved variants on the same tests. Understand:
+Read these 3 papers now using the Read tool (they are PDFs, you can read them directly):
+
+```
+/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2012 - The MR3-GK Algorithm for the Bidiagonal SVD - Willems and Lang.pdf
+/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2001 - An O(n^2) Algorithm for the Bidiagonal SVD - Großer and Lang.pdf
+/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2013 - A Framework for the MR3 Algorithm Theory and Implementation - Willems and Lang.pdf
+```
+
+After reading the papers, also read:
+- `knowledge/PRIOR_APPROACHES.md` — 12 approaches already tried, what worked and failed
+- `knowledge/INDEX.md` — All known bugs, test matrix formulas, numerical thresholds
+
+Take notes on: What is Algorithm 4.1? What is the NCD condition? What is GK structure?
+What are the five MR³ requirements? Why does coupling fail at deep recursion? What are
+block factorizations and how do they reduce element growth?
+
+Only after you have read and understood the papers, proceed to Step 1.
+
+### STEP 1: IDENTIFY FAILING TESTS
+
+Compile and run the current code. Group failures by mode (INFO!=0, residual blow-up,
+orthoU/V blow-up). Note WHICH specific matrices fail and at WHICH sizes.
+
+### STEP 2: COMPARE AGAINST BASELINES AND TOP VARIANTS
+
+For the failing matrices, run the baselines AND top evolved variants on the same tests:
    - Which baselines/variants pass where yours fails? What do they do differently?
    - Which baselines/variants fail on the same matrices? This reveals fundamental hardness.
    - Read the source code (and RESEARCH.md for variants) to understand their techniques.
    - If a top variant already solves a failure mode, DON'T reinvent — build on its approach.
 
-4. **READ THE PAPERS (PDFs) AND UNDERSTAND THE MATHEMATICS** — This is the most
-   important step. The knowledge/ files are only summaries. You MUST read the actual
-   papers to understand the algorithms, theorems, and proofs. Use the Read tool on
-   the PDFs listed in the "WHAT TO READ" section above. For the most impactful failure:
+### STEP 3: CONNECT FAILURES TO THE PAPERS
+
+For the most impactful failure mode, go back to the papers you read in Step 0:
    - **What algebraic property breaks?** Orthogonality, norm deviation, residual
      coupling, representation quality (NCD/RRR)?
    - **What structural property of the failing matrix triggers it?** Clustered
@@ -217,10 +238,14 @@ test, iterate, and document — in whatever order makes sense.
    - **Read the reference Fortran code.** See how XMR (dstexr.f) or HGBSVD (dbdsgr.f)
      handle the same case. What technique do they use? Can it be adapted?
 
-5. **FORMULATE A PRINCIPLED FIX** — Design a solution that addresses the root
-   cause, not the symptom. Know which theorem/property guarantees correctness.
+### STEP 4: FORMULATE A PRINCIPLED FIX
 
-6. **VERIFY NOVELTY BEFORE IMPLEMENTING** — This is critical. Before writing code,
+Design a solution that addresses the root cause, not the symptom. Know which
+theorem/property guarantees correctness. Reference the specific paper and theorem.
+
+### STEP 5: VERIFY NOVELTY BEFORE IMPLEMENTING
+
+This is critical. Before writing code,
    check whether your proposed approach is ALREADY implemented by an existing
    baseline or prior variant:
    - **Spawn a subagent** to search all RESEARCH.md files, baseline source code,
@@ -233,7 +258,9 @@ test, iterate, and document — in whatever order makes sense.
      variants. Explain specifically what is new and why prior attempts at the same idea
      didn't work.
 
-7. **PREDICT FAILURES BEFORE IMPLEMENTING** — Before writing code:
+### STEP 6: PREDICT FAILURES BEFORE IMPLEMENTING
+
+Before writing code:
    - **Which matrices will your fix NOT help?** Identify cases where your approach's
      assumptions break (e.g., "this assumes well-separated singular values, so
      `two_clusters` at n=400 will still fail because...").
@@ -242,23 +269,29 @@ test, iterate, and document — in whatever order makes sense.
      do easy matrices regress?
    - **What's the complexity?** Count the operations. Will it stay O(n²)?
 
-7. **IMPLEMENT** — Edit `{agent_dir}/program/bidiag_svd.h`.
+### STEP 7: IMPLEMENT
 
-8. **COMPILE & TEST** — Build and run. Compare against the parent variant AND
-   against baselines:
+Edit `{agent_dir}/program/bidiag_svd.h`.
+
+### STEP 8: COMPILE & TEST
+
+Build and run. Compare against the parent variant AND against baselines:
    - Did you improve on the parent? (pass rate, score, specific matrices)
    - Did you overcome any baseline bugs/failures? (e.g., HGBSVD INFO!=0 cases)
    - Did anything regress? If so, diagnose why and fix.
    - Keep iterating until pass rate is maximized.
 
-9. **VERIFY IMPROVEMENT** — Run your final version side-by-side with:
+### STEP 9: VERIFY IMPROVEMENT
+
+Run your final version side-by-side with:
    - The **baselines** (DBDSQR, HGBSVD, TGK+STEMR) on failing matrices
    - The **top evolved variants** (in `baselines/top_variants/`) on the same matrices
    Confirm you actually beat them, not just match. If a top variant already handles
    a case you're working on, study HOW it does it (read its code and RESEARCH.md)
    and build on that approach rather than reinventing. Report a comparison table.
 
-10. **DOCUMENT** — Write `{agent_dir}/RESEARCH.md`. Future agents read this to
+### STEP 10: DOCUMENT
+Write `{agent_dir}/RESEARCH.md`. Future agents read this to
     build on your work. Follow this structure:
 
 ```markdown
