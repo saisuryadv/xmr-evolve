@@ -19,9 +19,12 @@ DBDSQR's 270/270 accuracy but with O(n²) scaling instead of O(n³)).
 - `src/bidiag_tgk_stexr.h` — TGK+DSTEXR reference (61/379, O(n²))
 - `src/bidiag_tgk_common.h` — Shared TGK utilities
 - `src/fortran_interface.h` — C++ declarations for Fortran routines
-- `evaluator.py` — OpenEvolve Python evaluator
+- `evaluator.py` — OpenEvolve Python evaluator (saves variants to `evolved_variants/`)
+- `claude_agent_llm.py` — Claude Agent SDK adapter (single-phase, directory-scoped writes)
+- `run_xmr.py` — OpenEvolve entry point
 - `lib/libxmr_c.a` — Pure C library (CLAPACK + XMR + hgbsvd, no Fortran)
 - `config.yaml` — OpenEvolve configuration
+- `scratch/` — Agent workspaces (scratch/agent_NNN/ per call, gitignored)
 
 ## Evolved File Requirements
 - `bidiag_svd.h` MUST be **self-contained** — no `#include` of project headers
@@ -71,6 +74,18 @@ Scaling = worst time doubling ratio (n=200→400) across patterns that pass at A
 | HGBSVD | 174/379 | 533121 | 532982 | 533112 | 4.35x (O(n²)) | 37.96 |
 | TGK+STEMR | 93/379 | 52935 | 492760 | 451378 | 4.82x (O(n²)) | 27.27 |
 | TGK+STEXR | 61/379 | 163642 | 567171 | 520277 | 5.73x | 21.58 |
+
+## Agent Architecture
+Single-phase agent with full tools and isolated per-call workspace:
+- **Workspace**: `scratch/agent_NNN/` — isolated directory per agent call
+  - `program/bidiag_svd.h` — the output file (pre-copied, agent edits it, read back as result)
+  - `evaluate.cpp` — pre-copied for compilation
+- **Write scope**: only `scratch/agent_NNN/` (enforced via `can_use_tool` callback)
+- **Read scope**: unrestricted (all project files, knowledge base, references)
+- **Tools**: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch, Agent
+- **Subagents**: `numerical-analyst` (stability analysis), `bug-hunter` (known bugs)
+- **Result capture**: file-based (read `program/bidiag_svd.h` from disk, not text extraction)
+- **Budget**: $3.50/call default (configurable via `--budget`)
 
 ## Agent Autonomy Rules
 - **NEVER stop to ask whether an approach or direction is correct.** Just try it, evaluate it, and report results.

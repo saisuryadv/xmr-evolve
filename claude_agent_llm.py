@@ -1,28 +1,27 @@
 """
 Claude Agent SDK adapter for OpenEvolve
 
-Drop-in replacement for OpenEvolve's OpenAI LLM backend that uses the
-Claude Agent SDK instead.  Each "generation" is a TWO-PHASE agent pipeline:
+Single-phase agentic pipeline: one agent with full tool access and
+directory-scoped write permissions via the SDK's can_use_tool callback.
 
-Phase 1 — RESEARCH AGENT (read-only, cheap model):
-  Analyzes the parent program's test failures by reading the knowledge base,
-  reference code, and documented bugs.  Produces a focused "research brief"
-  with specific clues about what technique to try and why.
+Each agent call gets an isolated workspace:
+  scratch/agent_NNN/
+    program/bidiag_svd.h  ← the output file (agent edits this, we read it back)
+    evaluate.cpp           ← pre-copied for compilation
+    evaluate               ← compiled binary
 
-Phase 2 — MUTATION AGENT (full tools, main model):
-  Receives the OpenEvolve prompt PLUS the research brief.  Has all tools
-  (read, write, bash, grep, subagents) to implement the suggested changes.
-  Returns the complete evolved file in ```cpp fences.
+Write permissions restricted to scratch/agent_NNN/ only.
+Read permissions: unrestricted (read anything from anywhere).
+Subagent spawning: enabled (Agent tool).
 
-This two-phase design means the mutation agent starts each session with
-domain-specific guidance instead of having to rediscover failure modes
-from scratch.
+Result capture: we read scratch/agent_NNN/program/bidiag_svd.h after the agent
+finishes, instead of parsing ```cpp blocks from conversational output.
 """
 
-import asyncio
 import logging
 import os
 import re
+import shutil
 from typing import Any, Dict, List, Optional
 
 from openevolve.llm.base import LLMInterface
@@ -52,163 +51,174 @@ def _ensure_sdk():
 
 
 # ---------------------------------------------------------------------------
-# Phase 1: Research agent prompt
+# Unified prompt template
 # ---------------------------------------------------------------------------
 
-RESEARCH_SYSTEM_PROMPT = """\
-You are a numerical linear algebra research analyst for bidiagonal SVD algorithms.
-Your job is to analyze test failures and produce actionable research briefs that
-guide a code mutation agent.
+UNIFIED_PROMPT_TEMPLATE = """\
+## YOUR WORKSPACE
 
-You have access to:
-- knowledge/ directory: papers, bugs, test matrix formulas, prior approaches
-- src/ directory: reference implementations (bidiag_dbdsqr.h, bidiag_hgbsvd.h, etc.)
-- WebSearch: search for LAPACK bugs, numerical methods, MR³ algorithm papers, GitHub issues
-- WebFetch: fetch specific URLs (e.g., LAPACK GitHub issues, netlib source)
+Your isolated workspace is: `{agent_dir}`
 
-RULES:
-- You MUST NOT modify any files. You are read-only.
-- NEVER ask questions or request clarification. Produce your analysis and stop.
-- Be CONCRETE: name specific functions, line numbers, formulas — not vague advice.
-- Read AT MOST 3 files from knowledge/ — pick the most relevant ones, don't read all 13.
-  Start with knowledge/INDEX.md (master reference), then pick 1-2 based on the failure pattern:
-  * Orthogonality failures → knowledge/PRIOR_APPROACHES.md
-  * HGBSVD INFO!=0 → knowledge/grosser_lang_2001_hgbsvd.md
-  * Specific matrix failures → knowledge/EVALUATION.md (pattern descriptions)
-  * Scaling problems → knowledge/BASELINES.md
-- Use WebSearch when the local knowledge base doesn't have enough info about a specific
-  numerical technique, LAPACK bug, or algorithm variant. For example: search for recent
-  LAPACK dstemr fixes, MR³ bidiagonal SVD implementations, or NCD shift strategies.
-"""
+```
+{agent_dir}/
+  program/bidiag_svd.h  ← YOUR OUTPUT FILE — edit this, final version is read from here
+  evaluate.cpp           ← pre-copied, do not modify
+```
 
-RESEARCH_PROMPT_TEMPLATE = """\
-## Task: Failure Analysis & Research Brief
+The workspace has been pre-populated with the current bidiag_svd.h and evaluate.cpp.
+You can ONLY write/edit files inside `{agent_dir}/`. All other files are read-only.
 
-Below is the current evolved program with its evaluation results.
-Produce a SHORT, ACTIONABLE research brief (max 500 words).
+## BUILD & TEST (use these exact commands)
 
-{openevolve_prompt}
+```bash
+g++ -std=c++17 -O2 -Isrc/clapack -I{agent_dir}/program -o {agent_dir}/evaluate {agent_dir}/evaluate.cpp -Llib -lxmr_c -lm
+{agent_dir}/evaluate
+```
+
+## PRIOR RESEARCH
+
+{prior_research}
+
+## YOUR WORKFLOW
+
+### Phase 1: Analyze (~20% of budget)
+1. **READ PRIOR RESEARCH** — Check the prior research summaries above. If any are
+   listed, read the most relevant RESEARCH.md files to understand what was tried,
+   what worked, and what failed. Don't repeat failed approaches.
+
+2. **IDENTIFY FAILING TESTS** — From the evaluation output below, list which
+   patterns fail and group by failure mode (INFO!=0, residual blow-up, orthoU/V blow-up).
+
+3. **DIAGNOSE ROOT CAUSE** — For the top 1-3 failure modes, identify the specific
+   code path in bidiag_svd.h that triggers the failure. Be concrete: name the function,
+   the condition, the formula. Read up to 2 knowledge files if needed (start with
+   knowledge/INDEX.md). Use WebSearch for LAPACK/MR³ techniques if local knowledge
+   is insufficient.
+
+### Phase 2: Implement (~60% of budget)
+4. **EDIT** `{agent_dir}/program/bidiag_svd.h` with your fix.
+5. **COMPILE** and **TEST** using the commands above.
+6. **ITERATE** if compile fails or tests regress — fix and re-test.
+
+### Phase 3: Document & Finalize (~20% of budget)
+7. Verify your final version compiles and passes more tests than the parent.
+8. Your final `{agent_dir}/program/bidiag_svd.h` IS your output — no need to
+   paste it in chat. Just make sure it compiles and passes tests.
+9. **Write `{agent_dir}/RESEARCH.md`** — a structured research report. This is
+   critical: future agents will read your RESEARCH.md to build on your work.
+   Follow this structure:
+
+```markdown
+# Variant N: [One-line title of your approach]
+
+## Abstract
+[2-3 sentences: what problem you addressed, what you did, key result (pass rate, score)]
+
+## Introduction
+[What specific failures motivated this work? Which test patterns fail and why?
+What is the parent variant's score and pass rate?]
+
+## Related Work
+[What prior variants (from the changelog) attempted similar fixes? What approaches
+from knowledge/PRIOR_APPROACHES.md are relevant? Why did they succeed or fail?]
+
+## Proposed Method
+[Detailed description of your code changes. Which functions modified? What conditions
+added/changed? Include the key formulas/thresholds. If this is a modification of an
+existing technique, clearly state what's different.]
+
+### Novelty
+[What is new about your approach compared to all prior variants? Be specific.]
+
+## Experiments
+[Test results: pass rate, score, avg residual, avg orthoU, avg orthoV.
+Comparison table vs parent variant. Which tests improved? Which regressed?
+Include actual numbers from ./evaluate output.]
+
+## Limitations
+[What tests still fail? Why? What numerical phenomena does your approach not handle?]
+
+## Future Work
+[Specific suggestions for the next agent. What should be tried next based on
+your findings? What promising directions did you not have budget to explore?]
+```
+
+## RULES
+- NEVER ask questions or stop for confirmation. Just implement, compile, test, iterate.
+- NEVER add O(n³) operations: no global MGS over all n vectors, no dense n×n matrix multiply,
+  no full SVD/eigendecomposition of n×n matrices. Chunked operations (chunk ≤ 32) are OK.
+- You can spawn subagents (Agent tool) for parallel investigation or focused tasks.
+- You can create scratch files in `{agent_dir}/` for notes, intermediate results, etc.
+- You can ONLY write/edit files inside `{agent_dir}/`. All other files are read-only.
+
+{changelog}
 
 ---
 
-## Required Analysis (be concrete, not vague):
-
-1. **FAILING TESTS** — List the specific pattern names that fail (e.g., "stemr_killer at n=200:
-   orthoU=847.3"). Group by failure mode: INFO!=0, residual blow-up, orthoU/V blow-up.
-
-2. **ROOT CAUSE** — What specific code path triggers the failure? Name the function and the
-   problematic logic. Examples of good root causes:
-   - "The TGK extraction in extract_uv() doesn't normalize when eigenvector has near-zero
-     odd-row norm, causing orthoU > 1000"
-   - "dbdsgr_ returns INFO=5 for stemr_killer because B^TB has condition > 10^20"
-   Bad root causes (too vague, DO NOT write these):
-   - "orthogonality is lost due to numerical issues"
-   - "the algorithm doesn't handle clustered eigenvalues well"
-
-3. **SPECIFIC FIX** — One concrete code change. Must include:
-   - Which function to modify
-   - What condition to add/change (with formula)
-   - Why this fixes the identified root cause
-   - O(n²) verification: state whether the fix is O(n), O(n²), or O(n³)
-   Example: "In post_process_tgk(), after line ~450, add: if (vnorm < sqrt(n*eps)*sigma_max)
-   recompute u[k] = B*v[k]/sigma[k] using one-sided recovery. This is O(n) per vector."
-
-4. **DEAD ENDS** — Read knowledge/PRIOR_APPROACHES.md. List 1-3 techniques already tried
-   that failed for THIS specific failure pattern. One line each.
-
-## Output: Plain text, start with "RESEARCH BRIEF:". No code blocks. No JSON.
+{openevolve_prompt}
 """
 
 
 # ---------------------------------------------------------------------------
-# Phase 2: Mutation output format instruction
+# Markdown section extraction
 # ---------------------------------------------------------------------------
 
-OUTPUT_INSTRUCTION = """
-
-## MANDATORY WORKFLOW (follow this exact sequence)
-
-1. **READ** the current bidiag_svd.h (it's in the prompt above) and the research brief
-2. **IMPLEMENT** your changes by editing src/bidiag_svd.h directly using Edit/Write tools
-3. **COMPILE** — run: g++ -std=c++17 -O2 -Isrc/clapack -o evaluate src/evaluate.cpp -Llib -lxmr_c -lm
-4. **TEST** — run: ./evaluate (no args = adversarial only, fast). Check PASS/FAIL counts.
-5. **ITERATE** if compile fails or tests regress — fix and re-test. Do NOT give up after one try.
-6. **OUTPUT** the final working version as described below.
-
-IMPORTANT RULES:
-- NEVER ask questions or stop for confirmation. Just implement, compile, test, iterate.
-- Do NOT read knowledge files or reference implementations to "understand the problem."
-  The research agent already did that — its diagnosis is in the RESEARCH BRIEF above.
-  Your first tool call should be editing src/bidiag_svd.h, not reading other files.
-- NEVER add O(n³) operations: no global MGS over all n vectors, no dense n×n matrix multiply,
-  no full SVD/eigendecomposition of n×n matrices. Chunked operations (chunk ≤ 32) are OK.
-
-## CRITICAL OUTPUT FORMAT
-
-After testing, output the COMPLETE final bidiag_svd.h in a SINGLE ```cpp block.
-This is how the evolution framework captures your work.
-
-- The ```cpp block MUST contain the ENTIRE file — every line, every function
-- Do NOT use "// ... rest unchanged" or "// [omitted]" — output EVERYTHING
-- Do NOT output multiple ```cpp blocks — only ONE, and it must be the LAST code block
-- The file must start with #pragma once and contain the complete bidiag_svd() function
-
-```cpp
-#pragma once
-// YOUR COMPLETE EVOLVED FILE HERE — EVERY LINE
-```
-"""
+def _extract_section(markdown: str, section_name: str) -> str:
+    """Extract the content of a ## section from markdown text."""
+    lines = markdown.split("\n")
+    capture = False
+    result = []
+    for line in lines:
+        if line.startswith("## ") and section_name.lower() in line.lower():
+            capture = True
+            continue
+        elif line.startswith("## ") and capture:
+            break
+        elif line.startswith("# ") and capture:
+            break
+        elif capture:
+            result.append(line)
+    return "\n".join(result).strip()
 
 
 # ---------------------------------------------------------------------------
-# Code extraction
+# Code extraction (fallback only — primary capture is file-based)
 # ---------------------------------------------------------------------------
 
 def _extract_code_from_response(response: str, language: str = "cpp") -> str:
     """
-    Extract the evolved code from an agent's conversational response.
+    Extract evolved code from agent's conversational response.
+    Used as fallback when the agent didn't write the output file.
 
-    Strategy (in order):
-    1. Find all ```cpp blocks. Among those with #pragma once (full files),
-       take the LAST one (matching our "LAST code block" instruction).
-       If none have #pragma once, take the largest.
-    2. Find all generic ``` blocks, take the largest
-    3. Return raw response (OpenEvolve's parse_full_rewrite will handle it)
+    Strategy: find last ```cpp block with #pragma once, else largest block.
     """
     if not response or not response.strip():
         return response
 
-    # Strategy 1: ```cpp blocks
+    # ```cpp blocks
     pattern = r"```" + re.escape(language) + r"\s*\n(.*?)```"
     matches = re.findall(pattern, response, re.DOTALL)
     if matches:
-        # Prefer blocks that look like complete files (#pragma once)
         full_files = [m for m in matches if "#pragma once" in m and len(m.strip()) > 500]
         if full_files:
-            # Take the LAST complete file (our instruction says "LAST code block")
             best = full_files[-1]
         else:
-            # Fallback: take the largest block
             best = max(matches, key=len)
-
         if len(best.strip()) > 100:
             return f"```{language}\n{best.strip()}\n```"
 
-    # Strategy 2: generic ``` blocks
+    # Generic ``` blocks
     pattern = r"```\s*\n(.*?)```"
     matches = re.findall(pattern, response, re.DOTALL)
     if matches:
-        # Same logic: prefer last complete file, then largest
         full_files = [m for m in matches if "#pragma once" in m and len(m.strip()) > 500]
         if full_files:
             best = full_files[-1]
         else:
             best = max(matches, key=len)
-
         if len(best.strip()) > 100:
             return f"```{language}\n{best.strip()}\n```"
 
-    # Strategy 3: raw fallback
     logger.warning(
         "No substantial code block found in agent response "
         f"({len(response)} chars). Returning raw response."
@@ -217,7 +227,21 @@ def _extract_code_from_response(response: str, language: str = "cpp") -> str:
 
 
 # ---------------------------------------------------------------------------
-# Agent runner (shared by both phases)
+# AsyncIterable prompt wrapper (required by can_use_tool callback)
+# ---------------------------------------------------------------------------
+
+async def _make_prompt_iterable(prompt: str):
+    """Wrap a string prompt into an AsyncIterable for can_use_tool support."""
+    yield {
+        "type": "user",
+        "session_id": "",
+        "message": {"role": "user", "content": prompt},
+        "parent_tool_use_id": None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Agent runner
 # ---------------------------------------------------------------------------
 
 async def _run_agent_session(
@@ -230,12 +254,18 @@ async def _run_agent_session(
     result_text = ""
     cost_usd = 0.0
 
+    # can_use_tool requires AsyncIterable prompt
+    if options.can_use_tool:
+        actual_prompt = _make_prompt_iterable(prompt)
+    else:
+        actual_prompt = prompt
+
     try:
-        async for message in sdk.query(prompt=prompt, options=options):
+        async for message in sdk.query(prompt=actual_prompt, options=options):
             if hasattr(message, "result") and message.result:
                 result_text = message.result
-            if hasattr(message, "cost_usd") and message.cost_usd:
-                cost_usd = message.cost_usd
+            if hasattr(message, "total_cost_usd") and message.total_cost_usd:
+                cost_usd = message.total_cost_usd
             # Fallback: capture text blocks from assistant messages
             if hasattr(message, "content") and not result_text:
                 for block in getattr(message, "content", []):
@@ -258,35 +288,34 @@ async def _run_agent_session(
 
 class ClaudeAgentLLM(LLMInterface):
     """
-    Two-phase agentic LLM for OpenEvolve:
-      Phase 1: Research agent analyzes failures (read-only, cheap)
-      Phase 2: Mutation agent implements changes (full tools)
+    Single-phase agentic LLM for OpenEvolve with per-agent isolated workspaces.
+
+    Each generate call creates scratch/agent_NNN/ with:
+      program/bidiag_svd.h  — the file to evolve (pre-copied, agent edits it)
+      evaluate.cpp          — pre-copied for compilation
+
+    Write/Edit restricted to the agent's directory via can_use_tool callback.
+    Result captured by reading program/bidiag_svd.h from disk (not from text output).
     """
 
     def __init__(
         self,
         model: str = "claude-sonnet-4-20250514",
         cwd: Optional[str] = None,
-        max_budget_usd: float = 1.0,
+        max_budget_usd: float = 3.50,
         enable_tools: bool = True,
-        enable_explore: bool = True,
         enable_checkpointing: bool = False,
         load_project_settings: bool = True,
-        permission_mode: str = "acceptEdits",
+        permission_mode: str = "bypassPermissions",
         extra_system_prompt: Optional[str] = None,
         custom_agents: Optional[dict] = None,
         language: str = "cpp",
-        # Research agent settings
-        research_model: Optional[str] = None,
-        research_budget_usd: float = 0.50,
-        enable_research: bool = True,
     ):
         _ensure_sdk()
         self.model = model
         self.cwd = cwd
         self.max_budget_usd = max_budget_usd
         self.enable_tools = enable_tools
-        self.enable_explore = enable_explore
         self.enable_checkpointing = enable_checkpointing
         self.load_project_settings = load_project_settings
         self.permission_mode = permission_mode
@@ -294,64 +323,293 @@ class ClaudeAgentLLM(LLMInterface):
         self.custom_agents = custom_agents or {}
         self.language = language
 
-        # Research agent config
-        self.enable_research = enable_research
-        self.research_model = research_model or model
-        self.research_budget_usd = research_budget_usd
+        # Agent counter (PID-prefixed to avoid collisions across worker processes)
+        self._agent_counter = 0
+        self._pid = os.getpid()
+
+        # Scratch root
+        if self.cwd:
+            self._scratch_dir = os.path.abspath(os.path.join(self.cwd, "scratch"))
+            os.makedirs(self._scratch_dir, exist_ok=True)
+        else:
+            self._scratch_dir = None
+
+        # Current agent's directory (set per-call for the permission callback)
+        self._current_agent_dir: Optional[str] = None
 
         logger.info(
             f"ClaudeAgentLLM initialized: model={model}, "
-            f"tools={enable_tools}, explore={enable_explore}, "
-            f"budget=${max_budget_usd}, "
-            f"research={'ON' if enable_research else 'OFF'} "
-            f"(model={self.research_model}, budget=${research_budget_usd})"
+            f"tools={enable_tools}, budget=${max_budget_usd}, "
+            f"scratch={self._scratch_dir}"
         )
+
+    # -------------------------------------------------------------------
+    # Agent workspace setup
+    # -------------------------------------------------------------------
+
+    def _create_agent_workspace(self) -> str:
+        """
+        Create an isolated workspace for this agent call.
+
+        Returns the absolute path to scratch/agent_NNN/.
+        Pre-populates with:
+          program/bidiag_svd.h  — copied from src/
+          evaluate.cpp          — copied from src/
+        """
+        self._agent_counter += 1
+        agent_name = f"agent_{self._pid}_{self._agent_counter:04d}"
+        agent_dir = os.path.join(self._scratch_dir, agent_name)
+        program_dir = os.path.join(agent_dir, "program")
+        os.makedirs(program_dir, exist_ok=True)
+
+        # Copy source files into workspace
+        src_dir = os.path.join(self.cwd, "src")
+        shutil.copy2(
+            os.path.join(src_dir, "bidiag_svd.h"),
+            os.path.join(program_dir, "bidiag_svd.h"),
+        )
+        shutil.copy2(
+            os.path.join(src_dir, "evaluate.cpp"),
+            os.path.join(agent_dir, "evaluate.cpp"),
+        )
+
+        logger.info(f"Created agent workspace: {agent_dir}")
+        return agent_dir
+
+    def _read_agent_output(self, agent_dir: str) -> Optional[str]:
+        """
+        Read the agent's output file from disk.
+
+        Returns the file content wrapped in ```cpp fences for OpenEvolve's
+        parse_full_rewrite, or None if the file wasn't written.
+        """
+        output_file = os.path.join(agent_dir, "program", "bidiag_svd.h")
+        if not os.path.exists(output_file):
+            return None
+
+        try:
+            with open(output_file) as f:
+                content = f.read()
+        except Exception as e:
+            logger.warning(f"Failed to read agent output: {e}")
+            return None
+
+        if not content.strip() or len(content.strip()) < 100:
+            return None
+
+        # Verify it looks like a valid evolved file
+        if "#pragma once" not in content:
+            logger.warning("Agent output missing #pragma once — may be incomplete")
+
+        return f"```{self.language}\n{content}\n```"
+
+    # -------------------------------------------------------------------
+    # Research report staging
+    # -------------------------------------------------------------------
+
+    def _stage_research(self, agent_dir: str) -> None:
+        """
+        Read the agent's RESEARCH.md and stage it for the evaluator.
+
+        The evaluator's save_variant_and_log() picks up the staged file,
+        saves it as v{N}_RESEARCH.md, and extracts the abstract for the
+        changelog one-liner.
+        """
+        research_file = os.path.join(agent_dir, "RESEARCH.md")
+        if not os.path.exists(research_file):
+            logger.debug("No RESEARCH.md found in agent workspace")
+            return
+
+        try:
+            with open(research_file) as f:
+                research = f.read().strip()
+        except Exception:
+            return
+
+        if not research:
+            return
+
+        # Stage for evaluator to pick up
+        variants_dir = os.path.join(self.cwd, "evolved_variants")
+        os.makedirs(variants_dir, exist_ok=True)
+        pending = os.path.join(variants_dir, ".pending_research.md")
+        try:
+            with open(pending, "w") as f:
+                f.write(research)
+            logger.info(f"Staged RESEARCH.md ({len(research)} chars)")
+        except Exception as e:
+            logger.warning(f"Failed to stage RESEARCH.md: {e}")
+
+    # -------------------------------------------------------------------
+    # Prior research summaries (for inclusion in prompt)
+    # -------------------------------------------------------------------
+
+    def _build_prior_research_summary(self) -> str:
+        """
+        Build a summary of prior agents' research for inclusion in the prompt.
+
+        Reads the abstract from the last N RESEARCH.md files and lists all
+        available research files so the agent can read any in full.
+        """
+        if not self.cwd:
+            return "No prior research available."
+
+        variants_dir = os.path.join(self.cwd, "evolved_variants")
+        if not os.path.exists(variants_dir):
+            return "No prior research available (first iteration)."
+
+        # Find all RESEARCH.md files, sorted by variant number
+        import glob as globmod
+        research_files = globmod.glob(os.path.join(variants_dir, "v*_RESEARCH.md"))
+        if not research_files:
+            return "No prior research available yet."
+
+        # Parse variant numbers and sort
+        numbered = []
+        for path in research_files:
+            base = os.path.basename(path)
+            try:
+                num = int(base.split("_")[0][1:])
+                numbered.append((num, path))
+            except (ValueError, IndexError):
+                pass
+
+        numbered.sort(key=lambda x: x[0])
+
+        # Extract abstracts from the last 5 research papers
+        max_recent = 5
+        recent = numbered[-max_recent:]
+        parts = []
+
+        parts.append(
+            f"{len(numbered)} prior research reports available at `{variants_dir}/`.\n"
+            f"You can Read any of them in full for detailed analysis.\n"
+        )
+
+        # List all available research files
+        if len(numbered) > max_recent:
+            parts.append("**All reports:** " + ", ".join(
+                f"v{num}" for num, _ in numbered
+            ) + "\n")
+
+        # Show abstracts of recent ones
+        parts.append("**Recent abstracts:**\n")
+        for num, path in recent:
+            try:
+                with open(path) as f:
+                    content = f.read()
+            except Exception:
+                continue
+
+            # Extract title (first # line)
+            title = f"v{num}"
+            for line in content.split("\n"):
+                if line.startswith("# "):
+                    title = line[2:].strip()
+                    break
+
+            # Extract abstract section
+            abstract = _extract_section(content, "Abstract")
+            if not abstract:
+                abstract = "(no abstract)"
+            # Truncate long abstracts
+            if len(abstract) > 300:
+                abstract = abstract[:300] + "..."
+
+            parts.append(f"- **{title}**: {abstract}")
+
+        return "\n".join(parts)
+
+    # -------------------------------------------------------------------
+    # Write permission callback (scoped to current agent directory)
+    # -------------------------------------------------------------------
+
+    async def _write_permission_callback(
+        self,
+        tool_name: str,
+        tool_input: dict,
+        context,
+    ):
+        """
+        Directory-scoped write permission callback.
+
+        Allows Write/Edit only for files inside the current agent's directory
+        (scratch/agent_NNN/). All other tools allowed unconditionally.
+        """
+        sdk = _ensure_sdk()
+
+        # Only gate Write and Edit tools
+        if tool_name not in ("Write", "Edit"):
+            return sdk.PermissionResultAllow()
+
+        # Get the file path from tool input
+        file_path = tool_input.get("file_path", "")
+        if not file_path:
+            return sdk.PermissionResultDeny(
+                message="Write/Edit requires a file_path"
+            )
+
+        # Resolve to absolute path
+        abs_path = os.path.abspath(file_path)
+
+        # Check: is it inside the current agent's directory?
+        if self._current_agent_dir:
+            agent_prefix = self._current_agent_dir + os.sep
+            if abs_path.startswith(agent_prefix) or abs_path == self._current_agent_dir:
+                return sdk.PermissionResultAllow()
+
+        return sdk.PermissionResultDeny(
+            message=(
+                f"Write/Edit denied for: {file_path}\n"
+                f"You can only write to your workspace: {self._current_agent_dir}/\n"
+                f"Edit {self._current_agent_dir}/program/bidiag_svd.h for code changes.\n"
+                f"Use {self._current_agent_dir}/ for notes and scratch files."
+            )
+        )
+
+    # -------------------------------------------------------------------
+    # Build agent options
+    # -------------------------------------------------------------------
 
     def _build_options(
         self,
         system_prompt: Optional[str] = None,
-        *,
-        read_only: bool = False,
-        model_override: Optional[str] = None,
-        budget_override: Optional[float] = None,
-        tools_override: Optional[list] = None,
     ):
         """Build ClaudeAgentOptions for an agent session."""
         sdk = _ensure_sdk()
 
-        # Tools
-        if tools_override is not None:
-            allowed_tools = tools_override
-        elif read_only:
-            allowed_tools = ["Read", "Grep", "Glob", "Bash", "WebSearch", "WebFetch"]
-        elif self.enable_tools:
-            allowed_tools = [
-                "Read", "Write", "Edit", "MultiEdit",
-                "Bash", "Grep", "Glob",
-                "WebSearch", "WebFetch",
-            ]
-            if self.enable_explore:
-                allowed_tools.append("Task")
-        else:
-            allowed_tools = []
+        # Full tool access — write restrictions enforced via can_use_tool
+        allowed_tools = [
+            "Read", "Write", "Edit", "Bash", "Grep", "Glob",
+            "WebSearch", "WebFetch", "Agent",
+        ]
 
         # Settings sources
         setting_sources = ["user", "project"] if self.load_project_settings else []
 
         # System prompt
         full_system_prompt = system_prompt or ""
-        if self.extra_system_prompt and not read_only:
+        if self.extra_system_prompt:
             full_system_prompt += "\n\n" + self.extra_system_prompt
+
+        # Convert custom agents to AgentDefinition if needed
+        agents = None
+        if self.custom_agents:
+            agents = {}
+            for name, agent_def in self.custom_agents.items():
+                if isinstance(agent_def, dict):
+                    agents[name] = sdk.AgentDefinition(**agent_def)
+                else:
+                    agents[name] = agent_def
 
         # Build options
         opts_kwargs = dict(
-            model=model_override or self.model,
-            allowed_tools=allowed_tools if allowed_tools else None,
-            # Research agent uses bypassPermissions too — "plan" mode blocks tool
-            # execution. Safety comes from the allowed_tools list (no Write/Edit).
+            model=self.model,
+            allowed_tools=allowed_tools if self.enable_tools else [],
             permission_mode=self.permission_mode,
-            max_budget_usd=budget_override or self.max_budget_usd,
+            max_budget_usd=self.max_budget_usd,
             enable_file_checkpointing=self.enable_checkpointing,
+            can_use_tool=self._write_permission_callback,
         )
 
         if full_system_prompt.strip():
@@ -363,8 +621,8 @@ class ClaudeAgentLLM(LLMInterface):
         if setting_sources:
             opts_kwargs["setting_sources"] = setting_sources
 
-        if self.custom_agents and not read_only:
-            opts_kwargs["agents"] = self.custom_agents
+        if agents:
+            opts_kwargs["agents"] = agents
 
         return sdk.ClaudeAgentOptions(**opts_kwargs)
 
@@ -394,19 +652,24 @@ class ClaudeAgentLLM(LLMInterface):
             return ""
 
         # Count variants
-        lines = [l for l in content.split("\n") if l.startswith("| ") and not l.startswith("| #") and not l.startswith("|---")]
+        lines = [
+            l for l in content.split("\n")
+            if l.startswith("| ") and not l.startswith("| #") and not l.startswith("|---")
+        ]
         num_variants = len(lines)
         if num_variants == 0:
             return ""
 
-        # Include the full changelog (it's a concise table)
-        # But truncate if too many entries — show header + last 20
+        # Truncate if too many entries — show header + last 20
         all_lines = content.split("\n")
         if num_variants > 20:
-            # Keep header (first 4 lines) + last 20 data rows
             header = all_lines[:4]
             data_lines = [l for l in all_lines[4:] if l.strip()]
-            truncated = header + [f"| ... | ({num_variants - 20} earlier variants omitted) | ... | ... | ... | ... | ... | ... | ... |"] + data_lines[-20:]
+            truncated = (
+                header
+                + [f"| ... | ({num_variants - 20} earlier variants omitted) | ... | ... | ... | ... | ... | ... | ... |"]
+                + data_lines[-20:]
+            )
             content = "\n".join(truncated)
 
         variants_dir = os.path.join(self.cwd, "evolved_variants")
@@ -414,73 +677,17 @@ class ClaudeAgentLLM(LLMInterface):
         return (
             f"## Evolution History ({num_variants} variants so far)\n\n"
             f"Previous variants saved at: `{variants_dir}/`\n"
-            f"You can Read any variant file (e.g., `{variants_dir}/v1_85.h`) to see its full code.\n\n"
+            f"- Code: `{variants_dir}/v{{N}}_{{score}}.h` — Read any variant to see its full code\n"
+            f"- Research: `{variants_dir}/v{{N}}_RESEARCH.md` — Structured research report\n\n"
             f"{content}\n"
         )
 
     # -------------------------------------------------------------------
-    # Phase 1: Research
-    # -------------------------------------------------------------------
-
-    async def _run_research(self, openevolve_prompt: str, changelog: str = "") -> str:
-        """
-        Run the research agent to analyze failures and produce a brief.
-
-        Args:
-            openevolve_prompt: The full prompt OpenEvolve built (code + metrics + artifacts)
-            changelog: Evolution changelog summary (variants tried so far)
-
-        Returns:
-            Research brief text, or empty string if research fails/is disabled
-        """
-        if not self.enable_research:
-            return ""
-
-        # Build research prompt with changelog context
-        prompt_with_history = openevolve_prompt
-        if changelog:
-            prompt_with_history = changelog + "\n\n" + openevolve_prompt
-
-        research_prompt = RESEARCH_PROMPT_TEMPLATE.format(
-            openevolve_prompt=prompt_with_history
-        )
-
-        options = self._build_options(
-            system_prompt=RESEARCH_SYSTEM_PROMPT,
-            read_only=True,
-            model_override=self.research_model,
-            budget_override=self.research_budget_usd,
-        )
-
-        logger.info("Phase 1: Running research agent...")
-
-        try:
-            result = await _run_agent_session(
-                prompt=research_prompt,
-                options=options,
-                label="Research",
-            )
-        except Exception as e:
-            logger.warning(f"Research agent failed (non-fatal): {e}")
-            return ""
-
-        if not result or not result.strip():
-            logger.warning("Research agent returned empty result")
-            return ""
-
-        # Truncate if too long (don't overwhelm the mutation prompt)
-        if len(result) > 3000:
-            result = result[:3000] + "\n... [research brief truncated]"
-
-        logger.info(f"Research brief: {len(result)} chars")
-        return result
-
-    # -------------------------------------------------------------------
-    # Phase 2: Mutation
+    # Generation (single-phase)
     # -------------------------------------------------------------------
 
     async def generate(self, prompt: str, **kwargs) -> str:
-        """Generate text from a prompt using the two-phase pipeline."""
+        """Generate text from a prompt."""
         return await self.generate_with_context(
             system_message=kwargs.get("system_message", ""),
             messages=[{"role": "user", "content": prompt}],
@@ -491,9 +698,12 @@ class ClaudeAgentLLM(LLMInterface):
         self, system_message: str, messages: List[Dict[str, str]], **kwargs
     ) -> str:
         """
-        Two-phase generation:
-          1) Research agent analyzes failures (read-only)
-          2) Mutation agent implements changes (full tools)
+        Single-phase generation with isolated agent workspace.
+
+        1. Create scratch/agent_NNN/ with pre-copied files
+        2. Run agent with write permissions scoped to that directory
+        3. Read program/bidiag_svd.h from disk as the result
+        4. Fallback: extract code from agent's text response
         """
         # Build the combined prompt from OpenEvolve messages
         prompt_parts = []
@@ -507,58 +717,63 @@ class ClaudeAgentLLM(LLMInterface):
 
         openevolve_prompt = "\n\n".join(prompt_parts)
 
-        # --- Read evolution changelog ---
+        # Read evolution changelog and prior research
         changelog = self._read_changelog()
+        prior_research = self._build_prior_research_summary()
 
-        # --- Phase 1: Research ---
-        research_brief = await self._run_research(openevolve_prompt, changelog)
+        # Create isolated workspace for this agent
+        agent_dir = self._create_agent_workspace()
+        self._current_agent_dir = agent_dir
 
-        # --- Phase 2: Mutation ---
-        # Structure: research brief FIRST (so agent sees guidance before the code),
-        # then changelog (so agent knows what was tried), then OpenEvolve prompt
-        # (code + metrics), then output instructions.
-        mutation_parts = []
-
-        if research_brief:
-            mutation_parts.append(
-                "## RESEARCH BRIEF — READ THIS FIRST\n"
-                "A research agent analyzed the current failures, knowledge base, and prior\n"
-                "approaches. Follow its specific recommendations. Do NOT re-investigate\n"
-                "what it already analyzed — go straight to implementing the suggested fix.\n\n"
-                + research_brief
+        try:
+            # Build unified prompt with workspace paths
+            prompt = UNIFIED_PROMPT_TEMPLATE.format(
+                agent_dir=agent_dir,
+                prior_research=prior_research,
+                changelog=changelog,
+                openevolve_prompt=openevolve_prompt,
             )
 
-        if changelog:
-            mutation_parts.append(changelog)
+            options = self._build_options(system_prompt=system_message)
 
-        mutation_parts.append(openevolve_prompt)
-        mutation_parts.append(OUTPUT_INSTRUCTION)
+            logger.info(f"Running evolution agent in {agent_dir}")
 
-        mutation_prompt = "\n\n".join(mutation_parts)
+            result_text = await _run_agent_session(
+                prompt=prompt,
+                options=options,
+                label="Evolution",
+            )
 
-        options = self._build_options(system_prompt=system_message)
+            # Stage the agent's RESEARCH.md for the evaluator
+            self._stage_research(agent_dir)
 
-        logger.info("Phase 2: Running mutation agent...")
+            # Primary: read the output file from disk
+            file_result = self._read_agent_output(agent_dir)
+            if file_result:
+                logger.info(
+                    f"Read agent output from {agent_dir}/program/bidiag_svd.h "
+                    f"({len(file_result)} chars)"
+                )
+                return file_result
 
-        result_text = await _run_agent_session(
-            prompt=mutation_prompt,
-            options=options,
-            label="Mutation",
-        )
+            # Fallback: extract code from conversational response
+            logger.warning(
+                "Agent output file not found or empty — "
+                "falling back to text extraction"
+            )
+            if not result_text:
+                logger.warning("Agent returned empty result")
+                return ""
 
-        if not result_text:
-            logger.warning("Mutation agent returned empty result")
-            return ""
+            processed = _extract_code_from_response(result_text, self.language)
+            logger.debug(
+                f"Text extraction: {len(result_text)} chars raw -> "
+                f"{len(processed)} chars processed"
+            )
+            return processed
 
-        # Post-process: extract code from conversational response
-        processed = _extract_code_from_response(result_text, self.language)
-
-        logger.debug(
-            f"Mutation response: {len(result_text)} chars raw -> "
-            f"{len(processed)} chars processed"
-        )
-
-        return processed
+        finally:
+            self._current_agent_dir = None
 
 
 # ---------------------------------------------------------------------------
@@ -572,17 +787,12 @@ def create_claude_agent_client(model_cfg) -> ClaudeAgentLLM:
     return ClaudeAgentLLM(
         model=getattr(model_cfg, "name", "claude-sonnet-4-20250514"),
         cwd=getattr(model_cfg, "cwd", None),
-        max_budget_usd=getattr(model_cfg, "max_budget_usd", 1.0),
+        max_budget_usd=getattr(model_cfg, "max_budget_usd", 3.50),
         enable_tools=getattr(model_cfg, "enable_tools", True),
-        enable_explore=getattr(model_cfg, "enable_explore", True),
         enable_checkpointing=getattr(model_cfg, "enable_checkpointing", False),
         load_project_settings=getattr(model_cfg, "load_project_settings", True),
-        permission_mode=getattr(model_cfg, "permission_mode", "acceptEdits"),
+        permission_mode=getattr(model_cfg, "permission_mode", "bypassPermissions"),
         extra_system_prompt=getattr(model_cfg, "extra_system_prompt", None),
         custom_agents=getattr(model_cfg, "custom_agents", None),
         language=getattr(model_cfg, "language", "cpp"),
-        # Research agent settings
-        research_model=getattr(model_cfg, "research_model", None),
-        research_budget_usd=getattr(model_cfg, "research_budget_usd", 0.50),
-        enable_research=getattr(model_cfg, "enable_research", True),
     )

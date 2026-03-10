@@ -326,6 +326,38 @@ def _extract_failing_tests(eval_output: str, max_tests: int = 5) -> list:
     return unique[:max_tests]
 
 
+def _read_pending_research() -> str:
+    """Read and consume the agent's staged RESEARCH.md."""
+    pending = os.path.join(VARIANTS_DIR, ".pending_research.md")
+    if not os.path.exists(pending):
+        return ""
+    try:
+        with open(pending) as f:
+            research = f.read().strip()
+        os.remove(pending)
+        return research
+    except Exception:
+        return ""
+
+
+def _extract_abstract(research: str) -> str:
+    """Extract the Abstract section from a RESEARCH.md."""
+    lines = research.split("\n")
+    capture = False
+    result = []
+    for line in lines:
+        if line.startswith("## ") and "abstract" in line.lower():
+            capture = True
+            continue
+        elif line.startswith("## ") and capture:
+            break
+        elif line.startswith("# ") and capture:
+            break
+        elif capture:
+            result.append(line)
+    return " ".join(result).strip()
+
+
 def save_variant_and_log(program_path: str, score: float, metrics: dict,
                          artifacts: dict) -> str:
     """Save evolved variant to disk and append to CHANGELOG.md."""
@@ -339,6 +371,18 @@ def save_variant_and_log(program_path: str, score: float, metrics: dict,
         shutil.copy2(program_path, variant_path)
     except Exception:
         return ""
+
+    # Read agent's RESEARCH.md (staged by claude_agent_llm.py)
+    research = _read_pending_research()
+
+    # Save full research report alongside variant file
+    if research:
+        research_path = os.path.join(VARIANTS_DIR, f"v{num}_RESEARCH.md")
+        try:
+            with open(research_path, "w") as f:
+                f.write(research)
+        except Exception:
+            pass
 
     # Build changelog entry
     pass_rate = metrics.get("pass_rate", 0)
@@ -357,22 +401,32 @@ def save_variant_and_log(program_path: str, score: float, metrics: dict,
     if len(failing) == 5:
         fail_str += ", ..."
 
+    # Extract abstract one-liner for table (full report in v{N}_RESEARCH.md)
+    approach_summary = ""
+    if research:
+        abstract = _extract_abstract(research)
+        if abstract:
+            approach_summary = abstract[:80]
+            if len(abstract) > 80:
+                approach_summary += "..."
+
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     # Initialize changelog if it doesn't exist
     if not os.path.exists(CHANGELOG_FILE):
         with open(CHANGELOG_FILE, "w") as f:
             f.write("# Evolution Changelog\n\n")
-            f.write("Each entry = one evaluated variant. Variants saved in this directory.\n\n")
-            f.write("| # | Score | Pass | Avg Res | Avg OrtU | Scaling | File | Failing Tests | Time |\n")
-            f.write("|---|-------|------|---------|----------|---------|------|---------------|------|\n")
+            f.write("Each entry = one evaluated variant. Variants saved in this directory.\n")
+            f.write("Full research reports: see v{N}_RESEARCH.md files.\n\n")
+            f.write("| # | Score | Pass | Avg Res | Avg OrtU | Scaling | Approach | Failing Tests | Time |\n")
+            f.write("|---|-------|------|---------|----------|---------|----------|---------------|------|\n")
 
     # Append entry
     with open(CHANGELOG_FILE, "a") as f:
         f.write(
             f"| {num} | {score:.1f} | {pass_count}/{total_count} "
             f"| {avg_res:.2f} | {avg_ortU:.2f} | {scaling:.2f}x "
-            f"| {variant_name} | {fail_str} | {timestamp} |\n"
+            f"| {approach_summary or '(no report)'} | {fail_str} | {timestamp} |\n"
         )
 
     return variant_path

@@ -1,22 +1,14 @@
 """
 run_xmr.py — Run OpenEvolve with Claude Agent SDK for bidiagonal SVD evolution
 
-Two-phase agentic pipeline per generation:
-
-Phase 1 — RESEARCH AGENT (read-only, cheap):
-  Analyzes the parent program's test failures.  Reads knowledge base files,
-  reference Fortran code, documented bugs, and prior approaches.  Produces a
-  focused "research brief" with specific clues: which tests fail and why,
-  what technique to try, what NOT to try.
-
-Phase 2 — MUTATION AGENT (full tools):
-  Receives the OpenEvolve prompt PLUS the research brief.  Has full agentic
-  capabilities: read/write files, compile, run tests, explore subagents.
-  Returns the improved bidiag_svd.h in ```cpp fences.
+Single-phase agentic pipeline per generation:
+  One agent with full tools (read, write, edit, bash, grep, glob, search, fetch,
+  subagents) and directory-scoped write permissions (scratch/ + src/bidiag_svd.h).
+  The agent handles both research/analysis and code mutation in a single session.
 
 Usage:
-    python run_xmr.py --iterations 50 --budget 3.0
-    python run_xmr.py --iterations 10 --budget 2.0 --research-model claude-haiku-4-5-20251001
+    python run_xmr.py --iterations 50 --budget 3.50
+    python run_xmr.py --iterations 10 --budget 5.0 --model claude-opus-4-6
 """
 
 import argparse
@@ -44,23 +36,11 @@ async def main():
     # Claude Agent SDK settings
     parser.add_argument(
         "--model", default="claude-sonnet-4-20250514",
-        help="Claude model for code mutation (phase 2)"
+        help="Claude model for evolution agent"
     )
     parser.add_argument(
-        "--research-model", default=None,
-        help="Claude model for research analysis (phase 1, default: same as --model)"
-    )
-    parser.add_argument(
-        "--budget", type=float, default=3.0,
-        help="Max USD per mutation agent call"
-    )
-    parser.add_argument(
-        "--research-budget", type=float, default=0.50,
-        help="Max USD per research agent call"
-    )
-    parser.add_argument(
-        "--no-research", action="store_true",
-        help="Disable the research pre-step (phase 1)"
+        "--budget", type=float, default=3.50,
+        help="Max USD per evolution agent call"
     )
     parser.add_argument(
         "--permission-mode", default="bypassPermissions",
@@ -77,16 +57,16 @@ async def main():
     else:
         config = Config()
 
-    # Disable OpenEvolve's built-in LLM feedback — we replace it with the
-    # research agent pre-step which is far more useful for this domain
+    # Disable OpenEvolve's built-in LLM feedback — the agent does its own
+    # analysis as part of the unified workflow
     config.evaluator.use_llm_feedback = False
 
     # Build system prompt with knowledge base
     knowledge_dir = os.path.join(os.path.dirname(__file__), "knowledge")
     system_prompt = build_system_prompt(knowledge_dir)
 
-    # Configure the main code mutation model (Claude Agent SDK)
-    mutation_model = LLMModelConfig(
+    # Configure the evolution agent (Claude Agent SDK)
+    agent_model = LLMModelConfig(
         name=args.model,
         weight=1.0,
         init_client=create_claude_agent_client,
@@ -100,22 +80,16 @@ async def main():
     )
 
     # Agent-specific settings
-    mutation_model.cwd = os.path.dirname(os.path.abspath(__file__))
-    mutation_model.max_budget_usd = args.budget
-    mutation_model.enable_tools = True
-    mutation_model.enable_explore = True
-    mutation_model.enable_checkpointing = False
-    mutation_model.load_project_settings = True
-    mutation_model.permission_mode = args.permission_mode
-    mutation_model.extra_system_prompt = system_prompt
-    mutation_model.language = "cpp"
+    agent_model.cwd = os.path.dirname(os.path.abspath(__file__))
+    agent_model.max_budget_usd = args.budget
+    agent_model.enable_tools = True
+    agent_model.enable_checkpointing = False
+    agent_model.load_project_settings = True
+    agent_model.permission_mode = args.permission_mode
+    agent_model.extra_system_prompt = system_prompt
+    agent_model.language = "cpp"
 
-    # Research agent settings
-    mutation_model.enable_research = not args.no_research
-    mutation_model.research_model = args.research_model or args.model
-    mutation_model.research_budget_usd = args.research_budget
-
-    mutation_model.custom_agents = {
+    agent_model.custom_agents = {
         "numerical-analyst": {
             "description": "Analyze numerical algorithm correctness and stability",
             "prompt": (
@@ -141,23 +115,21 @@ async def main():
         },
     }
 
-    # Set models in config (no eval model needed — research agent replaces LLM feedback)
-    config.llm.models = [mutation_model]
+    # Set models in config
+    config.llm.models = [agent_model]
 
     # Paths
     initial_program = os.path.join(os.path.dirname(__file__), "src", "bidiag_svd.h")
     evaluator_file = os.path.join(os.path.dirname(__file__), "evaluator.py")
 
     # Run
-    research_status = "ON" if not args.no_research else "OFF"
-    research_model_name = args.research_model or args.model
     print(f"{'='*60}")
     print(f"  OpenEvolve + Claude Agent SDK — Bidiagonal SVD")
-    print(f"  Mutation model:  {args.model} (${args.budget:.2f}/call)")
-    print(f"  Research agent:  {research_status} ({research_model_name}, ${args.research_budget:.2f}/call)")
-    print(f"  Permission:      {args.permission_mode}")
-    print(f"  Iterations:      {args.iterations}")
-    print(f"  LLM feedback:    OFF (replaced by research agent)")
+    print(f"  Model:       {args.model} (${args.budget:.2f}/call)")
+    print(f"  Permission:  {args.permission_mode}")
+    print(f"  Iterations:  {args.iterations}")
+    print(f"  Write scope: scratch/agent_NNN/ (isolated per call)")
+    print(f"  Subagents:   numerical-analyst, bug-hunter")
     print(f"{'='*60}")
 
     evolve = OpenEvolve(
@@ -192,21 +164,16 @@ def build_system_prompt(knowledge_dir: str) -> str:
         "- NEVER ask questions or request clarification. NEVER stop for confirmation.\n",
         "- NEVER say 'should I proceed?' or 'would you like me to...'. Just DO IT.\n",
         "- If unsure between two approaches, try the more promising one. If it fails, try the other.\n",
-        "- Your ONLY job: read code → implement changes → compile → test → output final file.\n",
-        "- Do NOT read knowledge files or reference implementations. The research brief\n",
-        "  already has the diagnosis. Your first action should be editing src/bidiag_svd.h.\n",
+        "- Your ONLY job: analyze failures → implement changes → compile → test → output final file.\n",
         "\n## Your Goal\n",
         "Improve the `bidiag_svd()` function to:\n",
         "1. Pass ALL test matrices (STCollection + adversarial) with res ≤ 7, orthoU ≤ 5, orthoV ≤ 5\n",
         "2. Maintain O(n²) worst-case complexity (scaling ratio ≤ 5x when n doubles)\n",
         "3. Handle extreme condition numbers (up to 10^15)\n",
-        "\n## Mandatory Workflow\n",
-        "1. Read the research brief (provided below) for failure diagnosis\n",
-        "2. Edit src/bidiag_svd.h with your fix\n",
-        "3. Compile: g++ -std=c++17 -O2 -Isrc/clapack -o evaluate src/evaluate.cpp -Llib -lxmr_c -lm\n",
-        "4. Test: ./evaluate (check PASS/FAIL counts)\n",
-        "5. If it regresses or fails to compile, fix and re-test\n",
-        "6. Output the COMPLETE final bidiag_svd.h in a single ```cpp block\n",
+        "\n## Write Permissions\n",
+        "You have an isolated workspace directory (provided in the prompt).\n",
+        "You can ONLY write/edit files inside your workspace. All other files are READ-ONLY.\n",
+        "Your output file is `<workspace>/program/bidiag_svd.h` — edit that, not src/.\n",
         "\n## Key Constraints\n",
         "- The file is bidiag_svd.h — a single self-contained C++ header (no #include of project headers)\n",
         "- You can call Fortran routines via extern \"C\" (DSTEMR, DBDSGR, DBDSQR, etc.)\n",
@@ -226,6 +193,11 @@ def build_system_prompt(knowledge_dir: str) -> str:
         "- dstexr_: Willems XMR improved MR³ (O(n²))\n",
         "- dbdsgr_: Großer-Lang coupling SVD (O(n²), needs ftnlen 1,1)\n",
         "- dlamch_: machine parameters. BLAS: dnrm2, ddot, dscal, dcopy, daxpy, dgemv\n",
+        "\n## Build & Test\n",
+        "```bash\n",
+        "g++ -std=c++17 -O2 -Isrc/clapack -o evaluate src/evaluate.cpp -Llib -lxmr_c -lm\n",
+        "./evaluate\n",
+        "```\n",
         "\n## Current Architecture (hybrid HGBSVD + TGK+DSTEMR)\n",
         "1. Try HGBSVD (dbdsgr_) first — O(n²), good accuracy on passing tests\n",
         "2. If HGBSVD returns INFO!=0, fall back to TGK+DSTEMR with post-processing\n",

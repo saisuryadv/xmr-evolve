@@ -25,6 +25,7 @@ evolution_trace/
 .openevolve/
 openevolve_output/
 evolved_variants/
+scratch/
 
 # Large reference source trees (not needed for build)
 lapack/
