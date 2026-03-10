@@ -18,16 +18,6 @@ The evolved file (`src/bidiag_svd.h`) is a **hybrid HGBSVD + TGK+DSTEMR** algori
 4. **Self-contained**: No `#include` of project headers — required because OpenEvolve copies only this file to a temp dir for evaluation
 5. **O(n²) on all paths**: HGBSVD is O(n²); TGK+DSTEMR is O(n²); chunked MGS is O(n²)
 
-## Current bidiag_svd.h Architecture
-
-The evolved file (`src/bidiag_svd.h`) is a **hybrid HGBSVD + TGK+DSTEMR** algorithm:
-
-1. **Primary path**: Try HGBSVD (`dbdsgr_`) — Großer-Lang coupling-based O(n²) SVD
-2. **Fallback**: If HGBSVD returns INFO!=0, use TGK+DSTEMR (`dstemr_`) with post-processing
-3. **Post-processing** (TGK path): normalize extracted U/V, sign-consistency fix, one-sided recovery (U=BV/σ for unreliable small σ), chunked MGS reorthogonalization (MAX_CHUNK=32, CHUNK_OVERLAP=4)
-4. **Self-contained**: No `#include` of project headers — required because OpenEvolve copies only this file to a temp dir for evaluation
-5. **O(n²) on all paths**: HGBSVD is O(n²); TGK+DSTEMR is O(n²); chunked MGS is O(n²)
-
 ## The Algorithm: Willems-Lang Algorithm 4.1 (MR3 on T_GK)
 
 **Input:** Upper bidiagonal B (n x n), index set I_0. **Output:** Singular triplets (sigma_i, u_i, v_i).
