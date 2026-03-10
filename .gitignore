@@ -1,0 +1,37 @@
+# Build artifacts
+evaluate
+evaluate_*
+test_dbdsvdx
+test_dstexr
+*.o
+*.dSYM/
+__pycache__/
+*.pyc
+
+# Libraries (tracked via lib/ but ignore object dirs)
+lib/obj/
+lib/obj_c/
+
+# Temporary/generated
+*.tmp
+/tmp/
+xmr_eval_*
+xmr_s1_*
+xmr_s2_*
+
+# OpenEvolve runtime
+checkpoints/
+evolution_trace/
+.openevolve/
+
+# Large reference source trees (not needed for build)
+lapack/
+LAPackCPP/
+tlapack/
+converted_fortran/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

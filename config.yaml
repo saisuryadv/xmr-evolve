@@ -1,0 +1,68 @@
+# OpenEvolve configuration for XMR bidiagonal SVD evolution
+# Uses Claude Agent SDK for agentic code mutation
+
+max_iterations: 200
+checkpoint_interval: 10
+log_level: INFO
+language: cpp
+file_suffix: .h
+
+# Full rewrite mode — agent returns complete file in ```cpp fences
+# (diff mode requires rigid SEARCH/REPLACE format incompatible with Agent SDK)
+diff_based_evolution: false
+max_code_length: 50000
+
+# LLM config is set programmatically in run_xmr.py via Claude Agent SDK
+# This section is a fallback if running without the SDK
+llm:
+  temperature: 0.7
+  max_tokens: 16000
+  timeout: 300
+  retries: 2
+  retry_delay: 5
+
+# Prompt configuration
+prompt:
+  num_top_programs: 3
+  num_diverse_programs: 2
+  use_template_stochasticity: true
+  use_meta_prompting: true
+  meta_prompt_weight: 0.15
+  include_artifacts: true
+  max_artifact_bytes: 30000
+
+# Database (MAP-Elites quality-diversity)
+database:
+  population_size: 500
+  archive_size: 50
+  num_islands: 3
+  elite_selection_ratio: 0.15
+  exploration_ratio: 0.3
+  exploitation_ratio: 0.55
+  diversity_metric: edit_distance
+  feature_dimensions:
+    - pass_rate           # 0-1, measures correctness
+    - pass_worst_scaling  # ~4-10, measures complexity class
+    - pass_avg_residual   # ~0.5-5, measures accuracy quality
+  feature_bins: 8
+
+# Evaluator
+evaluator:
+  timeout: 300
+  max_retries: 2
+  cascade_evaluation: true
+  cascade_thresholds:
+    - 10     # Stage 1: must compile and pass some tests (score > 10)
+    - 30     # Stage 2: must pass >50% with some accuracy (score > 30)
+    - 60     # Stage 3: high pass rate, decent accuracy (score > 60)
+  parallel_evaluations: 1
+  use_llm_feedback: false   # Replaced by research agent pre-step in claude_agent_llm.py
+  llm_feedback_weight: 0.0
+  enable_artifacts: true
+
+# Evolution trace
+evolution_trace:
+  enabled: true
+  format: jsonl
+  include_code: true
+  include_prompts: true

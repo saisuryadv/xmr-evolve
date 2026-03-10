@@ -1,0 +1,320 @@
+
+=== Adversarial Matrices (n=10) ===
+  exponential_graded                  n=  10  res=   1.428  ortU=13058975024445.766  ortV=6757222754025.600  t=0.0001s  FAIL
+  glued_repeated                      n=  10  res=   2.600  ortU=   3.800  ortV=   3.600  t=0.0000s  PASS
+  saw_tooth                           n=  10  res=276173931.867  ortU=343926751.600  ortV=719784504395384.750  t=0.0000s  FAIL
+  stemr_killer                        n=  10  res=   6.840  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  huge_condition                      n=  10  res=   4.878  ortU=14535395073.827  ortV=900719925474099.250  t=0.0000s  FAIL
+  spike                               n=  10  res=   2.176  ortU=5139.900  ortV=8503.000  t=0.0000s  FAIL
+  wilkinson_like                      n=  10  res=  18.343  ortU=  52.400  ortV=  48.000  t=0.0000s  FAIL
+  two_clusters                        n=  10  res=2257799623.600  ortU=2257799623.817  ortV=2257799623.747  t=0.0000s  FAIL
+  random_uniform                      n=  10  res=   2.747  ortU=   1.389  ortV=   1.000  t=0.0000s  PASS
+  diagonal_only                       n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0000s  PASS
+  constant                            n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0000s  PASS
+  all_equal_nontrivial                n=  10  res=   1.750  ortU=   3.800  ortV=   3.800  t=0.0000s  PASS
+  one_big_cluster                     n=  10  res=1091016382119.386  ortU=1091016382119.800  ortV=1091016382116.200  t=0.0000s  FAIL
+  arithmetic_progression              n=  10  res=   1.426  ortU=4973558.117  ortV=   6.800  t=0.0000s  FAIL
+  many_near_zero                      n=  10  res=   0.973  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  random_dense_clusters               n=  10  res=   2.737  ortU=   2.915  ortV=   2.662  t=0.0000s  PASS
+  constant_d_graded_e                 n=  10  res=2391507257.200  ortU=4783014517.600  ortV=4783014517.800  t=0.0000s  FAIL
+  random_clustered_5                  n=  10  res=574986465166.457  ortU=611994065880.275  ortV=611994065880.256  t=0.0000s  FAIL
+  alternating_sign                    n=  10  res=   6.769  ortU=   7.186  ortV=   8.400  t=0.0000s  FAIL
+  step_function                       n=  10  res=   2.589  ortU=  11.512  ortV=  16.900  t=0.0000s  FAIL
+  three_clusters                      n=  10  res=4024837745.551  ortU=4024837745.800  ortV=4024837745.913  t=0.0000s  FAIL
+  random_sparse_e                     n=  10  res=   2.319  ortU=   0.700  ortV=   0.200  t=0.0000s  PASS
+  chkbd                               n=  10  res=   7.021  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  marques_graded                      n=  10  res=   1.509  ortU=143806.852  ortV=760689.826  t=0.0000s  FAIL
+  gl_abcon0                           n=  10  res=   2.600  ortU=   3.800  ortV=   3.600  t=0.0000s  PASS
+  gl_abcon1                           n=  10  res=   2.733  ortU=   4.800  ortV=   2.603  t=0.0000s  PASS
+  gl_abcon2                           n=  10  res=   2.533  ortU=   3.700  ortV=   3.900  t=0.0000s  PASS
+  gl_abcon3                           n=  10  res=1153.900  ortU=1537.800  ortV=1535.000  t=0.0000s  FAIL
+  gl_random                           n=  10  res=   2.406  ortU=   8.800  ortV=   8.072  t=0.0000s  FAIL
+  gl_gradp                            n=  10  res=   1.650  ortU= 120.000  ortV= 111.318  t=0.0000s  FAIL
+  gl_gradm                            n=  10  res=   1.467  ortU= 148.200  ortV= 177.800  t=0.0000s  FAIL
+  gl_wilkp                            n=  10  res=   1.840  ortU=611933984601748.125  ortV=700741697263387.000  t=0.0000s  FAIL
+  gl_wilkm                            n=  10  res=   1.840  ortU=611933984601748.125  ortV=700741697263387.000  t=0.0000s  FAIL
+  gl_wilkw                            n=  10  res=   2.133  ortU=900719925474099.625  ortV=   3.900  t=0.0000s  FAIL
+  gl_wilk2w                           n=  10  res=   3.156  ortU=   7.671  ortV=  10.900  t=0.0000s  FAIL
+  gl_clement                          n=  10  res=   0.000  ortU=   0.000  ortV=900719925474099.250  t=0.0000s  FAIL
+  gl_gro0                             n=  10  res=   1.115  ortU= 143.000  ortV=  98.400  t=0.0000s  FAIL
+  gl_gro1                             n=  10  res=  36.931  ortU= 108.800  ortV= 157.400  t=0.0000s  FAIL
+  gl_gro2                             n=  10  res=  37.525  ortU=  88.000  ortV= 111.000  t=0.0000s  FAIL
+  gl_gro3                             n=  10  res=   1.350  ortU= 284.000  ortV= 188.200  t=0.0000s  FAIL
+  gl_bwilkp                           n=  10  res=26787854.800  ortU=32145424.200  ortV=32145427.800  t=0.0000s  FAIL
+  gl_ones                             n=  10  res=   0.200  ortU=   0.000  ortV=   0.000  t=0.0000s  PASS
+  gl_uniform_eps                      n=  10  res=   3.000  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  gl_uniform_sqrteps                  n=  10  res=   6.626  ortU=900719925474099.250  ortV=  13.278  t=0.0000s  FAIL
+  gl_uniform_eps_to_1                 n=  10  res=   2.000  ortU=900719925474099.250  ortV=   1.000  t=0.0000s  FAIL
+  gl_geometric_eps_to_1               n=  10  res=  10.973  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  gl_random_spectrum                  n=  10  res=   3.516  ortU=   2.000  ortV=   2.100  t=0.0000s  PASS
+  gl_clustered_at_1                   n=  10  res=  10.410  ortU=900719925474099.250  ortV=  11.213  t=0.0000s  FAIL
+  gl_clustered_at_pm1                 n=  10  res=   9.759  ortU=900719925474099.250  ortV=  10.898  t=0.0000s  FAIL
+  gl_clustered_at_eps                 n=  10  res=   0.020  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  gl_clustered_at_pmeps               n=  10  res=   2.800  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  demmel_S1pe                         n=  10  res=   0.200  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  demmel_S1ps                         n=  10  res=   6.744  ortU=421219715.259  ortV=444619867.323  t=0.0000s  FAIL
+  demmel_S2pe                         n=  10  res=   8.727  ortU=14260633.600  ortV=  10.600  t=0.0000s  FAIL
+  demmel_S2ps                         n=  10  res=   6.545  ortU=1619.575  ortV=   6.442  t=0.0000s  FAIL
+  demmel_W1                           n=  10  res=   3.000  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  demmel_W2                           n=  10  res=   5.000  ortU=900719925474099.250  ortV=   9.700  t=0.0000s  FAIL
+  demmel_W3                           n=  10  res=  12.965  ortU=  14.262  ortV=  14.551  t=0.0000s  FAIL
+  demmel_G1                           n=  10  res=  10.827  ortU=900719925474099.250  ortV=900719925474099.250  t=0.0000s  FAIL
+  demmel_G1s                          n=  10  res=   1.543  ortU=132402.877  ortV=230332.025  t=0.0000s  FAIL
+  demmel_U1                           n=  10  res=   1.748  ortU=4194304.000  ortV=   3.000  t=0.0000s  FAIL
+  demmel_U1s                          n=  10  res=   2.376  ortU= 599.480  ortV=   0.800  t=0.0000s  FAIL
+  wilkinson_exact                     n=  10  res=   2.160  ortU=548174926115848.000  ortV=   2.600  t=0.0000s  FAIL
+  glued_wilkinson                     n=  21  res=   1.939  ortU=415756733132189.500  ortV=   2.952  t=0.0001s  FAIL
+  glued_wilkinson_tight               n=  21  res=   1.939  ortU=415756733132189.500  ortV=   2.952  t=0.0001s  FAIL
+  wl_example48                        n=  10  res=2345400828.050  ortU=4690801654.900  ortV=450285164932206.375  t=0.0000s  FAIL
+  pd_T0                               n=   3  res=   8.444  ortU=   2.667  ortV=   2.667  t=0.0000s  FAIL
+  pd_T1                               n=   3  res=   6.333  ortU=   2.667  ortV=   4.333  t=0.0000s  PASS
+  zero_diagonal                       n=  10  res=   0.000  ortU=   0.000  ortV=900719925474099.250  t=0.0000s  FAIL
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0000s  PASS
+  near_overflow                       n=  10  res=179427862431326.219  ortU=222782043086030.625  ortV=75428766229088.000  t=0.0000s  FAIL
+  near_underflow                      n=  10  res=   2.584  ortU=   3.200  ortV=   3.323  t=0.0000s  PASS
+  mixed_signs                         n=  10  res=   3.138  ortU=   1.400  ortV=   2.400  t=0.0000s  PASS
+  checkerboard                        n=  10  res=   2.400  ortU=900719925474099.000  ortV=900719925474099.000  t=0.0000s  FAIL
+  exponential_graded_k4               n=  10  res=   1.433  ortU= 852.029  ortV= 709.300  t=0.0000s  FAIL
+  exponential_graded_k8               n=  10  res=   1.233  ortU=1487719.747  ortV=1157202.400  t=0.0000s  FAIL
+  exponential_graded_k12              n=  10  res=   1.042  ortU=867748653.750  ortV=1846171275.000  t=0.0000s  FAIL
+  stemr_killer_k5                     n=  10  res=   1.408  ortU=6277.001  ortV=4391.500  t=0.0000s  FAIL
+  stemr_killer_k10                    n=  10  res=   1.292  ortU=9480688.750  ortV=27736629.737  t=0.0000s  FAIL
+  huge_condition_k5                   n=  10  res=   1.424  ortU=14645.691  ortV=11088.200  t=0.0000s  FAIL
+  huge_condition_k10                  n=  10  res=   1.150  ortU=102576165.389  ortV=97880340.166  t=0.0000s  FAIL
+  demmel_G1_k4                        n=  10  res=   1.934  ortU= 200.605  ortV= 179.673  t=0.0000s  FAIL
+  demmel_G1_k8                        n=  10  res=   1.641  ortU=157771.276  ortV=312630.533  t=0.0000s  FAIL
+  demmel_G1_k12                       n=  10  res=   1.548  ortU=284707388.684  ortV=775380082.207  t=0.0000s  FAIL
+  demmel_S1pe_k4                      n=  10  res=   3.919  ortU=48148.500  ortV=39702.711  t=0.0000s  FAIL
+  demmel_S1pe_k8                      n=  10  res=   3.897  ortU=411744047.500  ortV=383133382.700  t=0.0000s  FAIL
+  chkbd_4                             n=   4  res=   1.434  ortU=2670.445  ortV=2133.463  t=0.0000s  FAIL
+  chkbd_16                            n=  16  res=   4.388  ortU=562949953421312.000  ortV=562949953421312.000  t=0.0000s  FAIL
+  marques_graded_k4                   n=  10  res=   1.568  ortU= 968.874  ortV= 748.391  t=0.0000s  FAIL
+  marques_graded_k8                   n=  10  res=   1.512  ortU=187874.480  ortV=575137.093  t=0.0000s  FAIL
+
+=== Adversarial Matrices (n=100) ===
+  exponential_graded                  n= 100  res=   9.517  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0030s  FAIL
+  glued_repeated                      n= 100  res=   0.500  ortU=   0.540  ortV=   0.720  t=0.0004s  PASS
+  saw_tooth                           n= 100  res=194335353.891  ortU=90071992547409.641  ortV=85599835843409.641  t=0.0014s  FAIL
+  stemr_killer                        n= 100  res=  10.016  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0006s  FAIL
+  huge_condition                      n= 100  res=  10.299  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0009s  FAIL
+  spike                               n= 100  res=   0.412  ortU=2285.230  ortV=2476.700  t=0.0018s  FAIL
+  wilkinson_like                      n= 100  res=37526704055580.867  ortU=56917650022475.039  ortV=55735002269947.320  t=0.0023s  FAIL
+  two_clusters                        n= 100  res=4156559989.574  ortU=4156559989.690  ortV=4156559989.230  t=0.0007s  FAIL
+  random_uniform                      n= 100  res=   1.013  ortU=   5.500  ortV=   5.860  t=0.0019s  FAIL
+  diagonal_only                       n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0001s  PASS
+  constant                            n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0003s  PASS
+  all_equal_nontrivial                n= 100  res=   2.597  ortU=   2.628  ortV=   2.599  t=0.0012s  PASS
+  one_big_cluster                     n= 100  res=57613710925024.219  ortU=59821583859666.859  ortV=71223032050041.125  t=0.0003s  FAIL
+  arithmetic_progression              n= 100  res=   0.483  ortU=8206.351  ortV=   4.860  t=0.0017s  FAIL
+  many_near_zero                      n= 100  res=   0.097  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0003s  FAIL
+  random_dense_clusters               n= 100  res=  28.586  ortU=  45.300  ortV=  45.650  t=0.0017s  FAIL
+  constant_d_graded_e                 n= 100  res=78418810920.450  ortU=156837621840.590  ortV=156837621840.810  t=0.0019s  FAIL
+  random_clustered_5                  n= 100  res=343101712442.298  ortU=343101712442.320  ortV=343101712442.080  t=0.0002s  FAIL
+  alternating_sign                    n= 100  res=   5.308  ortU=   5.567  ortV=   5.703  t=0.0012s  FAIL
+  step_function                       n= 100  res=   7.239  ortU=82953233922903.156  ortV=2642155003.763  t=0.0015s  FAIL
+  three_clusters                      n= 100  res=3434413946.623  ortU=3434413946.991  ortV=3434413946.999  t=0.0015s  FAIL
+  random_sparse_e                     n= 100  res=   0.242  ortU=   0.080  ortV=   0.060  t=0.0001s  PASS
+  chkbd                               n= 100  res=   8.188  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0003s  FAIL
+  marques_graded                      n= 100  res=   0.518  ortU=16416322.700  ortV=8524633.000  t=0.0041s  FAIL
+  gl_abcon0                           n= 100  res=   3.618  ortU=   3.904  ortV=   3.666  t=0.0012s  PASS
+  gl_abcon1                           n= 100  res=   3.451  ortU=   3.750  ortV=   3.871  t=0.0012s  PASS
+  gl_abcon2                           n= 100  res=   2.065  ortU=   2.727  ortV=   2.421  t=0.0013s  PASS
+  gl_abcon3                           n= 100  res=   3.705  ortU=   5.142  ortV=   5.242  t=0.0012s  FAIL
+  gl_random                           n= 100  res=   0.382  ortU=2247319.180  ortV=4243.086  t=0.0018s  FAIL
+  gl_gradp                            n= 100  res=  10.240  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0004s  FAIL
+  gl_gradm                            n= 100  res=   6.827  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0009s  FAIL
+  gl_wilkp                            n= 100  res=   0.909  ortU=83194274884701.703  ortV=89451944469098.000  t=0.0009s  FAIL
+  gl_wilkm                            n= 100  res=   0.909  ortU=83194274884701.703  ortV=89451944469098.000  t=0.0009s  FAIL
+  gl_wilkw                            n= 100  res=   1.393  ortU=59785979617373.859  ortV=75451063615424.203  t=0.0009s  FAIL
+  gl_wilk2w                           n= 100  res=13677002316768.574  ortU=136691714869634.438  ortV=89840055889497.203  t=0.0008s  FAIL
+  gl_clement                          n= 100  res=   0.026  ortU=   0.000  ortV=90071992547409.922  t=0.0001s  FAIL
+  gl_gro0                             n= 100  res=   1.857  ortU=  96.801  ortV=  96.599  t=0.0015s  FAIL
+  gl_gro1                             n= 100  res=   3.515  ortU=  45.205  ortV=  46.534  t=0.0017s  FAIL
+  gl_gro2                             n= 100  res=   1.942  ortU=  45.080  ortV=  43.880  t=0.0019s  FAIL
+  gl_gro3                             n= 100  res=   1.506  ortU= 163.080  ortV= 159.423  t=0.0012s  FAIL
+  gl_bwilkp                           n= 100  res=34126132804289.656  ortU=54326010419312.703  ortV=58803042139802.781  t=0.0021s  FAIL
+  gl_ones                             n= 100  res=   0.020  ortU=   0.000  ortV=   0.000  t=0.0003s  PASS
+  gl_uniform_eps                      n= 100  res=   1.980  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0003s  FAIL
+  gl_uniform_sqrteps                  n= 100  res=   6.830  ortU=90071992547409.922  ortV=  12.500  t=0.0012s  FAIL
+  gl_uniform_eps_to_1                 n= 100  res=   1.285  ortU=90071992547409.906  ortV=   2.760  t=0.0014s  FAIL
+  gl_geometric_eps_to_1               n= 100  res=   9.750  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0009s  FAIL
+  gl_random_spectrum                  n= 100  res=   0.909  ortU=   3.862  ortV=   4.220  t=0.0018s  PASS
+  gl_clustered_at_1                   n= 100  res=  11.523  ortU=90071992547409.922  ortV=  12.274  t=0.0012s  FAIL
+  gl_clustered_at_pm1                 n= 100  res=  14.580  ortU=90071992547409.922  ortV=  15.209  t=0.0012s  FAIL
+  gl_clustered_at_eps                 n= 100  res=   0.002  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0002s  FAIL
+  gl_clustered_at_pmeps               n= 100  res=   0.280  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0002s  FAIL
+  demmel_S1pe                         n= 100  res=   0.020  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0002s  FAIL
+  demmel_S1ps                         n= 100  res=   5.553  ortU=366827809.159  ortV=369589347.809  t=0.0016s  FAIL
+  demmel_S2pe                         n= 100  res=  11.508  ortU=  11.832  ortV=90071992547409.922  t=0.0013s  FAIL
+  demmel_S2ps                         n= 100  res=  20.732  ortU=  28.837  ortV=  22.620  t=0.0012s  FAIL
+  demmel_W1                           n= 100  res=   1.980  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0002s  FAIL
+  demmel_W2                           n= 100  res=  12.056  ortU=90071992547409.922  ortV=  25.065  t=0.0012s  FAIL
+  demmel_W3                           n= 100  res=  12.361  ortU=  13.603  ortV=  13.883  t=0.0011s  FAIL
+  demmel_G1                           n= 100  res=   9.000  ortU=90071992547409.922  ortV=90071992547409.922  t=0.0026s  FAIL
+  demmel_G1s                          n= 100  res=   0.266  ortU=5762231.664  ortV=1708411.160  t=0.0042s  FAIL
+  demmel_U1                           n= 100  res=   1.059  ortU=   1.860  ortV=90071992547409.906  t=0.0018s  FAIL
+  demmel_U1s                          n= 100  res=   1.201  ortU=   3.540  ortV=   1.802  t=0.0018s  PASS
+  wilkinson_exact                     n= 100  res=   0.786  ortU=66568488324728.102  ortV=77885845351034.703  t=0.0009s  FAIL
+  glued_wilkinson                     n=  84  res=12362611167608.299  ortU=103939183283047.422  ortV=93988150717339.328  t=0.0004s  FAIL
+  glued_wilkinson_tight               n=  84  res=11367794487963.822  ortU=107204140697463.875  ortV=81030509330712.422  t=0.0004s  FAIL
+  wl_example48                        n= 100  res=84921221026.775  ortU=169842442053.200  ortV=34527428543464.609  t=0.0020s  FAIL
+  pd_T0                               n=   3  res=   8.444  ortU=   2.667  ortV=   2.667  t=0.0000s  FAIL
+  pd_T1                               n=   3  res=   6.333  ortU=   2.667  ortV=   4.333  t=0.0000s  PASS
+  zero_diagonal                       n= 100  res=   0.000  ortU=   0.000  ortV=90071992547409.922  t=0.0003s  FAIL
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0000s  PASS
+  near_overflow                       n= 100  res=1772144334.902  ortU=860389744.729  ortV=689318377.580  t=0.0031s  FAIL
+  near_underflow                      n= 100  res=   0.375  ortU=1537.600  ortV=2213.060  t=0.0012s  FAIL
+  mixed_signs                         n= 100  res=   0.964  ortU=   2.040  ortV=   1.850  t=0.0018s  PASS
+  checkerboard                        n= 100  res=   0.240  ortU=90071992547409.906  ortV=90071992547409.906  t=0.0003s  FAIL
+  exponential_graded_k4               n= 100  res=   0.707  ortU=1455.600  ortV=1652.040  t=0.0029s  FAIL
+  exponential_graded_k8               n= 100  res=   0.187  ortU=22657682.280  ortV=8419525.420  t=0.0040s  FAIL
+  exponential_graded_k12              n= 100  res=   0.307  ortU=232946118446.420  ortV=64538366742.480  t=0.0046s  FAIL
+  stemr_killer_k5                     n= 100  res=   0.262  ortU=12430.520  ortV=14789.540  t=0.0012s  FAIL
+  stemr_killer_k10                    n= 100  res=   0.280  ortU=4482597248.920  ortV=558142088.620  t=0.0013s  FAIL
+  huge_condition_k5                   n= 100  res=   0.151  ortU=16832.570  ortV=16616.310  t=0.0012s  FAIL
+  huge_condition_k10                  n= 100  res=   0.311  ortU=3789049299.140  ortV=912751375.340  t=0.0012s  FAIL
+  demmel_G1_k4                        n= 100  res=   0.593  ortU=1426.960  ortV=1182.780  t=0.0032s  FAIL
+  demmel_G1_k8                        n= 100  res=   0.183  ortU=7549979.174  ortV=2289827.042  t=0.0042s  FAIL
+  demmel_G1_k12                       n= 100  res=   0.542  ortU=10220975076765.506  ortV=14002675712.937  t=0.0047s  FAIL
+  demmel_S1pe_k4                      n= 100  res=   4.248  ortU=41143.216  ortV=40293.579  t=0.0016s  FAIL
+  demmel_S1pe_k8                      n= 100  res=   8.766  ortU=816633281.438  ortV=823863087.352  t=0.0013s  FAIL
+  chkbd_4                             n=   4  res=   1.434  ortU=2670.445  ortV=2133.463  t=0.0000s  FAIL
+  chkbd_16                            n=  16  res=   4.388  ortU=562949953421312.000  ortV=562949953421312.000  t=0.0000s  FAIL
+  marques_graded_k4                   n= 100  res=   0.428  ortU= 908.900  ortV=1736.140  t=0.0031s  FAIL
+  marques_graded_k8                   n= 100  res=   0.275  ortU=22003324.900  ortV=8682310.520  t=0.0041s  FAIL
+
+=== Adversarial Matrices (n=200) ===
+  exponential_graded                  n= 200  res=  11.953  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0127s  FAIL
+  glued_repeated                      n= 200  res=   0.250  ortU=   0.330  ortV=   0.360  t=0.0012s  PASS
+  saw_tooth                           n= 200  res=164029186.177  ortU=45035996273704.883  ortV=205001363.101  t=0.0049s  FAIL
+  stemr_killer                        n= 200  res=  10.637  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0024s  FAIL
+  huge_condition                      n= 200  res=  10.726  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0034s  FAIL
+  spike                               n= 200  res=   0.665  ortU=3581.055  ortV=3472.771  t=0.0063s  FAIL
+  wilkinson_like                      n= 200  res=44415525179163.922  ortU=53232964762726.078  ortV=50341352050021.844  t=0.0103s  FAIL
+  two_clusters                        n= 200  res=3500281527.470  ortU=3500281527.890  ortV=3500281527.710  t=0.0027s  FAIL
+  random_uniform                      n= 200  res=   0.717  ortU=   2.944  ortV=   2.681  t=0.0073s  PASS
+  diagonal_only                       n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0005s  PASS
+  constant                            n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0012s  PASS
+  all_equal_nontrivial                n= 200  res=   4.212  ortU=   4.316  ortV=   4.323  t=0.0048s  PASS
+  one_big_cluster                     n= 200  res=29752507955442.766  ortU=28047814065807.699  ortV=31544137861299.891  t=0.0009s  FAIL
+  arithmetic_progression              n= 200  res=   0.438  ortU=17800.689  ortV=   2.566  t=0.0068s  FAIL
+  many_near_zero                      n= 200  res=   0.049  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0012s  FAIL
+  random_dense_clusters               n= 200  res=  38.624  ortU=  50.350  ortV=  50.180  t=0.0069s  FAIL
+  constant_d_graded_e                 n= 200  res=25009490920.515  ortU=50018981840.970  ortV=50018981841.140  t=0.0081s  FAIL
+  random_clustered_5                  n= 200  res=  11.521  ortU=   0.000  ortV=   0.000  t=0.0006s  FAIL
+  alternating_sign                    n= 200  res=   5.021  ortU=   5.711  ortV=   5.619  t=0.0051s  FAIL
+  step_function                       n= 200  res=   7.426  ortU=41721690220495.953  ortV=42705227034022.469  t=0.0060s  FAIL
+  three_clusters                      n= 200  res=4080020022.162  ortU=4080020022.829  ortV=4080020022.825  t=0.0061s  FAIL
+  random_sparse_e                     n= 200  res=   0.127  ortU=   0.070  ortV=   0.040  t=0.0006s  PASS
+  chkbd                               n= 200  res=   4.094  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0012s  FAIL
+  marques_graded                      n= 200  res=   0.357  ortU=7310932.020  ortV=2378478.505  t=0.0192s  FAIL
+  gl_abcon0                           n= 200  res=   4.582  ortU=   4.600  ortV=   4.963  t=0.0049s  PASS
+  gl_abcon1                           n= 200  res=   3.940  ortU=   4.581  ortV=   4.334  t=0.0048s  PASS
+  gl_abcon2                           n= 200  res=   3.908  ortU=   4.832  ortV=   4.600  t=0.0046s  PASS
+  gl_abcon3                           n= 200  res=   3.814  ortU=   5.689  ortV=   5.805  t=0.0046s  FAIL
+  gl_random                           n= 200  res=   0.253  ortU=512573261.970  ortV= 187.759  t=0.0074s  FAIL
+  gl_gradp                            n= 200  res=  10.240  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0012s  FAIL
+  gl_gradm                            n= 200  res=   6.827  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0017s  FAIL
+  gl_wilkp                            n= 200  res=   1.338  ortU=41513394019833.906  ortV=44506371045462.000  t=0.0038s  FAIL
+  gl_wilkm                            n= 200  res=   1.338  ortU=41513394019833.906  ortV=44506371045462.000  t=0.0038s  FAIL
+  gl_wilkw                            n= 200  res=   1.160  ortU=40012270638128.180  ortV=   2.600  t=0.0038s  FAIL
+  gl_wilk2w                           n= 200  res=20651819397868.566  ortU=36906550794070.094  ortV=41503613508973.273  t=0.0034s  FAIL
+  gl_clement                          n= 200  res=   0.013  ortU=   0.000  ortV=45035996273704.961  t=0.0006s  FAIL
+  gl_gro0                             n= 200  res=   1.599  ortU=  88.407  ortV=  87.090  t=0.0053s  FAIL
+  gl_gro1                             n= 200  res=   2.450  ortU= 112.150  ortV= 112.681  t=0.0057s  FAIL
+  gl_gro2                             n= 200  res=   0.930  ortU=  35.254  ortV=  34.043  t=0.0069s  FAIL
+  gl_gro3                             n= 200  res=   2.242  ortU= 231.660  ortV= 228.218  t=0.0044s  FAIL
+  gl_bwilkp                           n= 200  res=36791778124675.969  ortU=36991796803761.781  ortV=47382764859384.617  t=0.0105s  FAIL
+  gl_ones                             n= 200  res=   0.010  ortU=   0.000  ortV=   0.000  t=0.0013s  PASS
+  gl_uniform_eps                      n= 200  res=   1.990  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0011s  FAIL
+  gl_uniform_sqrteps                  n= 200  res=   6.059  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0046s  FAIL
+  gl_uniform_eps_to_1                 n= 200  res=   1.084  ortU=45035996273704.922  ortV=45035996273704.961  t=0.0058s  FAIL
+  gl_geometric_eps_to_1               n= 200  res=  11.689  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0032s  FAIL
+  gl_random_spectrum                  n= 200  res=   1.207  ortU=   2.522  ortV=   2.945  t=0.0070s  PASS
+  gl_clustered_at_1                   n= 200  res=  18.664  ortU=45035996273704.961  ortV=  19.540  t=0.0050s  FAIL
+  gl_clustered_at_pm1                 n= 200  res=   9.581  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0053s  FAIL
+  gl_clustered_at_eps                 n= 200  res=   0.001  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0011s  FAIL
+  gl_clustered_at_pmeps               n= 200  res=   0.140  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0011s  FAIL
+  demmel_S1pe                         n= 200  res=   0.010  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0011s  FAIL
+  demmel_S1ps                         n= 200  res=   5.464  ortU=354337316.442  ortV=355039776.418  t=0.0057s  FAIL
+  demmel_S2pe                         n= 200  res=   9.723  ortU=922746.880  ortV=  11.029  t=0.0052s  FAIL
+  demmel_S2ps                         n= 200  res=   9.699  ortU= 122.797  ortV=  10.002  t=0.0052s  FAIL
+  demmel_W1                           n= 200  res=   1.990  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0011s  FAIL
+  demmel_W2                           n= 200  res=  12.242  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0047s  FAIL
+  demmel_W3                           n= 200  res=  12.237  ortU=  13.066  ortV=  13.366  t=0.0046s  FAIL
+  demmel_G1                           n= 200  res=41266629113388.922  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0105s  FAIL
+  demmel_G1s                          n= 200  res=   0.176  ortU=6538762.590  ortV=3194383.380  t=0.0198s  FAIL
+  demmel_U1                           n= 200  res=   0.872  ortU=67671.781  ortV=   1.630  t=0.0071s  FAIL
+  demmel_U1s                          n= 200  res=   0.607  ortU=   7.286  ortV=   2.480  t=0.0071s  FAIL
+  wilkinson_exact                     n= 200  res=   1.126  ortU=27755544534260.324  ortV=30362766414082.570  t=0.0038s  FAIL
+  glued_wilkinson                     n= 189  res=5494493852270.354  ortU=46195192570243.305  ortV=41772511429928.594  t=0.0013s  FAIL
+  glued_wilkinson_tight               n= 189  res=5052353105761.699  ortU=47646284754428.391  ortV=36013559702538.852  t=0.0014s  FAIL
+  wl_example48                        n= 200  res=16239531974.562  ortU=32479063948.920  ortV=14167497760432.850  t=0.0086s  FAIL
+  pd_T0                               n=   3  res=   8.444  ortU=   2.667  ortV=   2.667  t=0.0000s  FAIL
+  pd_T1                               n=   3  res=   6.333  ortU=   2.667  ortV=   4.333  t=0.0000s  PASS
+  zero_diagonal                       n= 200  res=   0.000  ortU=   0.000  ortV=45035996273704.961  t=0.0013s  FAIL
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0000s  PASS
+  near_overflow                       n= 200  res=17866.620  ortU=18824010100625.629  ortV=47164550.870  t=0.0201s  FAIL
+  near_underflow                      n= 200  res=   0.164  ortU=27906238.460  ortV=28074888.370  t=0.0048s  FAIL
+  mixed_signs                         n= 200  res=   0.781  ortU=  36.288  ortV=  25.958  t=0.0075s  FAIL
+  checkerboard                        n= 200  res=   0.120  ortU=45035996273704.953  ortV=45035996273704.953  t=0.0013s  FAIL
+  exponential_graded_k4               n= 200  res=   0.130  ortU= 908.210  ortV=1511.775  t=0.0129s  FAIL
+  exponential_graded_k8               n= 200  res=   0.090  ortU=15881656.610  ortV=4949197.230  t=0.0190s  FAIL
+  exponential_graded_k12              n= 200  res=30023997515803.309  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0185s  FAIL
+  stemr_killer_k5                     n= 200  res=   0.383  ortU=8457.100  ortV=9172.630  t=0.0049s  FAIL
+  stemr_killer_k10                    n= 200  res=   0.101  ortU=2541455044.485  ortV=444031811.310  t=0.0047s  FAIL
+  huge_condition_k5                   n= 200  res=   0.117  ortU=9584.970  ortV=7864.324  t=0.0047s  FAIL
+  huge_condition_k10                  n= 200  res=   0.097  ortU=2831393351.120  ortV=798906089.840  t=0.0047s  FAIL
+  demmel_G1_k4                        n= 200  res=   0.588  ortU=1074.135  ortV= 982.150  t=0.0144s  FAIL
+  demmel_G1_k8                        n= 200  res=   0.192  ortU=7131180.250  ortV=3887310.450  t=0.0199s  FAIL
+  demmel_G1_k12                       n= 200  res=41192978108483.625  ortU=45035996273704.961  ortV=45035996273704.961  t=0.0178s  FAIL
+  demmel_S1pe_k4                      n= 200  res=   3.359  ortU=32675.283  ortV=32867.366  t=0.0063s  FAIL
+  demmel_S1pe_k8                      n= 200  res=   4.237  ortU=407487599.818  ortV=408823243.999  t=0.0048s  FAIL
+  chkbd_4                             n=   4  res=   1.434  ortU=2670.445  ortV=2133.463  t=0.0000s  FAIL
+  chkbd_16                            n=  16  res=   4.388  ortU=562949953421312.000  ortV=562949953421312.000  t=0.0000s  FAIL
+  marques_graded_k4                   n= 200  res=   0.182  ortU= 761.840  ortV= 723.355  t=0.0135s  FAIL
+  marques_graded_k8                   n= 200  res=   0.112  ortU=13289200.810  ortV=3170012.105  t=0.0191s  FAIL
+
+=== Scaling Test ===
+  Pattern: exponential_graded
+    n= 100  time=0.0028s
+    n= 200  time=0.0126s
+    n= 400  time=0.0490s
+    ratio n=100->200: 4.47x
+    ratio n=200->400: 3.90x
+  Pattern: all_equal_nontrivial
+    n= 100  time=0.0013s
+    n= 200  time=0.0049s
+    n= 400  time=0.0209s
+    ratio n=100->200: 3.75x
+    ratio n=200->400: 4.27x
+  Pattern: stemr_killer
+    n= 100  time=0.0007s
+    n= 200  time=0.0026s
+    n= 400  time=0.0099s
+    ratio n=100->200: 3.70x
+    ratio n=200->400: 3.74x
+  Pattern: glued_wilkinson
+    n=  84  time=0.0004s
+    n= 189  time=0.0013s
+    n= 399  time=0.0062s
+    ratio n=100->200: 3.48x
+    ratio n=200->400: 4.68x
+  Pattern: chkbd
+    n= 100  time=0.0003s
+    n= 200  time=0.0011s
+    n= 400  time=0.0056s
+    ratio n=100->200: 3.83x
+    ratio n=200->400: 4.91x
+  worst_scaling_ratio=4.91 (expect <=5 for O(n^2))
+
+=== SUMMARY ===
+Pass: 43/270
+
+=== OPENEVOLVE METRICS ===
+pass_rate=0.1593
+avg_residual=133407.1570
+avg_ortho_u=547643.0009
+avg_ortho_v=500356.6541
+worst_scaling_ratio=4.9145
+composite_score=22.9630
