@@ -60,53 +60,54 @@ You are a numerical linear algebra research analyst for bidiagonal SVD algorithm
 Your job is to analyze test failures and produce actionable research briefs that
 guide a code mutation agent.
 
-You have access to:
-- knowledge/ directory: papers, documented bugs, test matrix formulas, prior approaches
-- src/ directory: reference implementations (bidiag_dbdsqr.h, bidiag_hgbsvd.h, etc.)
-- LAPACK/XMR Fortran source code for algorithmic reference
-- The evaluation framework (src/evaluate.cpp) to understand metrics
-
-You MUST NOT modify any files.  You are read-only.
+RULES:
+- You MUST NOT modify any files. You are read-only.
+- NEVER ask questions or request clarification. Produce your analysis and stop.
+- Be CONCRETE: name specific functions, line numbers, formulas — not vague advice.
+- Read AT MOST 3 files from knowledge/ — pick the most relevant ones, don't read all 13.
+  Start with knowledge/INDEX.md (master reference), then pick 1-2 based on the failure pattern:
+  * Orthogonality failures → knowledge/PRIOR_APPROACHES.md
+  * HGBSVD INFO!=0 → knowledge/grosser_lang_2001_hgbsvd.md
+  * Specific matrix failures → knowledge/EVALUATION.md (pattern descriptions)
+  * Scaling problems → knowledge/BASELINES.md
 """
 
 RESEARCH_PROMPT_TEMPLATE = """\
 ## Task: Failure Analysis & Research Brief
 
 Below is the current evolved program with its evaluation results.
-Your job is to produce a SHORT, ACTIONABLE research brief (max 500 words)
-that will guide the mutation agent.
+Produce a SHORT, ACTIONABLE research brief (max 500 words).
 
 {openevolve_prompt}
 
 ---
 
-## Your Analysis Must Cover:
+## Required Analysis (be concrete, not vague):
 
-1. **FAILURE PATTERN DIAGNOSIS** (most important):
-   - Which specific test matrices fail?  Group them by failure mode.
-   - What numerical quantity diverges?  (residual? orthoU? orthoV? info!=0?)
-   - Is it an extraction problem, a reorthogonalization problem, or an eigensolver problem?
+1. **FAILING TESTS** — List the specific pattern names that fail (e.g., "stemr_killer at n=200:
+   orthoU=847.3"). Group by failure mode: INFO!=0, residual blow-up, orthoU/V blow-up.
 
-2. **ROOT CAUSE** (be specific):
-   - Read knowledge/INDEX.md for documented bugs (#1-#10) — does any apply here?
-   - Read knowledge/PRIOR_APPROACHES.md — has this failure mode been seen before?
-   - What structural property of the failing matrices triggers the failure?
-     (e.g., clustered singular values, near-zero entries, huge condition number)
+2. **ROOT CAUSE** — What specific code path triggers the failure? Name the function and the
+   problematic logic. Examples of good root causes:
+   - "The TGK extraction in extract_uv() doesn't normalize when eigenvector has near-zero
+     odd-row norm, causing orthoU > 1000"
+   - "dbdsgr_ returns INFO=5 for stemr_killer because B^TB has condition > 10^20"
+   Bad root causes (too vague, DO NOT write these):
+   - "orthogonality is lost due to numerical issues"
+   - "the algorithm doesn't handle clustered eigenvalues well"
 
-3. **SUGGESTED TECHNIQUE** (concrete, implementable):
-   - Name ONE specific technique to try, with a brief explanation of WHY it
-     addresses the root cause.  Reference the relevant paper/section if possible.
-   - Show the key formula or pseudocode (2-5 lines max).
-   - Mention any gotchas (e.g., "this is O(n³) if done naively — use chunked version").
+3. **SPECIFIC FIX** — One concrete code change. Must include:
+   - Which function to modify
+   - What condition to add/change (with formula)
+   - Why this fixes the identified root cause
+   - O(n²) verification: state whether the fix is O(n), O(n²), or O(n³)
+   Example: "In post_process_tgk(), after line ~450, add: if (vnorm < sqrt(n*eps)*sigma_max)
+   recompute u[k] = B*v[k]/sigma[k] using one-sided recovery. This is O(n) per vector."
 
-4. **WHAT NOT TO TRY** (save the mutation agent from dead ends):
-   - List techniques from knowledge/PRIOR_APPROACHES.md that were already tried
-     and failed for this specific failure mode.
+4. **DEAD ENDS** — Read knowledge/PRIOR_APPROACHES.md. List 1-3 techniques already tried
+   that failed for THIS specific failure pattern. One line each.
 
-## Output Format:
-Write your brief as plain text.  No code blocks.  No JSON.  Just a concise
-analysis followed by a clear recommendation.  Start with "RESEARCH BRIEF:" on
-the first line.
+## Output: Plain text, start with "RESEARCH BRIEF:". No code blocks. No JSON.
 """
 
 
@@ -116,23 +117,35 @@ the first line.
 
 OUTPUT_INSTRUCTION = """
 
-## CRITICAL OUTPUT FORMAT REQUIREMENT
+## MANDATORY WORKFLOW (follow this exact sequence)
 
-After you finish your analysis and improvements, you MUST output the COMPLETE
-final version of the evolved file in a SINGLE ```cpp code block.  This is how
-the evolution framework captures your work.  Do NOT omit any part of the file.
-Do NOT use "// ... rest unchanged" or similar abbreviations — output every line.
+1. **READ** the current bidiag_svd.h (it's in the prompt above) and the research brief
+2. **IMPLEMENT** your changes by editing src/bidiag_svd.h directly using Edit/Write tools
+3. **COMPILE** — run: g++ -std=c++17 -O2 -Isrc/clapack -o evaluate src/evaluate.cpp -Llib -lxmr_c -lm
+4. **TEST** — run: ./evaluate (no args = adversarial only, fast). Check PASS/FAIL counts.
+5. **ITERATE** if compile fails or tests regress — fix and re-test. Do NOT give up after one try.
+6. **OUTPUT** the final working version as described below.
 
-The code block MUST:
-- Start with ```cpp
-- Contain the ENTIRE file (all #includes, all functions, everything)
-- End with ```
-- Be the LAST code block in your response
+IMPORTANT RULES:
+- NEVER ask questions or stop for confirmation. Just implement, compile, test, iterate.
+- NEVER spend more than 30% of your time reading files. The research agent already analyzed
+  the failures — trust its brief and start coding.
+- NEVER add O(n³) operations: no global MGS over all n vectors, no dense n×n matrix multiply,
+  no full SVD/eigendecomposition of n×n matrices. Chunked operations (chunk ≤ 32) are OK.
 
-Example:
+## CRITICAL OUTPUT FORMAT
+
+After testing, output the COMPLETE final bidiag_svd.h in a SINGLE ```cpp block.
+This is how the evolution framework captures your work.
+
+- The ```cpp block MUST contain the ENTIRE file — every line, every function
+- Do NOT use "// ... rest unchanged" or "// [omitted]" — output EVERYTHING
+- Do NOT output multiple ```cpp blocks — only ONE, and it must be the LAST code block
+- The file must start with #pragma once and contain the complete bidiag_svd() function
+
 ```cpp
 #pragma once
-// ... complete file content here ...
+// YOUR COMPLETE EVOLVED FILE HERE — EVERY LINE
 ```
 """
 
@@ -146,7 +159,9 @@ def _extract_code_from_response(response: str, language: str = "cpp") -> str:
     Extract the evolved code from an agent's conversational response.
 
     Strategy (in order):
-    1. Find all ```cpp blocks, take the largest (most likely the full file)
+    1. Find all ```cpp blocks. Among those with #pragma once (full files),
+       take the LAST one (matching our "LAST code block" instruction).
+       If none have #pragma once, take the largest.
     2. Find all generic ``` blocks, take the largest
     3. Return raw response (OpenEvolve's parse_full_rewrite will handle it)
     """
@@ -157,17 +172,31 @@ def _extract_code_from_response(response: str, language: str = "cpp") -> str:
     pattern = r"```" + re.escape(language) + r"\s*\n(.*?)```"
     matches = re.findall(pattern, response, re.DOTALL)
     if matches:
-        largest = max(matches, key=len)
-        if len(largest.strip()) > 100:
-            return f"```{language}\n{largest.strip()}\n```"
+        # Prefer blocks that look like complete files (#pragma once)
+        full_files = [m for m in matches if "#pragma once" in m and len(m.strip()) > 500]
+        if full_files:
+            # Take the LAST complete file (our instruction says "LAST code block")
+            best = full_files[-1]
+        else:
+            # Fallback: take the largest block
+            best = max(matches, key=len)
+
+        if len(best.strip()) > 100:
+            return f"```{language}\n{best.strip()}\n```"
 
     # Strategy 2: generic ``` blocks
     pattern = r"```\s*\n(.*?)```"
     matches = re.findall(pattern, response, re.DOTALL)
     if matches:
-        largest = max(matches, key=len)
-        if len(largest.strip()) > 100:
-            return f"```{language}\n{largest.strip()}\n```"
+        # Same logic: prefer last complete file, then largest
+        full_files = [m for m in matches if "#pragma once" in m and len(m.strip()) > 500]
+        if full_files:
+            best = full_files[-1]
+        else:
+            best = max(matches, key=len)
+
+        if len(best.strip()) > 100:
+            return f"```{language}\n{best.strip()}\n```"
 
     # Strategy 3: raw fallback
     logger.warning(
@@ -414,18 +443,23 @@ class ClaudeAgentLLM(LLMInterface):
         research_brief = await self._run_research(openevolve_prompt)
 
         # --- Phase 2: Mutation ---
-        mutation_prompt = openevolve_prompt
+        # Structure: research brief FIRST (so agent sees guidance before the code),
+        # then the OpenEvolve prompt (code + metrics), then output instructions
+        mutation_parts = []
 
-        # Inject research brief before the output instruction
         if research_brief:
-            mutation_prompt += "\n\n## Research Brief (from failure analysis agent)\n"
-            mutation_prompt += "The following analysis was produced by a research agent "
-            mutation_prompt += "that studied the current failures, the knowledge base, "
-            mutation_prompt += "and prior approaches.  Use it to guide your changes:\n\n"
-            mutation_prompt += research_brief
+            mutation_parts.append(
+                "## RESEARCH BRIEF — READ THIS FIRST\n"
+                "A research agent analyzed the current failures, knowledge base, and prior\n"
+                "approaches. Follow its specific recommendations. Do NOT re-investigate\n"
+                "what it already analyzed — go straight to implementing the suggested fix.\n\n"
+                + research_brief
+            )
 
-        # Append output format requirement
-        mutation_prompt += OUTPUT_INSTRUCTION
+        mutation_parts.append(openevolve_prompt)
+        mutation_parts.append(OUTPUT_INSTRUCTION)
+
+        mutation_prompt = "\n\n".join(mutation_parts)
 
         options = self._build_options(system_prompt=system_message)
 

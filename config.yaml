@@ -22,14 +22,17 @@ llm:
   retry_delay: 5
 
 # Prompt configuration
+# NOTE: Each program is ~2000 lines of C++. Sending 3+ full programs = 100KB+ of
+# context that overwhelms the mutation agent. Keep it lean: 1 top program for
+# reference, 0 diverse (agent has file access to read anything it needs).
 prompt:
-  num_top_programs: 3
-  num_diverse_programs: 2
+  num_top_programs: 1
+  num_diverse_programs: 0
   use_template_stochasticity: true
   use_meta_prompting: true
   meta_prompt_weight: 0.15
   include_artifacts: true
-  max_artifact_bytes: 30000
+  max_artifact_bytes: 15000   # Trim eval output — agent can re-run tests itself
 
 # Database (MAP-Elites quality-diversity)
 database:
