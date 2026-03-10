@@ -23,6 +23,8 @@ xmr_s2_*
 checkpoints/
 evolution_trace/
 .openevolve/
+openevolve_output/
+evolved_variants/
 
 # Large reference source trees (not needed for build)
 lapack/

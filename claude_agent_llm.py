@@ -358,15 +358,66 @@ class ClaudeAgentLLM(LLMInterface):
         return sdk.ClaudeAgentOptions(**opts_kwargs)
 
     # -------------------------------------------------------------------
+    # Evolution changelog (read from evaluator's persistent log)
+    # -------------------------------------------------------------------
+
+    def _read_changelog(self) -> str:
+        """
+        Read the evolution changelog maintained by evaluator.py.
+        Returns a concise summary for inclusion in prompts, or empty string.
+        """
+        if not self.cwd:
+            return ""
+
+        changelog_path = os.path.join(self.cwd, "evolved_variants", "CHANGELOG.md")
+        if not os.path.exists(changelog_path):
+            return ""
+
+        try:
+            with open(changelog_path) as f:
+                content = f.read()
+        except Exception:
+            return ""
+
+        if not content.strip():
+            return ""
+
+        # Count variants
+        lines = [l for l in content.split("\n") if l.startswith("| ") and not l.startswith("| #") and not l.startswith("|---")]
+        num_variants = len(lines)
+        if num_variants == 0:
+            return ""
+
+        # Include the full changelog (it's a concise table)
+        # But truncate if too many entries — show header + last 20
+        all_lines = content.split("\n")
+        if num_variants > 20:
+            # Keep header (first 4 lines) + last 20 data rows
+            header = all_lines[:4]
+            data_lines = [l for l in all_lines[4:] if l.strip()]
+            truncated = header + [f"| ... | ({num_variants - 20} earlier variants omitted) | ... | ... | ... | ... | ... | ... | ... |"] + data_lines[-20:]
+            content = "\n".join(truncated)
+
+        variants_dir = os.path.join(self.cwd, "evolved_variants")
+
+        return (
+            f"## Evolution History ({num_variants} variants so far)\n\n"
+            f"Previous variants saved at: `{variants_dir}/`\n"
+            f"You can Read any variant file (e.g., `{variants_dir}/v1_85.h`) to see its full code.\n\n"
+            f"{content}\n"
+        )
+
+    # -------------------------------------------------------------------
     # Phase 1: Research
     # -------------------------------------------------------------------
 
-    async def _run_research(self, openevolve_prompt: str) -> str:
+    async def _run_research(self, openevolve_prompt: str, changelog: str = "") -> str:
         """
         Run the research agent to analyze failures and produce a brief.
 
         Args:
             openevolve_prompt: The full prompt OpenEvolve built (code + metrics + artifacts)
+            changelog: Evolution changelog summary (variants tried so far)
 
         Returns:
             Research brief text, or empty string if research fails/is disabled
@@ -374,8 +425,13 @@ class ClaudeAgentLLM(LLMInterface):
         if not self.enable_research:
             return ""
 
+        # Build research prompt with changelog context
+        prompt_with_history = openevolve_prompt
+        if changelog:
+            prompt_with_history = changelog + "\n\n" + openevolve_prompt
+
         research_prompt = RESEARCH_PROMPT_TEMPLATE.format(
-            openevolve_prompt=openevolve_prompt
+            openevolve_prompt=prompt_with_history
         )
 
         options = self._build_options(
@@ -440,12 +496,16 @@ class ClaudeAgentLLM(LLMInterface):
 
         openevolve_prompt = "\n\n".join(prompt_parts)
 
+        # --- Read evolution changelog ---
+        changelog = self._read_changelog()
+
         # --- Phase 1: Research ---
-        research_brief = await self._run_research(openevolve_prompt)
+        research_brief = await self._run_research(openevolve_prompt, changelog)
 
         # --- Phase 2: Mutation ---
         # Structure: research brief FIRST (so agent sees guidance before the code),
-        # then the OpenEvolve prompt (code + metrics), then output instructions
+        # then changelog (so agent knows what was tried), then OpenEvolve prompt
+        # (code + metrics), then output instructions.
         mutation_parts = []
 
         if research_brief:
@@ -456,6 +516,9 @@ class ClaudeAgentLLM(LLMInterface):
                 "what it already analyzed — go straight to implementing the suggested fix.\n\n"
                 + research_brief
             )
+
+        if changelog:
+            mutation_parts.append(changelog)
 
         mutation_parts.append(openevolve_prompt)
         mutation_parts.append(OUTPUT_INSTRUCTION)

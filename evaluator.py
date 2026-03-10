@@ -14,12 +14,16 @@ import re
 import tempfile
 import shutil
 import time
+import glob as globmod
+from datetime import datetime
 
 # Paths
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 LIB_DIR = os.path.join(PROJECT_DIR, "lib")
 STCOLL_DIR = os.path.join(PROJECT_DIR, "..", "bidiag-algo", "MRRR Resources", "STCollection", "DATA")
 EVAL_SRC = os.path.join(PROJECT_DIR, "src", "evaluate.cpp")
+VARIANTS_DIR = os.path.join(PROJECT_DIR, "evolved_variants")
+CHANGELOG_FILE = os.path.join(VARIANTS_DIR, "CHANGELOG.md")
 
 # Compiler settings — pure C/C++ (no Fortran, no Accelerate)
 CXX = "g++"
@@ -200,6 +204,14 @@ def evaluate(program_path: str) -> dict:
 
         metrics["combined_score"] = score
 
+        # Save variant and log to changelog
+        try:
+            variant_path = save_variant_and_log(program_path, score, metrics, artifacts)
+            if variant_path:
+                metrics["variant_path"] = variant_path
+        except Exception:
+            pass  # Non-fatal — don't fail evaluation because of logging
+
         return {
             "score": score,
             "metrics": metrics,
@@ -272,6 +284,98 @@ def evaluate_stage2(program_path: str) -> dict:
 def evaluate_stage3(program_path: str) -> dict:
     """Stage 3: Full evaluation with large matrices + scaling."""
     return evaluate(program_path)
+
+
+# ============================================================
+# Variant persistence + changelog
+# ============================================================
+
+def _next_variant_number() -> int:
+    """Get the next variant number by scanning evolved_variants/."""
+    os.makedirs(VARIANTS_DIR, exist_ok=True)
+    existing = globmod.glob(os.path.join(VARIANTS_DIR, "v*.h"))
+    if not existing:
+        return 1
+    nums = []
+    for f in existing:
+        base = os.path.basename(f)
+        # Format: v{N}_{score}.h
+        try:
+            nums.append(int(base.split("_")[0][1:]))
+        except (ValueError, IndexError):
+            pass
+    return max(nums, default=0) + 1
+
+
+def _extract_failing_tests(eval_output: str, max_tests: int = 5) -> list:
+    """Extract names of failing tests from evaluation output."""
+    fails = []
+    for line in eval_output.split("\n"):
+        if "FAIL" in line and "res=" in line:
+            # Lines look like: "  stemr_killer          n= 200  res= 847.3  ...  FAIL"
+            parts = line.strip().split()
+            if parts:
+                fails.append(parts[0])
+    # Deduplicate (same pattern fails at multiple sizes)
+    seen = set()
+    unique = []
+    for f in fails:
+        if f not in seen:
+            seen.add(f)
+            unique.append(f)
+    return unique[:max_tests]
+
+
+def save_variant_and_log(program_path: str, score: float, metrics: dict,
+                         artifacts: dict) -> str:
+    """Save evolved variant to disk and append to CHANGELOG.md."""
+    os.makedirs(VARIANTS_DIR, exist_ok=True)
+    num = _next_variant_number()
+    variant_name = f"v{num}_{score:.0f}.h"
+    variant_path = os.path.join(VARIANTS_DIR, variant_name)
+
+    # Save the variant file
+    try:
+        shutil.copy2(program_path, variant_path)
+    except Exception:
+        return ""
+
+    # Build changelog entry
+    pass_rate = metrics.get("pass_rate", 0)
+    pass_count = metrics.get("pass_count", 0)
+    total_count = metrics.get("total_count", 0)
+    avg_res = metrics.get("pass_avg_residual", -1)
+    avg_ortU = metrics.get("pass_avg_ortho_u", -1)
+    avg_ortV = metrics.get("pass_avg_ortho_v", -1)
+    scaling = metrics.get("pass_worst_scaling", -1)
+    large_pass = metrics.get("large_pass_rate", -1)
+
+    # Extract failing test names
+    eval_output = artifacts.get("eval_output", "") + artifacts.get("large_eval_output", "")
+    failing = _extract_failing_tests(eval_output)
+    fail_str = ", ".join(failing) if failing else "(none)"
+    if len(failing) == 5:
+        fail_str += ", ..."
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    # Initialize changelog if it doesn't exist
+    if not os.path.exists(CHANGELOG_FILE):
+        with open(CHANGELOG_FILE, "w") as f:
+            f.write("# Evolution Changelog\n\n")
+            f.write("Each entry = one evaluated variant. Variants saved in this directory.\n\n")
+            f.write("| # | Score | Pass | Avg Res | Avg OrtU | Scaling | File | Failing Tests | Time |\n")
+            f.write("|---|-------|------|---------|----------|---------|------|---------------|------|\n")
+
+    # Append entry
+    with open(CHANGELOG_FILE, "a") as f:
+        f.write(
+            f"| {num} | {score:.1f} | {pass_count}/{total_count} "
+            f"| {avg_res:.2f} | {avg_ortU:.2f} | {scaling:.2f}x "
+            f"| {variant_name} | {fail_str} | {timestamp} |\n"
+        )
+
+    return variant_path
 
 
 # For standalone testing
