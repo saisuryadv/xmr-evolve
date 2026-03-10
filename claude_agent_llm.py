@@ -128,8 +128,9 @@ OUTPUT_INSTRUCTION = """
 
 IMPORTANT RULES:
 - NEVER ask questions or stop for confirmation. Just implement, compile, test, iterate.
-- NEVER spend more than 30% of your time reading files. The research agent already analyzed
-  the failures — trust its brief and start coding.
+- Do NOT read knowledge files or reference implementations to "understand the problem."
+  The research agent already did that — its diagnosis is in the RESEARCH BRIEF above.
+  Your first tool call should be editing src/bidiag_svd.h, not reading other files.
 - NEVER add O(n³) operations: no global MGS over all n vectors, no dense n×n matrix multiply,
   no full SVD/eigendecomposition of n×n matrices. Chunked operations (chunk ≤ 32) are OK.
 
