@@ -1,6 +1,6 @@
 # MRRR Resources Index
 
-All resources are in `../bidiag-algo/MRRR Resources/`.
+All resources are at `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/`.
 
 ## Papers (15 PDFs)
 
@@ -31,7 +31,7 @@ Located in `Papers/`:
 
 Master routine: `dbdsgr.f` (coupling-based bidiag SVD). Supporting: `dlarrv.f` (eigenvector computation), `dlarrb.f` (bisection refinement), `dlarrf.f` (shift selection), `dlar1v.f` (twisted factorization), `dlasq1-6.f` (dqds eigenvalue computation), `dlacsv.f` (coupling transforms), `dlag2g.f` (GK construction), `dlap2s.f` (positive-definiteness), `dlas2p.f`, `dlats1-2.f` (test matrix generation).
 
-Missing: `dlarri.f` (eigenvalue refinement by index) — referenced but not included in distribution. This causes INFO!=0 failures on some inputs.
+Includes `dlarri.f` (eigenvalue refinement by index). INFO!=0 failures come from incomplete implementation of deep recursion and splittings (see Bug #8 in INDEX.md).
 
 ### Willems XMR
 `Code/tdsolver/xmr/SRC/O/` — 45 Fortran files (production variant)

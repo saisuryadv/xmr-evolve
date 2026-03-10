@@ -22,6 +22,15 @@
 #include <tuple>
 #include <set>
 #include <cfloat>
+#include <csignal>
+
+// Global cumulative timeout: 30 seconds total for the entire evaluation.
+// If exceeded, print score=0 and exit immediately.
+static const double CUMULATIVE_TIMEOUT_SEC = 30.0;
+// Per-test timeout: 2 seconds per individual test.
+// Any single test exceeding this is auto-FAIL with huge metrics.
+static const double PER_TEST_TIMEOUT_SEC = 2.0;
+static std::chrono::high_resolution_clock::time_point g_eval_start;
 
 namespace fs = std::filesystem;
 
@@ -95,9 +104,40 @@ double compute_ortho(int n, const double* Q) {
     return max_err / (n * eps);
 }
 
+// Check cumulative timeout — if exceeded, print score=0 and hard-exit
+static void check_cumulative_timeout() {
+    auto now = std::chrono::high_resolution_clock::now();
+    double elapsed = std::chrono::duration<double>(now - g_eval_start).count();
+    if (elapsed > CUMULATIVE_TIMEOUT_SEC) {
+        printf("\n*** TIMEOUT: evaluation exceeded %.0f seconds (%.1fs elapsed) ***\n",
+               CUMULATIVE_TIMEOUT_SEC, elapsed);
+        printf("*** Score = 0. Your algorithm has a pathological performance bug. ***\n");
+        printf("\n=== OPENEVOLVE METRICS ===\n");
+        printf("pass_rate=0.0000\n");
+        printf("avg_residual=1000000.0000\n");
+        printf("avg_ortho_u=1000000.0000\n");
+        printf("avg_ortho_v=1000000.0000\n");
+        printf("max_residual=1000000.0000\n");
+        printf("max_ortho_u=1000000.0000\n");
+        printf("max_ortho_v=1000000.0000\n");
+        printf("pass_avg_residual=0.0000\n");
+        printf("pass_avg_ortho_u=0.0000\n");
+        printf("pass_avg_ortho_v=0.0000\n");
+        printf("pass_max_residual=0.0000\n");
+        printf("pass_max_ortho_u=0.0000\n");
+        printf("pass_max_ortho_v=0.0000\n");
+        printf("pass_worst_scaling=100.0000\n");
+        printf("composite_score=0.0000\n");
+        std::exit(1);
+    }
+}
+
 SVDMetrics evaluate_matrix(int n, const double* d, const double* e, const std::string& name) {
     SVDMetrics metrics;
     metrics.name = name;
+
+    // Check cumulative timeout before starting this test
+    check_cumulative_timeout();
 
     auto t0 = std::chrono::high_resolution_clock::now();
     BidiagSVDResult result = bidiag_svd(n, d, e);
@@ -105,6 +145,16 @@ SVDMetrics evaluate_matrix(int n, const double* d, const double* e, const std::s
 
     metrics.time_sec = std::chrono::duration<double>(t1 - t0).count();
     metrics.info = result.info;
+
+    // Per-test timeout: if this single test took too long, auto-FAIL
+    if (metrics.time_sec > PER_TEST_TIMEOUT_SEC) {
+        printf("  *** PER-TEST TIMEOUT: %s n=%d took %.2fs (limit %.1fs) ***\n",
+               name.c_str(), n, metrics.time_sec, PER_TEST_TIMEOUT_SEC);
+        metrics.residual = 1e10;
+        metrics.ortho_u = 1e10;
+        metrics.ortho_v = 1e10;
+        return metrics;
+    }
 
     if (result.info != 0 || result.sigma.empty()) {
         metrics.residual = 1e10;
@@ -885,6 +935,9 @@ TestMatrix make_adversarial(const std::string& name, int n) {
 // ============================================================
 
 int main(int argc, char** argv) {
+    // Start the cumulative timeout clock
+    g_eval_start = std::chrono::high_resolution_clock::now();
+
     std::string stcoll_dir = "";
     int adv_size = 100;
 
@@ -990,9 +1043,32 @@ int main(int argc, char** argv) {
     // Map: pattern_name -> {size -> passed}
     std::map<std::string, std::map<int, bool>> pattern_passed;
 
+    // Track patterns that catastrophically fail at small n — skip them at larger n
+    // "Catastrophic" = any metric > 1000 (way beyond threshold, no point testing larger)
+    std::set<std::string> catastrophic_patterns;
+
     for (int sz : test_sizes) {
         printf("\n=== Adversarial Matrices (n=%d) ===\n", sz);
         for (auto& name : adv_names) {
+            // Early abort: skip larger sizes for patterns that catastrophically failed
+            if (catastrophic_patterns.count(name)) {
+                // Still count as a test (failed) for scoring
+                SVDMetrics skip_m;
+                skip_m.name = name + "_n" + std::to_string(sz);
+                skip_m.residual = 1e10;
+                skip_m.ortho_u = 1e10;
+                skip_m.ortho_v = 1e10;
+                skip_m.time_sec = 0.0;
+                skip_m.info = -1;
+                all_metrics.push_back(skip_m);
+                total_count++;
+                pattern_times[name][sz] = 0.0;
+                pattern_passed[name][sz] = false;
+                printf("  %-35s n=%4d  SKIPPED (catastrophic fail at smaller n)\n",
+                       name.c_str(), sz);
+                continue;
+            }
+
             TestMatrix tm = make_adversarial(name, sz);
             SVDMetrics m = evaluate_matrix(tm.n, tm.d.data(), tm.e.data(), tm.name);
             all_metrics.push_back(m);
@@ -1004,6 +1080,12 @@ int main(int argc, char** argv) {
 
             pattern_times[name][sz] = m.time_sec;
             pattern_passed[name][sz] = pass;
+
+            // Mark catastrophic failures for early abort at larger sizes
+            if (m.residual > 1000.0 || m.ortho_u > 1000.0 || m.ortho_v > 1000.0 ||
+                m.time_sec > PER_TEST_TIMEOUT_SEC) {
+                catastrophic_patterns.insert(name);
+            }
 
             printf("  %-35s n=%4d  res=%8.3f  ortU=%8.3f  ortV=%8.3f  t=%.4fs  %s\n",
                    tm.name.c_str(), tm.n, m.residual, m.ortho_u, m.ortho_v,
@@ -1121,11 +1203,18 @@ int main(int argc, char** argv) {
                    + std::max(0.0, 5.0 - pavg_ortU) * 2.0
                    + std::max(0.0, 5.0 - pavg_ortV) * 2.0;
 
-    // Scaling bonus: up to 10 pts based on worst pass scaling ratio
-    double scaling_score = (worst_ratio <= 5.0) ? 10.0 :
-                           (worst_ratio <= 10.0) ? 10.0 * (10.0 - worst_ratio) / 5.0 : 0.0;
+    // O(n²) is a HARD CONSTRAINT, not a soft bonus.
+    // If worst scaling ratio > 5x (n doubles → time should ≤ 4x for O(n²), allow 5x for margin),
+    // the algorithm is NOT O(n²) and the score is capped at 5 (compilation only).
+    // This prevents gaming by using O(n³) fallbacks (e.g., DBDSQR) to boost pass rate.
     score += 5.0; // compilation bonus (we got here)
-    score += scaling_score;
+    if (worst_ratio > 5.0) {
+        printf("\n*** O(n²) VIOLATION: worst scaling ratio %.2fx > 5.0x ***\n", worst_ratio);
+        printf("*** Score capped at 5. An O(n³) fallback (e.g., DBDSQR) is NOT acceptable. ***\n");
+        score = 5.0;  // only compilation credit
+    } else {
+        score += 10.0;  // full scaling bonus
+    }
 
     printf("\n=== OPENEVOLVE METRICS ===\n");
     printf("pass_rate=%.4f\n", pass_rate);

@@ -25,11 +25,11 @@ Scaling measured on patterns that **pass at all sizes**. Worst ratio used for sc
 
 | Algorithm | Pass | Avg Res | Avg OrtU | Avg OrtV | Worst Pass Scaling | #Pass Patterns | Score |
 |-----------|------|---------|----------|----------|--------------------|----------------|-------|
-| **DBDSQR** | **379/379** | 0.43 | 0.37 | 0.35 | 8.53x (O(n³)) | 90/90 | **85.64** |
-| **DBDSVDX** | 371/379 | 13193 | 15852 | 13213 | 13.21x (O(n³)) | 87/90 | 53.94 |
+| **DBDSQR** | **379/379** | 0.43 | 0.37 | 0.35 | 8.53x (O(n³)) | 90/90 | **5** (hard gate) |
+| **DBDSVDX** | 371/379 | 13193 | 15852 | 13213 | 13.21x (O(n³)) | 87/90 | **5** (hard gate) |
 | **HGBSVD** | 174/379 | 533121 | 532982 | 533112 | 4.35x (O(n²)) | 36/90 | 37.96 |
 | **TGK+DSTEMR** | 93/379 | 52935 | 492760 | 451378 | 4.82x (O(n²)) | 18/90 | 27.27 |
-| **TGK+DSTEXR** | 61/379 | 163642 | 567171 | 520277 | 5.73x | 11/90 | 21.58 |
+| **TGK+DSTEXR** | 61/379 | 163642 | 567171 | 520277 | 5.73x | 11/90 | **5** (hard gate) |
 
 ## Top-5 Worst Pass Scaling (Stage 3, n=200→400 only)
 

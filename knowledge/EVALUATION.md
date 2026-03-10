@@ -165,20 +165,20 @@ score = pass_rate × 50                              // up to 50 pts
       + scaling_score                                // up to 10 pts
 ```
 
-Where `scaling_score`:
-- `worst_ratio ≤ 5.0` → 10.0
-- `5.0 < worst_ratio ≤ 10.0` → `10.0 × (10.0 - worst_ratio) / 5.0`
-- `worst_ratio > 10.0` → 0.0
+**HARD GATE on scaling**: if `worst_ratio > 5.0`, **score is capped at 5** (compilation only).
+Otherwise, full 10 pts scaling bonus is awarded.
 
-Max from evaluate.cpp alone: **95 pts**.
+Max from evaluate.cpp alone: **95 pts** (if worst_ratio ≤ 5.0).
 
-### evaluator.py additional scoring (evaluator.py:189-199)
+### evaluator.py additional scoring (evaluator.py:188-225)
 
-If stage 2 `pass_rate ≥ 0.6`, evaluator.py runs stage 3 and adds:
+**HARD GATE** applies in evaluator.py too: if `worst_ratio > 5.0`, score is capped at 5.
+
+If scaling passes AND stage 2 `pass_rate ≥ 0.6`, evaluator.py runs stage 3 and adds:
 - `large_pass_rate × 10.0` — up to 10 pts
-- Large scaling bonus — up to 5 pts (same formula as above, scaled to 5)
+- Large scaling bonus — up to 5 pts (if large worst ratio ≤ 5.0)
 
-Max from evaluator.py: **110 pts**.
+Max from evaluator.py: **110 pts** (if scaling passes everywhere).
 
 ## Evaluator Cascade (evaluator.py)
 
