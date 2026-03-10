@@ -72,6 +72,14 @@ Scaling = worst time doubling ratio (n=200→400) across patterns that pass at A
 | TGK+STEMR | 93/379 | 52935 | 492760 | 451378 | 4.82x (O(n²)) | 27.27 |
 | TGK+STEXR | 61/379 | 163642 | 567171 | 520277 | 5.73x | 21.58 |
 
+## Agent Autonomy Rules
+- **NEVER stop to ask whether an approach or direction is correct.** Just try it, evaluate it, and report results.
+- **NEVER ask for permission or confirmation** before implementing, compiling, running tests, or changing `bidiag_svd.h`. Just do it.
+- If an approach fails, **diagnose why it failed** (which matrices, which metrics, what numerical quantities are off), then try a fix or a different approach. Do not stop and ask the user what to do next.
+- If you're unsure between two approaches, **try both** and compare results. Don't ask which one to try.
+- The only reason to stop and ask is if you need information that isn't in the codebase or knowledge files (e.g., a missing dependency, a broken build environment).
+- **Be relentless**: compile, test, analyze failures, iterate. The evaluation framework gives you everything you need to judge whether something works.
+
 ## Critical Rules
 - **O(n²) worst-case required** — no global MGS, no dense n×n multiplies
 - The fundamental tradeoff: accuracy vs scaling. DBDSQR has accuracy but O(n³). TGK+STEMR has O(n²) but fails 76% of tests.
