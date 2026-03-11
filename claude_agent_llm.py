@@ -397,46 +397,43 @@ your findings? What promising directions did you not have budget to explore?]
 - You can create scratch files in `{agent_dir}/` for notes, intermediate results, etc.
 - You can ONLY write/edit files inside `{agent_dir}/`. All other files are read-only.
 
-## WHAT TO READ (in priority order)
+## EVOLVED FILE REQUIREMENTS
+- `bidiag_svd.h` MUST be **self-contained** — no `#include` of project headers
+  (OpenEvolve copies only this file to a temp dir for evaluation)
+- Only standard library + extern "C" LAPACK/BLAS declarations allowed
+- `dbdsgr_` (f2c) requires `ftnlen` args: pass `1, 1` at end of each call
 
-### 1. PAPERS (PDFs) — READ THESE FIRST, they contain the actual math
-The knowledge/ files are only summaries. The real algorithms, theorems, and proofs are in the papers.
-Use the Read tool on these PDFs (you can read PDFs directly):
+## SCORING (0-95)
+Exact formula from `src/evaluate.cpp`:
+- **50 pts**: `pass_rate * 50` — fraction of tests passing (res <= 7, orthoU <= 5, orthoV <= 5)
+- **10 pts**: `max(0, 5.0 - pass_avg_residual) * 2` — accuracy bonus for low residual
+- **10 pts**: `max(0, 5.0 - pass_avg_orthoU) * 2` — accuracy bonus for low orthoU
+- **10 pts**: `max(0, 5.0 - pass_avg_orthoV) * 2` — accuracy bonus for low orthoV
+- **5 pts**: compilation bonus (always awarded if code compiles)
+- **10 pts**: O(n^2) scaling bonus (awarded if worst doubling ratio <= 5.0)
+- **HARD GATE**: if worst scaling ratio > 5.0x, score is capped at 5 (compilation only)
 
-**Must-read papers** (read before implementing anything):
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2012 - The MR3-GK Algorithm for the Bidiagonal SVD - Willems and Lang.pdf`
-  → Algorithm 4.1 (the target algorithm), NCD condition, GK structure, Theorem 4.5
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2001 - An O(n^2) Algorithm for the Bidiagonal SVD - Großer and Lang.pdf`
-  → Coupling B^TB/BB^T, how HGBSVD works, why it fails at deep recursion
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2013 - A Framework for the MR3 Algorithm Theory and Implementation - Willems and Lang.pdf`
-  → Five requirements for MR³, block factorizations, DSTEMR underflow bugs
+## CURRENT BASELINES (270 tests, adv_size=100)
+| Algorithm | Pass | Worst Scaling | Score |
+|-----------|------|---------------|-------|
+| DBDSQR | 270/270 | 8.53x (O(n^3)) | **5** (hard gate) |
+| HGBSVD | 135/270 | 4.60x | 68.6 |
+| TGK+STEMR | 65/270 | 4.20x | 51.2 |
+| TGK+STEXR | 43/270 | 3.80x | 41.0 |
+| Current hybrid | 161/270 | 4.60x | 73.0 |
 
-**Read when investigating specific failures:**
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2020 - Bidiagonal SVD Computation via an Associated Tridiagonal Eigenproblem - Marques Demmel and Vasconcelos.pdf`
-  → DBDSVDX bugs, CHKBD matrix analysis, modern failure catalog
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/1997 - Dhillon Thesis.pdf`
-  → Original MR³: representation tree, twisted factorizations, assumptions that fail
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2005 - Glued Matrices and the MRRR Algorithm - Dhillon Parlett and Vömel.pdf`
-  → Wilkinson/glued matrix failures, random perturbation fixes
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2000 - Relatively Robust Representations of Symmetric Tridiagonals - Parlett and Dhillon.pdf`
-  → RRR theory, when LDL^T is/isn't an RRR
-- `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/1990 - Accurate Singular Values of Bidiagonal Matrices - Demmel and Kahan.pdf`
-  → Foundational accuracy theory, splitting criteria
+## CRITICAL ALGORITHMIC RULES
+- **O(n^2) worst-case required** — no global MGS, no dense n*n multiplies
+- The fundamental tradeoff: accuracy vs scaling. DBDSQR has accuracy but O(n^3). TGK+STEMR has O(n^2) but fails 76% of tests.
+- TGK eigenvector extraction (U from odd rows, V from even rows) destroys orthogonality unless eigenvectors have GK structure (requires NCD-aware shifts inside the eigensolver)
+- One-sided recovery (U = BV/sigma) helps for small sigma but does not fix extraction failures
+- Chunked MGS (chunk size 32) is O(n^2) but may miss cross-chunk orthogonality
 
-### 2. Knowledge base (summaries of the above papers + project-specific info)
-- `knowledge/INDEX.md` — Master reference: all known bugs, test matrix formulas, thresholds
-- `knowledge/PRIOR_APPROACHES.md` — 12 approaches tried, what worked and failed
-- `knowledge/BASELINES.md` — 5 baseline algorithms compared
-
-### 3. Reference Fortran code (production implementations of the algorithms in the papers)
-- XMR: `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Code/tdsolver/xmr/SRC/O/` (45 files, `dstexr.f` master)
-- HGBSVD: `/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Code/hgbsvd/hgbsvd/v2/` (24 files, `dbdsgr.f` master)
-
-### 4. Baseline C++ headers
-- `src/bidiag_dbdsqr.h`, `src/bidiag_hgbsvd.h`, `src/bidiag_tgk_stemr.h`, `src/bidiag_tgk_stexr.h`
-
-### 5. Top evolved variants
-- `{agent_dir}/baselines/top_variants/` (read their RESEARCH.md files)
+## REFERENCE CODE
+- Baseline C++ headers: `src/bidiag_dbdsqr.h`, `src/bidiag_hgbsvd.h`, `src/bidiag_tgk_stemr.h`, `src/bidiag_tgk_stexr.h`
+- XMR Fortran: `../bidiag-algo/MRRR Resources/Code/tdsolver/xmr/SRC/O/` (45 files)
+- HGBSVD Fortran: `../bidiag-algo/MRRR Resources/Code/hgbsvd/hgbsvd/v2/` (24 files)
+- LAPACK source: `lapack/SRC/` (dbdsqr.f, dbdsvdx.f, dstemr.f, dlarrv.f)
 
 ## DO NOT READ (irrelevant to this project)
 - **DO NOT** read `approach_*.py` files — these are Python prototypes from a different experiment
@@ -1061,7 +1058,10 @@ class ClaudeAgentLLM(LLMInterface):
         # Write restrictions enforced solely via can_use_tool callback.
 
         # Settings sources
-        setting_sources = ["user", "project"] if self.load_project_settings else []
+        # Disable project settings (CLAUDE.md) — everything the agent needs
+        # is in the prompt template and system prompt. CLAUDE.md conflicts by
+        # directing the agent to read .md summaries instead of actual PDFs.
+        setting_sources = []
 
         # System prompt
         full_system_prompt = system_prompt or ""
