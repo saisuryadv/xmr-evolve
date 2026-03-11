@@ -195,12 +195,12 @@ tests, or even looking at the source code. The papers contain the algorithms, th
 and mathematical foundations you need. Without reading them, you will waste time
 reinventing approaches that have already been tried and failed.
 
-Read these 3 papers now using the Read tool (they are PDFs, you can read them directly):
+Read these 3 papers now using the Read tool (they are PDFs in the knowledge/ directory):
 
 ```
-/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2012 - The MR3-GK Algorithm for the Bidiagonal SVD - Willems and Lang.pdf
-/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2001 - An O(n^2) Algorithm for the Bidiagonal SVD - Großer and Lang.pdf
-/Users/saisurya/MRRR/bidiag-algo/MRRR Resources/Papers/2013 - A Framework for the MR3 Algorithm Theory and Implementation - Willems and Lang.pdf
+knowledge/paper_willems_lang_2012_mr3gk.pdf
+knowledge/paper_grosser_lang_2001_on2.pdf
+knowledge/paper_willems_lang_2013_framework.pdf
 ```
 
 After reading the papers, also read:

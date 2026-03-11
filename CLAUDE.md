@@ -32,17 +32,22 @@ DBDSQR's 270/270 accuracy but with O(n²) scaling instead of O(n³)).
 - Only standard library + extern "C" LAPACK/BLAS declarations allowed
 - `dbdsgr_` (f2c) requires `ftnlen` args: pass `1, 1` at end of each call
 
-## Knowledge Base (READ THESE FIRST)
+## Papers (READ THESE FIRST — mandatory before writing any code)
+- `knowledge/paper_willems_lang_2012_mr3gk.pdf` — **THE KEY PAPER**: MR³-GK Algorithm 4.1, NCD shifts, GK structure, proof of correctness
+- `knowledge/paper_grosser_lang_2001_on2.pdf` — **O(n²) coupling approach**: coupling transformations, Algorithm 4.1 with embedded couplings
+- `knowledge/paper_willems_lang_2013_framework.pdf` — **MR³ framework**: 5 requirements (RRR, ELG, RELGAPS, SHIFTREL, GETVEC), XMR implementation
+
+## Knowledge Base
 - `knowledge/INDEX.md` — **Master reference**: Algorithm 4.1, NCD, GK structure, ALL known bugs (#1-#10), test matrix formulas, numerical thresholds
 - `knowledge/BASELINES.md` — **Comparison table** of 5 baseline algorithms with pass rates, accuracy, scaling
 - `knowledge/EVALUATION.md` — **How evaluation works**: metrics, scoring, all 90 test patterns, data layout, available routines
 - `knowledge/PRIOR_APPROACHES.md` — **What's been tried**: 12 approaches (A-L), key lessons, why each failed
 - `knowledge/PROGRESSION.md` — Paper-by-paper timeline (1990-2020)
 - `knowledge/RESOURCES.md` — **Index** of all MRRR Resources: 15 papers, code trees, STCollection, presentations
-- `knowledge/willems_lang_2012.md` — Algorithm 4.1 (MR³ on TGK with NCD shifts) — the target algorithm
-- `knowledge/willems_lang_2013_framework.md` — Five-requirement MR³ framework
+- `knowledge/willems_lang_2012.md` — Summary of Algorithm 4.1 (MR³ on TGK with NCD shifts)
+- `knowledge/willems_lang_2013_framework.md` — Summary of five-requirement MR³ framework
 - `knowledge/xmr_code_documentation.md` — Willems XMR 45-file Fortran codebase documentation
-- `knowledge/grosser_lang_2001_hgbsvd.md` — Coupling-based O(n²) SVD approach
+- `knowledge/grosser_lang_2001_hgbsvd.md` — Summary of coupling-based O(n²) SVD approach
 - `knowledge/mr3_foundations.md` — Dhillon 1997, Parlett-Dhillon 2000 (RRR theory)
 - `knowledge/marques_2020_bugs_matrices.md` — DBDSVDX bugs, CHKBD analysis
 - `knowledge/demmel_2008_test_matrices.md` — Demmel 2008 test matrix taxonomy
