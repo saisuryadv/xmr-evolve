@@ -195,12 +195,40 @@ tests, or even looking at the source code. The papers contain the algorithms, th
 and mathematical foundations you need. Without reading them, you will waste time
 reinventing approaches that have already been tried and failed.
 
-Read these 3 papers now using the Read tool (they are PDFs in the knowledge/ directory):
+Read these papers using the Read tool (they are PDFs in the knowledge/ directory).
 
+**Must-read (read ALL of these before writing any code):**
 ```
-knowledge/paper_willems_lang_2012_mr3gk.pdf
-knowledge/paper_grosser_lang_2001_on2.pdf
-knowledge/paper_willems_lang_2013_framework.pdf
+knowledge/paper_willems_lang_2012_mr3gk.pdf    — THE KEY PAPER: MR³-GK Algorithm 4.1, NCD, GK structure
+knowledge/paper_grosser_lang_2001_on2.pdf       — O(n²) coupling approach for bSVD
+knowledge/paper_willems_lang_2013_framework.pdf — MR³ framework: 5 requirements, XMR implementation
+knowledge/paper_marques_demmel_2020.pdf         — Modern bSVD: DBDSVDX bugs, CHKBD matrices
+```
+
+**Foundation papers (read if you need deeper understanding):**
+```
+knowledge/paper_demmel_kahan_1990.pdf              — Accurate singular values (foundational)
+knowledge/paper_dhillon_thesis_1997.pdf            — Original MR³ algorithm
+knowledge/paper_parlett_dhillon_2000.pdf           — Relatively robust representations
+knowledge/paper_dhillon_parlett_2004.pdf           — Orthogonal eigenvectors and relative gaps
+knowledge/paper_dhillon_parlett_vomel_2005_glued.pdf — Glued matrices and MRRR
+knowledge/paper_willems_thesis_2010.pdf            — Willems thesis: XMR full details
+```
+
+**Additional references:**
+```
+knowledge/paper_barlow_2002.pdf                    — More accurate bidiagonal reduction
+knowledge/paper_lapack_wn163_2005.pdf              — LAPACK Working Note 163
+knowledge/paper_lapack_wn166_2005.pdf              — LAPACK Working Note 166
+knowledge/paper_symmetric_eigenproblems_bsvd_2005.pdf — Eigenproblems from bidiagonal SVD
+knowledge/paper_demmel_marques_2008.pdf            — LAPACK eigensolver performance
+```
+
+**Slides & communications:**
+```
+knowledge/slides_bebop_mr3_bsvd.pdf                — BeBOP talk: MR³ for bSVD (88 slides)
+knowledge/slides_willems_thesis.pdf                — Willems thesis slides (16 slides)
+knowledge/communication_willems_xmr_failure.pdf    — XMR failure cases discussion
 ```
 
 After reading the papers, also read:

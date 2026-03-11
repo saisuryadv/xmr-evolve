@@ -32,10 +32,33 @@ DBDSQR's 270/270 accuracy but with O(n²) scaling instead of O(n³)).
 - Only standard library + extern "C" LAPACK/BLAS declarations allowed
 - `dbdsgr_` (f2c) requires `ftnlen` args: pass `1, 1` at end of each call
 
-## Papers (READ THESE FIRST — mandatory before writing any code)
-- `knowledge/paper_willems_lang_2012_mr3gk.pdf` — **THE KEY PAPER**: MR³-GK Algorithm 4.1, NCD shifts, GK structure, proof of correctness
-- `knowledge/paper_grosser_lang_2001_on2.pdf` — **O(n²) coupling approach**: coupling transformations, Algorithm 4.1 with embedded couplings
-- `knowledge/paper_willems_lang_2013_framework.pdf` — **MR³ framework**: 5 requirements (RRR, ELG, RELGAPS, SHIFTREL, GETVEC), XMR implementation
+## Papers & Slides (READ THESE — all in `knowledge/`)
+
+### Must-read papers (read before writing any code)
+- `paper_willems_lang_2012_mr3gk.pdf` — **THE KEY PAPER**: MR³-GK Algorithm 4.1, NCD shifts, GK structure, proof of correctness
+- `paper_grosser_lang_2001_on2.pdf` — **O(n²) coupling approach**: coupling transformations for bSVD
+- `paper_willems_lang_2013_framework.pdf` — **MR³ framework**: 5 requirements (RRR, ELG, RELGAPS, SHIFTREL, GETVEC), XMR implementation
+- `paper_marques_demmel_2020.pdf` — **Modern bSVD treatment**: DBDSVDX bugs, CHKBD test matrices
+
+### Foundation papers
+- `paper_demmel_kahan_1990.pdf` — Accurate singular values of bidiagonal matrices (foundational)
+- `paper_dhillon_thesis_1997.pdf` — Dhillon thesis: the original MR³/MRRR algorithm
+- `paper_parlett_dhillon_2000.pdf` — Relatively robust representations of symmetric tridiagonals
+- `paper_dhillon_parlett_2004.pdf` — Orthogonal eigenvectors and relative gaps
+- `paper_dhillon_parlett_vomel_2005_glued.pdf` — Glued matrices and the MRRR algorithm
+- `paper_willems_thesis_2010.pdf` — Willems thesis: XMR algorithm, full implementation details
+
+### Additional references
+- `paper_barlow_2002.pdf` — More accurate bidiagonal reduction
+- `paper_lapack_wn163_2005.pdf` — LAPACK Working Note 163
+- `paper_lapack_wn166_2005.pdf` — LAPACK Working Note 166
+- `paper_symmetric_eigenproblems_bsvd_2005.pdf` — Symmetric eigenproblems induced by bidiagonal SVD
+- `paper_demmel_marques_2008.pdf` — Performance and accuracy of LAPACK eigensolvers
+
+### Slides & communications
+- `slides_bebop_mr3_bsvd.pdf` — BeBOP talk: MR³ for bidiagonal SVD (88 slides, failure examples)
+- `slides_willems_thesis.pdf` — Willems thesis slides (16 slides, representation details)
+- `communication_willems_xmr_failure.pdf` — Communication with Willems about XMR failure cases
 
 ## Knowledge Base
 - `knowledge/INDEX.md` — **Master reference**: Algorithm 4.1, NCD, GK structure, ALL known bugs (#1-#10), test matrix formulas, numerical thresholds
