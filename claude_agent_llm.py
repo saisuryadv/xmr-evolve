@@ -114,6 +114,27 @@ def _load_agent_settings(scratch_dir: str = None) -> dict:
 # ---------------------------------------------------------------------------
 
 UNIFIED_PROMPT_TEMPLATE = """\
+## BEFORE ANYTHING ELSE: READ THE PAPERS
+
+You MUST read these PDFs yourself (using the Read tool directly, NOT via subagents) before
+writing ANY code or running ANY tests. Do not delegate this to a subagent. Do not skip this.
+
+Read these 4 must-read papers NOW:
+1. knowledge/paper_willems_lang_2012_mr3gk.pdf — THE KEY PAPER: MR³-GK Algorithm 4.1
+2. knowledge/paper_grosser_lang_2001_on2.pdf — O(n²) coupling approach
+3. knowledge/paper_willems_lang_2013_framework.pdf — MR³ framework, 5 requirements
+4. knowledge/paper_marques_demmel_2020.pdf — Modern bSVD, DBDSVDX bugs
+
+Then read these knowledge files:
+- knowledge/PRIOR_APPROACHES.md — 12 approaches already tried
+- knowledge/INDEX.md — All known bugs, numerical thresholds
+
+Additional papers available in knowledge/ (read as needed):
+- paper_demmel_kahan_1990.pdf, paper_dhillon_thesis_1997.pdf, paper_parlett_dhillon_2000.pdf
+- paper_dhillon_parlett_2004.pdf, paper_willems_thesis_2010.pdf, slides_bebop_mr3_bsvd.pdf
+
+---
+
 ## YOUR WORKSPACE
 
 Your isolated workspace is: `{agent_dir}`
@@ -759,8 +780,7 @@ class ClaudeAgentLLM(LLMInterface):
                     dst_name = "bidiag_svd.h" if hdr.startswith("bidiag_") and hdr != "bidiag_tgk_common.h" else hdr
                     shutil.copy2(src_file, os.path.join(bdir, dst_name))
 
-        # Pre-populate top evolved variants for comparison testing
-        # Find the top 5 variants by score from the variants directory
+        # Copy top variants from THIS experiment's variants directory
         self._copy_top_variants(agent_dir)
 
         logger.info(f"Created agent workspace: {agent_dir}")
@@ -1200,6 +1220,11 @@ class ClaudeAgentLLM(LLMInterface):
             log_path = os.path.join(agent_dir, "session.log")
             logger.info(f"Running evolution agent in {agent_dir}")
             logger.info(f"Live session log: {log_path}")
+            print(f"\n{'='*60}")
+            print(f"  Agent workspace: {agent_dir}")
+            print(f"  Session log:     {log_path}")
+            print(f"  Monitor with:    tail -f {log_path}")
+            print(f"{'='*60}\n", flush=True)
 
             result_text = await _run_agent_session(
                 prompt=prompt,
