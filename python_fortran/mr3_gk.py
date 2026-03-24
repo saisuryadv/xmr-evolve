@@ -517,7 +517,11 @@ def bidiag_svd(d, e):
             sig_idx = sigma[idx]
             res_v = np.linalg.norm(BV - sig_idx[None, :] * U[:, idx], axis=0)
             res_u = np.linalg.norm(BTU - sig_idx[None, :] * V[:, idx], axis=0)
-            thresh_arr = 10 * n * EPS * sig_idx
+            # Use bnorm-based threshold, not sigma-based.
+            # For tiny sigma, sigma-based threshold is too small and triggers
+            # recovery that amplifies roundoff via division by tiny sigma.
+            bnorm_val = max(np.max(np.abs(d)), np.max(np.abs(e[:n-1])) if n > 1 else 0.0)
+            thresh_arr = 10 * n * EPS * np.maximum(sig_idx, bnorm_val)
             fix_v = (res_v > thresh_arr) & (res_v > res_u)
             fix_u = (res_u > thresh_arr) & (res_u > res_v) & (~fix_v)
             if np.any(fix_v):
@@ -541,32 +545,35 @@ def bidiag_svd(d, e):
             U[:, idx] *= sign_flip[None, :]
 
         # GS completion — only multi-block columns with zero sigma
-        v_col_norms = np.linalg.norm(V[:, mc], axis=0)
-        u_col_norms = np.linalg.norm(U[:, mc], axis=0)
-        zero_v_mc = mc[v_col_norms < 0.5]
-        zero_u_mc = mc[u_col_norms < 0.5]
+        # Vectorized: project using BLAS matrix ops instead of Python loops
+        all_v_norms = np.linalg.norm(V, axis=0)
+        all_u_norms = np.linalg.norm(U, axis=0)
+        zero_v_mc = mc[all_v_norms[mc] < 0.5]
+        zero_u_mc = mc[all_u_norms[mc] < 0.5]
         for j in zero_v_mc:
+            good_mask = np.arange(n) != j
+            good_mask &= all_v_norms > 0.5
+            V_good = V[:, good_mask]
             for attempt in range(n+5):
                 if attempt < n:
                     v_cand = np.zeros(n); v_cand[attempt] = 1.0
                 else:
                     v_cand = np.random.randn(n)
-                for k in range(n):
-                    if k != j and np.linalg.norm(V[:,k]) > 0.5:
-                        v_cand -= np.dot(v_cand, V[:,k]) * V[:,k]
+                v_cand -= V_good @ (V_good.T @ v_cand)
                 nrm = np.linalg.norm(v_cand)
                 if nrm > 0.1:
                     V[:,j] = v_cand / nrm
                     break
         for j in zero_u_mc:
+            good_mask = np.arange(n) != j
+            good_mask &= all_u_norms > 0.5
+            U_good = U[:, good_mask]
             for attempt in range(n+5):
                 if attempt < n:
                     u_cand = np.zeros(n); u_cand[attempt] = 1.0
                 else:
                     u_cand = np.random.randn(n)
-                for k in range(n):
-                    if k != j and np.linalg.norm(U[:,k]) > 0.5:
-                        u_cand -= np.dot(u_cand, U[:,k]) * U[:,k]
+                u_cand -= U_good @ (U_good.T @ u_cand)
                 nrm = np.linalg.norm(u_cand)
                 if nrm > 0.1:
                     U[:,j] = u_cand / nrm
