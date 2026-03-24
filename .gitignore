@@ -43,3 +43,10 @@ converted_fortran/
 .idea/
 *.swp
 *.swo
+eval_dbdsqr
+eval_hgbsvd
+eval_tgk_stemr
+eval_tgk_stexr
+evaluate_cpp
+src/evaluate_long.cpp
+lib/obj_c/

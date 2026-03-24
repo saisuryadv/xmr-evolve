@@ -36,23 +36,42 @@ def load_stcoll(path):
 
 def test_one(d, e, timeout_s=30):
     n = len(d)
-    t0 = time.time()
-    sigma, U, V, info = bidiag_svd(d, e)
-    dt = time.time() - t0
+    # Warmup runs (JIT, cache effects)
+    bidiag_svd(d.copy(), e.copy())
+    bidiag_svd(d.copy(), e.copy())
+    # Pre-copy arrays for timed runs
+    copies = [(d.copy(), e.copy()) for _ in range(5)]
+    # 5 timed runs, take median
+    times = []
+    for dc, ec in copies:
+        t0 = time.perf_counter()
+        sigma, U, V, info = bidiag_svd(dc, ec)
+        times.append(time.perf_counter() - t0)
+    times.sort()
+    dt = times[2]  # median
     if dt > timeout_s:
         return None, float('inf'), float('inf'), float('inf'), dt
     B = np.diag(d) + np.diag(e, 1)
-    bn = max(np.max(np.abs(B)), 1e-300)
-    res = np.max(np.abs(B - U @ np.diag(sigma) @ V.T)) / (bn * n * EPS)
+    # Match C++ compute_bnorm: infinity norm of bidiagonal (max row sum)
+    bnorm = abs(d[-1]) if len(d) > 0 else 0.0
+    for i in range(len(d) - 1):
+        bnorm = max(bnorm, abs(d[i]) + abs(e[i]))
+    if bnorm == 0.0:
+        bnorm = 1.0
+    res = np.max(np.abs(B - U @ np.diag(sigma) @ V.T)) / (bnorm * n * EPS)
     ou = np.max(np.abs(U.T @ U - np.eye(n))) / (n * EPS)
     ov = np.max(np.abs(V.T @ V - np.eye(n))) / (n * EPS)
     ok = res <= RES_THRESH and ou <= ORTHO_THRESH and ov <= ORTHO_THRESH
     return ok, res, ou, ov, dt
 
 def get_patterns():
-    """Extract all pattern names from full_eval.py"""
-    src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'full_eval.py')).read()
-    return list(dict.fromkeys(re.findall(r"(?:if|elif)\s+name\s*==\s*'(\w+)'", src)))
+    """Get all pattern names from full_eval.py's adv_names list"""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("full_eval",
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'full_eval.py'))
+    fe = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fe)
+    return fe.adv_names
 
 SMALL_PATTERNS = [
     'exponential_graded', 'glued_repeated', 'saw_tooth', 'stemr_killer',
@@ -67,6 +86,7 @@ def main():
     parser = argparse.ArgumentParser(description='Evaluate MR³-GK bidiagonal SVD')
     parser.add_argument('--small', action='store_true', help='Small 64-test suite (22 patterns × 3 sizes)')
     parser.add_argument('--medium', action='store_true', help='Medium 270-test suite (90 patterns × 3 sizes)')
+    parser.add_argument('--scale800', action='store_true', help='Full suite + n=800, scaling from 400→800')
     parser.add_argument('--timeout', type=int, default=30, help='Per-test timeout in seconds')
     args = parser.parse_args()
 
@@ -80,6 +100,11 @@ def main():
         test_sizes = [10, 100, 200]
         run_stcoll = False
         suite_name = "Medium (270 tests)"
+    elif args.scale800:
+        patterns = get_patterns()
+        test_sizes = [10, 100, 400, 800]
+        run_stcoll = True
+        suite_name = "Full + n=800 (scaling from 400→800)"
     else:
         patterns = get_patterns()
         test_sizes = [10, 100, 200, 400]
@@ -151,6 +176,8 @@ def main():
                 scaling_pats.append(pat)
 
     worst_ratio = 0.0
+    worst_pattern = ""
+    all_ratios = []
     if len(test_sizes) >= 2:
         s_large = test_sizes[-1]
         s_prev = test_sizes[-2]
@@ -159,7 +186,12 @@ def main():
             t_prev = pd[s_prev][1]
             t_large = pd[s_large][1]
             if t_prev > 1e-6:
-                worst_ratio = max(worst_ratio, t_large / t_prev)
+                ratio = t_large / t_prev
+                all_ratios.append((ratio, pat, t_prev, t_large))
+                if ratio > worst_ratio:
+                    worst_ratio = ratio
+                    worst_pattern = pat
+    all_ratios.sort(reverse=True)
 
     score = pass_rate * 50.0
     score += max(0.0, 5.0 - avg_res) * 2.0
@@ -175,7 +207,11 @@ def main():
     print(f"\n{'='*60}")
     print(f"TOTAL: {passed}/{total} passed ({100*pass_rate:.1f}%)")
     print(f"Pass avg: res={avg_res:.3f}  oU={avg_ou:.3f}  oV={avg_ov:.3f}")
-    print(f"Scaling: {len(scaling_pats)} patterns, worst_ratio={worst_ratio:.3f}")
+    print(f"Scaling: {len(scaling_pats)} patterns, worst_ratio={worst_ratio:.3f} ({worst_pattern})")
+    if all_ratios:
+        print(f"  Top-10 worst scaling ratios (n={test_sizes[-2]}→{test_sizes[-1]}):")
+        for ratio, pat, tp, tl in all_ratios[:10]:
+            print(f"    {ratio:6.2f}x  {pat:35s}  t{test_sizes[-2]}={tp:.4f}  t{test_sizes[-1]}={tl:.4f}")
     print(f"SCORE: {score:.2f}")
     if worst_ratio > 5.0:
         print(f"  *** HARD GATE: worst_ratio={worst_ratio:.1f} > 5.0, score CAPPED at 5 ***")

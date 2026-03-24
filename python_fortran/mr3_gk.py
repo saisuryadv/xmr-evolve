@@ -364,64 +364,46 @@ def mr3_block(c, e_off, nn, pos_evals, spdiam):
 # ============================================================
 # Main driver
 # ============================================================
-def mr3_tgk(d_bidiag, e_bidiag, n):
+def mr3_tgk_multiblock(d_bidiag, e_bidiag, n, bbeg, bend):
+    """Run MR³ on a single multi-element block. Returns (evals, evecs) of size (k, 2k×k)."""
     from xmr_ctypes import xmr_eigenvectors, build_repr_from_tridiag
-    m2n = 2*n; result_evals = np.zeros(n); result_evecs = np.zeros((m2n, n))
-    bidiag_blocks = split_bidiag(d_bidiag, e_bidiag, n)
-    ev_assigned = 0
-    for bbeg, bend in bidiag_blocks:
-        bk = bend-bbeg+1
-        if bk <= 0: continue
-        if bk == 1:
-            # Singleton: σ = |d[i]|, eigvec of T_GK is [1/√2, 1/√2] at positions (2i, 2i+1)
-            result_evals[ev_assigned] = abs(d_bidiag[bbeg])
-            result_evecs[2*bbeg, ev_assigned] = 1.0 / np.sqrt(2.0)    # v component
-            result_evecs[2*bbeg+1, ev_assigned] = 1.0 / np.sqrt(2.0)  # u component
-            ev_assigned += 1
-            continue
-        bd = d_bidiag[bbeg:bend+1].copy()
-        be = e_bidiag[bbeg:bend].copy() if bk > 1 else np.array([])
-        # Use |d[i]| for T_GK (singular values are sign-independent).
-        # Record signs to fix u later in bidiag_svd.
-        bd_signs = np.sign(bd); bd_signs[bd_signs == 0] = 1.0
-        bd_abs = np.abs(bd)
-        m2k = 2*bk; bc = np.zeros(m2k); bte = np.zeros(max(m2k-1,0))
-        for i in range(bk):
-            bte[2*i] = bd_abs[i]
-            if i < bk-1: bte[2*i+1] = be[i]
-        # Get all eigenvalues via bisection
-        all_evals = bisect_evals(bc, bte, m2k, 1, m2k)
-        all_evals = np.sort(all_evals)
-        npos = bk  # T_GK has bk positive eigenvalues
-        if npos == 0: continue
-        spdiam = all_evals[-1] - all_evals[0]
-        # Build root repr
-        root = build_repr_from_tridiag(bc, bte, m2k, k=m2k)
-        # Compute positive eigenvectors via XMR (eigenvalues bk+1..2*bk)
-        w, Z, info = xmr_eigenvectors(root, bte, all_evals,
-                                        wil=bk+1, wiu=m2k,
-                                        spdiam=spdiam, gaptol=GAPTOL)
-        if info != 0:
-            # Fallback to Python mr3_block
-            block_pos = all_evals[bk:]
-            block_ev, block_z = mr3_block(bc, bte, m2k, block_pos, spdiam)
-            w = block_ev; Z = block_z
-        # Fix u-component signs is done in bidiag_svd, not here.
-        # XMR eigenvectors are for T_GK(|B|), which is correct.
-        tgk_offset = 2*bbeg
-        for j in range(npos):
-            if ev_assigned+j < n:
-                result_evals[ev_assigned+j] = w[j]
-                result_evecs[tgk_offset:tgk_offset+m2k, ev_assigned+j] = Z[:m2k, j]
-        ev_assigned += npos
-    order = np.argsort(-result_evals[:ev_assigned])
-    result_evals[:ev_assigned] = result_evals[:ev_assigned][order]
-    result_evecs[:, :ev_assigned] = result_evecs[:, :ev_assigned][:, order]
-    return result_evals, result_evecs
+    bk = bend - bbeg + 1
+    m2k = 2 * bk
+    bd_abs = np.abs(d_bidiag[bbeg:bend+1])
+    be = e_bidiag[bbeg:bend].copy()
+    bc = np.zeros(m2k)
+    bte = np.zeros(m2k - 1)
+    bte[0::2] = bd_abs
+    if bk > 1:
+        bte[1::2] = be[:bk-1]
+    all_evals = np.sort(bisect_evals(bc, bte, m2k, 1, m2k))
+    spdiam = all_evals[-1] - all_evals[0]
+    root = build_repr_from_tridiag(bc, bte, m2k, k=m2k)
+    w, Z, info = xmr_eigenvectors(root, bte, all_evals,
+                                    wil=bk+1, wiu=m2k,
+                                    spdiam=spdiam, gaptol=GAPTOL)
+    if info != 0:
+        block_pos = all_evals[bk:]
+        w, Z = mr3_block(bc, bte, m2k, block_pos, spdiam)
+    return w[:bk], Z[:m2k, :bk]
 
 # ============================================================
 # Main entry
 # ============================================================
+def _bidiag_matvec_batch(d, e, M):
+    """Compute B @ M where B = diag(d) + superdiag(e), batch over columns."""
+    BM = d[:, None] * M
+    if len(e) > 0:
+        BM[:-1] += e[:, None] * M[1:]
+    return BM
+
+def _bidiagT_matvec_batch(d, e, M):
+    """Compute B^T @ M where B = diag(d) + superdiag(e), batch over columns."""
+    BTM = d[:, None] * M
+    if len(e) > 0:
+        BTM[1:] += e[:, None] * M[:-1]
+    return BTM
+
 def bidiag_svd(d, e):
     d = np.asarray(d, dtype=np.float64).copy()
     e = np.asarray(e, dtype=np.float64).copy()
@@ -431,97 +413,139 @@ def bidiag_svd(d, e):
         return (np.array([abs(d[0])]),
                 np.array([[1.0 if d[0]>=0 else -1.0]]),
                 np.array([[1.0]]), 0)
-    m2n = 2*n
-    # Zero out split e[i] entries per condition (3.5)
-    # These were used as split points in mr3_tgk; the Bv recovery must use
-    # the same (split) matrix, not the original B.
+
+    # Split bidiagonal and zero split entries
     blocks = split_bidiag(d, e, n)
-    # Zero e[i] at block boundaries
-    block_ends = set()
     for bbeg, bend in blocks:
         if bend < n-1:
-            block_ends.add(bend)
-    for i in block_ends:
-        e[i] = 0.0
+            e[bend] = 0.0
 
-    evals, evecs = mr3_tgk(d, e, n)
-    sigma = np.abs(evals)
-
-    # Extract u, v from T_GK eigenvectors:
-    # q = [v_0, u_0, v_1, u_1, ...] so v = q[0::2], u = q[1::2]
-    # T_GK was built with |d[i]|, so eigenvectors are for |B|.
-    # B = D1 * |B| * D2 where D1, D2 are diagonal sign matrices.
-    # Then U = D1 * U_pos, V = D2 * V_pos.
-    # Compute D1, D2 from: D1[i]*D2[i]=sign(d[i]), D1[i]*D2[i+1]=sign(e[i])
+    # D1, D2 sign matrices (O(n) scalar loop — sequential dependency)
     d1 = np.ones(n); d2 = np.ones(n)
     d1[0] = 1.0; d2[0] = np.sign(d[0]) if d[0] != 0 else 1.0
     for i in range(n-1):
-        # D1[i]*D2[i+1] = sign(e[i])
         s_e = np.sign(e[i]) if e[i] != 0 else 1.0
         d2[i+1] = s_e / d1[i] if abs(d1[i]) > 0 else s_e
-        # D1[i+1]*D2[i+1] = sign(d[i+1])
         s_d = np.sign(d[i+1]) if d[i+1] != 0 else 1.0
         d1[i+1] = s_d / d2[i+1] if abs(d2[i+1]) > 0 else s_d
 
-    V = np.zeros((n,n)); U = np.zeros((n,n))
-    for j in range(n):
-        ev = evecs[:m2n, j]
-        V[:,j] = ev[0::2] * d2   # V = D2 * V_pos
-        U[:,j] = ev[1::2] * d1   # U = D1 * U_pos
+    sigma = np.zeros(n)
+    U = np.zeros((n, n))
+    V = np.zeros((n, n))
 
-    # Normalize and decide which side to recover from
-    for j in range(n):
-        nv = np.linalg.norm(V[:,j])
-        nu = np.linalg.norm(U[:,j])
-        # Both sides should have norm ≈ 1/sqrt(2) for well-conditioned GK eigenvectors.
-        # If one side is tiny relative to the other, it's noise from a near-zero eigenvalue.
-        norm_thresh = max(nu, nv) * 1e-4
-        v_good = nv > norm_thresh and nv > SAFMIN
-        u_good = nu > norm_thresh and nu > SAFMIN
-        if v_good: V[:,j] /= nv
-        else: V[:,j] = 0.0
-        if u_good: U[:,j] /= nu
-        else: U[:,j] = 0.0
+    # Classify blocks into singletons and multi-blocks
+    sing_rows = []; sing_cols = []; multi_blocks = []
+    col = 0
+    for bbeg, bend in blocks:
+        bk = bend - bbeg + 1
+        if bk <= 0: continue
+        if bk == 1:
+            sing_rows.append(bbeg)
+            sing_cols.append(col)
+            col += 1
+        else:
+            multi_blocks.append((bbeg, bend, bk, col))
+            col += bk
 
-        if sigma[j] > n*EPS*max(sigma):
-            bv = d*V[:,j]
-            if n > 1: bv[:n-1] += e*V[1:,j]
-            btu = d*U[:,j]
-            if n > 1: btu[1:] += e*U[:n-1,j]
+    # --- Singletons: O(n) total, no intermediate matrix ---
+    if sing_rows:
+        sr = np.array(sing_rows)
+        sc = np.array(sing_cols)
+        sigma[sc] = np.abs(d[sr])
+        V[sr, sc] = d2[sr]   # ±1, already unit vectors
+        U[sr, sc] = d1[sr]   # ±1, already unit vectors
+        # Sign is automatically correct: d1[i]*d2[i] = sign(d[i])
+        # so d[i]*d2[i] = |d[i]|*d1[i], meaning B*v = σ*u holds exactly.
 
-            if not u_good and v_good:
-                U[:,j] = bv / sigma[j]
-                nu2 = np.linalg.norm(U[:,j])
-                if nu2 > SAFMIN: U[:,j] /= nu2
-            elif not v_good and u_good:
-                V[:,j] = btu / sigma[j]
-                nv2 = np.linalg.norm(V[:,j])
-                if nv2 > SAFMIN: V[:,j] /= nv2
-            else:
-                res_v = np.linalg.norm(bv - sigma[j]*U[:,j])
-                res_u = np.linalg.norm(btu - sigma[j]*V[:,j])
-                if res_v > 10*n*EPS*sigma[j] and res_v > res_u:
-                    V[:,j] = btu / sigma[j]
-                    nv2 = np.linalg.norm(V[:,j])
-                    if nv2 > SAFMIN: V[:,j] /= nv2
-                elif res_u > 10*n*EPS*sigma[j] and res_u > res_v:
-                    U[:,j] = bv / sigma[j]
-                    nu2 = np.linalg.norm(U[:,j])
-                    if nu2 > SAFMIN: U[:,j] /= nu2
+    # --- Multi-element blocks: XMR eigensolver ---
+    multi_col_list = []
+    for bbeg, bend, bk, col_offset in multi_blocks:
+        w, Z = mr3_tgk_multiblock(d, e, n, bbeg, bend)
+        nc = min(bk, n - col_offset)
+        c_slice = slice(col_offset, col_offset + nc)
+        r_slice = slice(bbeg, bend + 1)
 
-    # Fix signs: ensure B*v_j and u_j point the same way
-    for j in range(n):
-        if sigma[j] < SAFMIN: continue
-        bv = d*V[:,j]
-        if n > 1: bv[:n-1] += e*V[1:,j]
-        if np.dot(bv, U[:,j]) < 0: U[:,j] *= -1.0
+        # Extract V, U from even/odd rows of T_GK eigenvectors, apply D1/D2
+        V[r_slice, c_slice] = Z[0::2, :nc] * d2[bbeg:bend+1, None]
+        U[r_slice, c_slice] = Z[1::2, :nc] * d1[bbeg:bend+1, None]
+        sigma[c_slice] = np.abs(w[:nc])
+        multi_col_list.extend(range(col_offset, col_offset + nc))
 
-    # For zero singular values, V[:,j] and U[:,j] may be zero vectors.
-    # Fill them by completing to an orthonormal basis.
-    for j in range(n):
-        if np.linalg.norm(V[:,j]) < 0.5:
-            # Find a unit vector orthogonal to all other V columns
-            # Use random + Gram-Schmidt
+    # --- Post-processing: only on multi-block columns ---
+    if multi_col_list:
+        mc = np.array(multi_col_list)
+
+        # Normalize
+        nv_mc = np.linalg.norm(V[:, mc], axis=0)
+        nu_mc = np.linalg.norm(U[:, mc], axis=0)
+        max_norms = np.maximum(nv_mc, nu_mc)
+        norm_thresh = max_norms * 1e-4
+        v_good = (nv_mc > norm_thresh) & (nv_mc > SAFMIN)
+        u_good = (nu_mc > norm_thresh) & (nu_mc > SAFMIN)
+        scale_v = np.where(v_good, 1.0 / np.maximum(nv_mc, SAFMIN), 0.0)
+        V[:, mc] *= scale_v[None, :]
+        scale_u = np.where(u_good, 1.0 / np.maximum(nu_mc, SAFMIN), 0.0)
+        U[:, mc] *= scale_u[None, :]
+
+        # Bv recovery
+        sigma_max = np.max(sigma)
+        sig_thresh = n * EPS * sigma_max
+        sig_mc = sigma[mc]
+        need_recovery = sig_mc > sig_thresh
+        recover_u = need_recovery & (~u_good) & v_good
+        recover_v = need_recovery & (~v_good) & u_good
+        both_good = need_recovery & v_good & u_good
+
+        if np.any(recover_u):
+            idx = mc[recover_u]
+            BV = _bidiag_matvec_batch(d, e, V[:, idx])
+            U_new = BV / sigma[idx][None, :]
+            norms = np.maximum(np.linalg.norm(U_new, axis=0), SAFMIN)
+            U[:, idx] = U_new / norms[None, :]
+
+        if np.any(recover_v):
+            idx = mc[recover_v]
+            BTU = _bidiagT_matvec_batch(d, e, U[:, idx])
+            V_new = BTU / sigma[idx][None, :]
+            norms = np.maximum(np.linalg.norm(V_new, axis=0), SAFMIN)
+            V[:, idx] = V_new / norms[None, :]
+
+        if np.any(both_good):
+            idx = mc[both_good]
+            BV = _bidiag_matvec_batch(d, e, V[:, idx])
+            BTU = _bidiagT_matvec_batch(d, e, U[:, idx])
+            sig_idx = sigma[idx]
+            res_v = np.linalg.norm(BV - sig_idx[None, :] * U[:, idx], axis=0)
+            res_u = np.linalg.norm(BTU - sig_idx[None, :] * V[:, idx], axis=0)
+            thresh_arr = 10 * n * EPS * sig_idx
+            fix_v = (res_v > thresh_arr) & (res_v > res_u)
+            fix_u = (res_u > thresh_arr) & (res_u > res_v) & (~fix_v)
+            if np.any(fix_v):
+                fv_idx = idx[fix_v]
+                V_new = BTU[:, fix_v] / sigma[fv_idx][None, :]
+                norms = np.maximum(np.linalg.norm(V_new, axis=0), SAFMIN)
+                V[:, fv_idx] = V_new / norms[None, :]
+            if np.any(fix_u):
+                fu_idx = idx[fix_u]
+                U_new = BV[:, fix_u] / sigma[fu_idx][None, :]
+                norms = np.maximum(np.linalg.norm(U_new, axis=0), SAFMIN)
+                U[:, fu_idx] = U_new / norms[None, :]
+
+        # Sign fix — only multi-block columns
+        nonzero_sig = sig_mc >= SAFMIN
+        if np.any(nonzero_sig):
+            idx = mc[nonzero_sig]
+            BV = _bidiag_matvec_batch(d, e, V[:, idx])
+            dots = np.sum(BV * U[:, idx], axis=0)
+            sign_flip = np.where(dots < 0, -1.0, 1.0)
+            U[:, idx] *= sign_flip[None, :]
+
+        # GS completion — only multi-block columns with zero sigma
+        v_col_norms = np.linalg.norm(V[:, mc], axis=0)
+        u_col_norms = np.linalg.norm(U[:, mc], axis=0)
+        zero_v_mc = mc[v_col_norms < 0.5]
+        zero_u_mc = mc[u_col_norms < 0.5]
+        for j in zero_v_mc:
             for attempt in range(n+5):
                 if attempt < n:
                     v_cand = np.zeros(n); v_cand[attempt] = 1.0
@@ -534,7 +558,7 @@ def bidiag_svd(d, e):
                 if nrm > 0.1:
                     V[:,j] = v_cand / nrm
                     break
-        if np.linalg.norm(U[:,j]) < 0.5:
+        for j in zero_u_mc:
             for attempt in range(n+5):
                 if attempt < n:
                     u_cand = np.zeros(n); u_cand[attempt] = 1.0
