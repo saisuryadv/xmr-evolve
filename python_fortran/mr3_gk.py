@@ -364,6 +364,33 @@ def mr3_block(c, e_off, nn, pos_evals, spdiam):
 # ============================================================
 # Main driver
 # ============================================================
+def _solve_tgk_block(bc, bte, m, bk_hint=None):
+    """Solve a single T_GK eigenproblem of size m.
+    Returns (w, Z) where w has the non-negative eigenvalues
+    and Z has the corresponding eigenvectors.
+    bk_hint: if given, number of non-negative eigenvalues expected = ceil(m/2).
+    """
+    from xmr_ctypes import xmr_eigenvectors, build_repr_from_tridiag
+    n_nonneg = (m + 1) // 2  # ceil(m/2): number of non-negative eigenvalues
+    if bk_hint is not None:
+        n_nonneg = bk_hint
+    wil = m - n_nonneg + 1  # first non-negative eigenvalue index (1-based)
+    wiu = m                  # last eigenvalue index (1-based)
+
+    all_evals = np.sort(bisect_evals(bc, bte, m, 1, m))
+    spdiam = all_evals[-1] - all_evals[0] if len(all_evals) > 0 else 0.0
+
+    root = build_repr_from_tridiag(bc, bte, m, k=m)
+    w, Z, info = xmr_eigenvectors(root, bte, all_evals,
+                                    wil=wil, wiu=wiu,
+                                    spdiam=spdiam, gaptol=GAPTOL)
+    if info != 0:
+        pos_evals = all_evals[wil-1:]
+        w, Z = mr3_block(bc, bte, m, pos_evals, spdiam)
+
+    return w[:n_nonneg], Z[:m, :n_nonneg]
+
+
 def mr3_tgk_multiblock(d_bidiag, e_bidiag, n, bbeg, bend):
     """Run MR³ on a single multi-element block. Returns (evals, evecs) of size (k, 2k×k)."""
     from xmr_ctypes import xmr_eigenvectors, build_repr_from_tridiag
@@ -376,16 +403,109 @@ def mr3_tgk_multiblock(d_bidiag, e_bidiag, n, bbeg, bend):
     bte[0::2] = bd_abs
     if bk > 1:
         bte[1::2] = be[:bk-1]
-    all_evals = np.sort(bisect_evals(bc, bte, m2k, 1, m2k))
-    spdiam = all_evals[-1] - all_evals[0]
-    root = build_repr_from_tridiag(bc, bte, m2k, k=m2k)
-    w, Z, info = xmr_eigenvectors(root, bte, all_evals,
-                                    wil=bk+1, wiu=m2k,
-                                    spdiam=spdiam, gaptol=GAPTOL)
-    if info != 0:
-        block_pos = all_evals[bk:]
-        w, Z = mr3_block(bc, bte, m2k, block_pos, spdiam)
-    return w[:bk], Z[:m2k, :bk]
+
+    # Check for zeros in bte that split T_GK into independent sub-blocks
+    zero_positions = np.where(np.abs(bte) < SAFMIN)[0]
+
+    if len(zero_positions) == 0:
+        # No splits — standard path (most common case)
+        w, Z = _solve_tgk_block(bc, bte, m2k, bk_hint=bk)
+        return w[:bk], Z[:m2k, :bk]
+
+    # =========================================================
+    # T_GK has zeros in off-diagonal — split into sub-blocks
+    # =========================================================
+    # bte[zp]=0 means T_GK[zp, zp+1] = 0, so rows [start..zp] are decoupled
+    # from rows [zp+1..end].
+    boundaries = []
+    start = 0
+    for zp in zero_positions:
+        boundaries.append((start, zp + 1))  # [start, zp+1) = rows start..zp
+        start = zp + 1
+    if start < m2k:
+        boundaries.append((start, m2k))
+
+    print(f'  TGK_SPLIT: block [{bbeg},{bend}] bk={bk} m2k={m2k}')
+    print(f'  TGK_SPLIT: bte zeros at positions {zero_positions.tolist()}')
+    print(f'  TGK_SPLIT: {len(boundaries)} sub-blocks:')
+    for i, (sb_s, sb_e) in enumerate(boundaries):
+        sb_m = sb_e - sb_s
+        sb_nonneg = (sb_m + 1) // 2
+        sb_bte = bte[sb_s:sb_e-1] if sb_m > 1 else np.array([])
+        print(f'    sub[{i}]: T_GK rows [{sb_s},{sb_e}) size={sb_m} ceil(m/2)={sb_nonneg}')
+        print(f'      bte = {np.round(sb_bte, 6)}')
+        # Show which bidiag components this maps to
+        # T_GK row 2i -> v_{i+1}, row 2i+1 -> u_{i+1}
+        row_labels = []
+        for r in range(sb_s, sb_e):
+            if r % 2 == 0:
+                row_labels.append(f'v{r//2}')
+            else:
+                row_labels.append(f'u{r//2}')
+        print(f'      maps to: {row_labels}')
+
+    # Solve each sub-block independently
+    all_w = []
+    all_Z_entries = []  # list of (sub_start, sub_end, w_sub, Z_sub)
+
+    for i, (sb_start, sb_end) in enumerate(boundaries):
+        sb_m = sb_end - sb_start
+        if sb_m == 0:
+            continue
+
+        sb_bc = np.zeros(sb_m)
+        sb_bte = bte[sb_start:sb_end-1].copy() if sb_m > 1 else np.array([])
+
+        if sb_m == 1:
+            # Size-1 sub-block: single eigenvalue = 0
+            w_sub = np.array([0.0])
+            Z_sub = np.ones((1, 1))
+            print(f'    sub[{i}]: size=1, eigenvalue=0 (trivial)')
+        else:
+            w_sub, Z_sub = _solve_tgk_block(sb_bc, sb_bte, sb_m)
+            n_ev = len(w_sub)
+            print(f'    sub[{i}]: size={sb_m}, solved -> {n_ev} eigenpairs')
+            print(f'      eigenvalues: {np.round(w_sub, 8)}')
+            # Check GK structure for each eigenvector
+            for j in range(n_ev):
+                z = np.zeros(m2k)
+                z[sb_start:sb_end] = Z_sub[:, j]
+                even_norm = np.linalg.norm(z[0::2])
+                odd_norm = np.linalg.norm(z[1::2])
+                print(f'      evec[{j}]: eval={w_sub[j]:.8e}  even_norm={even_norm:.6f}  odd_norm={odd_norm:.6f}')
+
+        all_Z_entries.append((sb_start, sb_end, w_sub, Z_sub))
+
+    # Collect all eigenvalues and their associated eigenvectors
+    # Total non-negative eigenvalues across sub-blocks may exceed bk
+    # (each odd sub-block contributes an extra zero eigenvalue)
+    # We want the bk largest eigenvalues
+    total_evals = []
+    for sb_start, sb_end, w_sub, Z_sub in all_Z_entries:
+        for j in range(len(w_sub)):
+            total_evals.append((w_sub[j], sb_start, sb_end, Z_sub[:, j]))
+
+    print(f'  TGK_SPLIT: total eigenpairs collected = {len(total_evals)}, need bk = {bk}')
+
+    # Sort by eigenvalue descending, take top bk
+    total_evals.sort(key=lambda x: -x[0])
+    selected = total_evals[:bk]
+    # Sort selected back by eigenvalue ascending (standard ordering)
+    selected.sort(key=lambda x: x[0])
+
+    w_out = np.zeros(bk)
+    Z_out = np.zeros((m2k, bk))
+    for j, (ev, sb_start, sb_end, z_sub) in enumerate(selected):
+        w_out[j] = ev
+        Z_out[sb_start:sb_end, j] = z_sub
+
+    print(f'  TGK_SPLIT: selected {bk} eigenvalues: {np.round(w_out, 8)}')
+    # Verify: show how many zeros we kept vs discarded
+    n_zero_kept = np.sum(np.abs(w_out) < SAFMIN)
+    n_zero_total = sum(1 for ev, _, _, _ in total_evals if abs(ev) < SAFMIN)
+    print(f'  TGK_SPLIT: zeros: {n_zero_kept} kept / {n_zero_total} total')
+
+    return w_out, Z_out
 
 # ============================================================
 # Main entry
@@ -550,6 +670,8 @@ def bidiag_svd(d, e):
         all_u_norms = np.linalg.norm(U, axis=0)
         zero_v_mc = mc[all_v_norms[mc] < 0.5]
         zero_u_mc = mc[all_u_norms[mc] < 0.5]
+        if len(zero_v_mc) > 0 or len(zero_u_mc) > 0:
+            print(f'  GS_COMPLETION: {len(zero_v_mc)} zero-V cols, {len(zero_u_mc)} zero-U cols')
         for j in zero_v_mc:
             good_mask = np.arange(n) != j
             good_mask &= all_v_norms > 0.5
@@ -563,6 +685,8 @@ def bidiag_svd(d, e):
                 nrm = np.linalg.norm(v_cand)
                 if nrm > 0.1:
                     V[:,j] = v_cand / nrm
+                    all_v_norms[j] = 1.0  # update so next iteration includes this column
+                    print(f'    filled V[:,{j}] at attempt {attempt}')
                     break
         for j in zero_u_mc:
             good_mask = np.arange(n) != j
@@ -577,6 +701,8 @@ def bidiag_svd(d, e):
                 nrm = np.linalg.norm(u_cand)
                 if nrm > 0.1:
                     U[:,j] = u_cand / nrm
+                    all_u_norms[j] = 1.0  # update so next iteration includes this column
+                    print(f'    filled U[:,{j}] at attempt {attempt}')
                     break
 
     return sigma, U, V, 0
