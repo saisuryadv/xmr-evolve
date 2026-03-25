@@ -370,7 +370,7 @@ def mr3_tgk_multiblock(d_bidiag, e_bidiag, n, bbeg, bend):
     bk = bend - bbeg + 1
     m2k = 2 * bk
     bd_abs = np.abs(d_bidiag[bbeg:bend+1])
-    be = e_bidiag[bbeg:bend].copy()
+    be = np.abs(e_bidiag[bbeg:bend])
     bc = np.zeros(m2k)
     bte = np.zeros(m2k - 1)
     bte[0::2] = bd_abs
