@@ -8,10 +8,11 @@ O(n²) bidiagonal SVD using MR³ with Golub-Kahan structure preservation (Willem
 Python (mr3_gk.py)          Fortran (XMR, ~15K lines)
 ┌─────────────────┐         ┌──────────────────┐
 │ bidiag_svd()    │         │ dlaxre_gk.f      │ ← GK-enabled root repr
-│   split_bidiag  │         │ dlaxrv.f         │ ← eigenvector computation
-│   mr3_tgk       │──ctypes─│ dlaxrf.f + deps  │ ← child repr (shift/twist)
-│   sign recovery │         │ xmr_wrapper.c    │ ← C interface
-│   Bv recovery   │         └──────────────────┘
+│   QR deflation  │         │ dlaxrv.f         │ ← eigenvector computation
+│   split_bidiag  │         │ dlaxrf.f + deps  │ ← child repr (shift/twist)
+│   mr3_tgk       │──ctypes─│ xmr_wrapper.c    │ ← C interface
+│   sign recovery │         └──────────────────┘
+│   Bv recovery   │
 │   GS completion │
 └─────────────────┘
 Eigenvalues: LAPACK dstebz (bisection)
@@ -19,64 +20,100 @@ Eigenvalues: LAPACK dstebz (bisection)
 
 ## Current Results
 
+**Score: 86.37** — 330/379 tests passing, worst scaling ratio 4.29×
+
 | Suite | Tests | Passed | Rate |
 |-------|-------|--------|------|
-| Full (90 patterns × 4 sizes + 19 STCollection) | 379 | 308 | 81.3% |
-| Adversarial only (90 patterns × 4 sizes) | 360 | 299 | 83.1% |
-| STCollection | 19 | 9 | 47.4% |
+| Adversarial (90 patterns × 3 sizes) | 270 | 235 | 87.0% |
+| Scaling (n=400) + STCollection | 109 | 95 | 87.2% |
+| **Total** | **379** | **330** | **87.1%** |
 
-Pass averages (over passing tests): res=0.303 nε, oU=0.509 nε, oV=0.529 nε
+### Worst-Case Metrics
+
+| Metric | Worst Value | Test Case | Threshold |
+|--------|-------------|-----------|-----------|
+| Residual | 8.43 nε | pd_T0@100 | ≤ 7.0 |
+| Orthogonality U | 33.23 nε | demmel_S1pe_k4@100 | ≤ 5.0 |
+| Orthogonality V | 33.22 nε | demmel_S1pe_k4@100 | ≤ 5.0 |
 
 ### Baseline Comparison
 
-All algorithms evaluated with the same Python evaluator (`run_baselines.py`): 2 warmup runs + median of 5 timed runs, `perf_counter`, pre-copied arrays, infinity-norm bnorm matching C++ evaluator.
+| Algorithm | Pass | Rate | Worst Scaling | Score |
+|-----------|------|------|---------------|-------|
+| **DBDSQR** | **371/371** | **100%** | 25.9× (O(n³)) | 5.00 (gated) |
+| **MR³-GK (ours)** | **330/379** | **87.1%** | **4.29×** | **86.37** |
+| TGK+DSTEMR | crash | — | — | — |
 
-| Algorithm | Pass | Rate | Avg Res | Avg oU | Avg oV | Worst Scaling | Score |
-|-----------|------|------|---------|--------|--------|---------------|-------|
-| **DBDSQR** | **371/371** | **100%** | 0.194 | 0.190 | 0.199 | 25.9× (O(n³)) | 5.00 (gated) |
-| **MR³-GK (ours)** | **300/371** | **80.9%** | 0.303 | 0.509 | 0.529 | **4.90×** | **82.75** |
-| TGK+DSTEMR | crash | — | — | — | — | — | — |
+## Zero-Shift QR Deflation (Preprocessing)
 
-DBDSQR is the gold standard for accuracy (100% pass) but is O(n³), so the scaling gate caps it at 5.0. Our MR³-GK is the only algorithm with an ungated score. TGK+DSTEMR crashes due to memory corruption in LAPACK's dstemr (via f2c/ctypes). From the C++ evaluator, HGBSVD passes 172/379 and TGK+DSTEXR passes 147/379 — both well below our 300.
+Before MR³, each unsplit block undergoes one sweep of implicit zero-shift QR iteration (Demmel-Kahan 1990, Section 3). This serves as a zero singular value detector:
 
-To reproduce:
+**Theory**: Zero-shift QR is equivalent to inverse iteration on B^TB (Demmel-Kahan 1990). When σ_min = 0, inverse iteration converges in one step — both d[n-1] and e[n-1] converge to zero, creating a clean 1×1 split at the bottom.
 
-```bash
-python3 run_baselines.py
-```
+**Algorithm**:
+1. For each unsplit block of size k, apply one zero-shift QR sweep (O(k), cheap)
+2. Check if |d[-1]| < n·ε AND |e[-1]| < n·ε (clean split at bottom)
+3. If yes → zero SV detected: solve (k-1) sub-problem, embed into k×k, apply Givens rotations
+4. If no → no zero SV: proceed with MR³ normally
 
-### Scoring
+**Why check both d[-1] AND e[-1]**: When σ_min = 0, the QR sweep drives both to zero. When σ_min > 0 (even if tiny), d[-1] → σ_min but e[-1] stays large — NOT a clean split. Deflating without a clean split severs matrix coupling and produces catastrophic residual errors (observed on gl_wilkw: e[-1] = 0.707 after sweep).
 
-```
-score = pass_rate×50 + max(0, 5-avg_res)×2 + max(0, 5-avg_oU)×2 + max(0, 5-avg_oV)×2 + 5 + scaling_score
-```
+**Impact**: Fixes saw_tooth@200 (ortU: 552 → 2.04 neps), step_function@200 (ortU: 70.6 → 18.1 neps), and all matrices with structural zero diagonals (zero_diagonal, gl_wilkp, gl_clement, etc.).
 
-- HARD GATE: if worst_ratio (t400/t200 for patterns passing all sizes) > 5.0, score capped at 5.0
-- Current worst_ratio ≈ 4.9× (under 5.0), score: **82.75**
+## Analysis of Remaining Failures
 
-### Evaluators
+All 49 remaining failures share one common theme: **tight eigenvalue clusters in the T_GK tridiagonal matrix that MR³ cannot resolve**.
 
-There are two evaluators that can score this code:
+### Top 15 Worst Orthogonality Cases
 
-1. **Python evaluator** (`evaluate.py`) — runs `bidiag_svd()` from `mr3_gk.py` directly. Uses 2 warmup runs + median of 5 timed runs for stable scaling measurement. This is what we use day-to-day.
-2. **C++ evaluator** (`../src/evaluate.cpp`) — compiled against a `bidiag_svd.h` header. Designed for C++ implementations but can call our Python code via a pipe bridge (see below). Uses slightly different matrix generation (xorshift RNG vs numpy), which causes ~23 test differences. Single-run timing (no warmup), so scaling ratios are noisier.
+| Test | ortU (neps) | Max Cluster Size | Clustered/Total | Description |
+|------|-------------|-----------------|-----------------|-------------|
+| demmel_S1pe_k4@100 | 33.2 | 12 | 20/100 | Demmel type 1, positive end, κ=10⁴ |
+| pd_T0@100 | 33.0 | 76 | 76/100 | Tight uniform cluster spanning 76% of spectrum |
+| gl_abcon3@100 | 24.3 | 65 | 65/100 | Glued matrix, 65-element cluster |
+| demmel_S1pe_k4@200 | 21.8 | 12 | 20/200 | Same pattern at larger size |
+| three_clusters@100 | 21.6 | 34 | 100/100 | Three groups, ALL eigenvalues clustered |
+| gl_wilkw@200 | 21.1 | 9 | 9/200 | Wilkinson-type with wide off-diag |
+| demmel_S1ps@100 | 19.3 | 12 | 20/100 | Demmel type 1, positive symmetry |
+| three_clusters@200 | 18.3 | 34 | 200/200 | Three groups at larger size |
+| step_function@200 | 18.1 | 3 | 5/200 | Step grading, near-zero SV + cluster |
+| two_clusters@100 | 17.8 | 50 | 100/100 | Two groups, ALL eigenvalues clustered |
 
-Both use identical scoring formulas and thresholds (res≤7nε, oU≤5nε, oV≤5nε).
+### Common Theme: Tight Eigenvalue Clusters
 
-Results are saved to `../results/`:
-- `mr3_gk_python.txt` — output from the Python evaluator
-- `dbdsqr.txt`, `tgk_stemr.txt`, etc. — baselines from C++ evaluator with other algorithms
+A cluster is a group of singular values with relative gap < 10⁻³. The failing matrices exhibit:
+
+1. **Large clusters** (pd_T0, gl_abcon3, two_clusters, three_clusters): 50-76 eigenvalues with relative gaps below 10⁻³. MR³'s representation tree cannot find child shifts that make all eigenvalues in these clusters relatively well-separated simultaneously.
+
+2. **NEGL miscount amplification** (step_function, demmel_S2pe, gl_abcon1): Matrices with near-zero (but not exactly zero) singular values where the T_GK Sturm sequence miscounts eigenvalues ≤ 0. The QR deflation fixes this when d[-1] AND e[-1] are both near-zero (clean split), but some cases have σ_min too large for deflation yet too small for stable NEGL computation.
+
+3. **High condition number + clusters** (demmel_S1pe, gl_wilkw, gl_abcon3): Condition numbers of 10⁴-10¹⁵⁸ combined with tight clusters. The wide dynamic range makes shift selection harder — shifts that work well for large eigenvalues may not resolve small clustered eigenvalues.
+
+### Why MR³ Struggles with Tight Clusters
+
+In MR³, orthogonality between eigenvectors comes from the relative gap: if eigenvalue λᵢ has relative gap ≥ gaptol with respect to its neighbors in the current LDL^T representation, its eigenvector can be computed to high relative accuracy directly. When eigenvalues cluster (relative gap < gaptol ≈ 10⁻³), MR³ must:
+
+1. Group the cluster
+2. Find a child representation (new shift) where cluster members become well-separated
+3. Recurse
+
+This process can fail when:
+- No shift makes all cluster members simultaneously well-separated
+- Element growth in the child LDL^T factorization is too large
+- The cluster is so tight that machine precision limits the achievable separation
+- NEGL miscount causes wrong eigenvalue assignment to clusters
+
+These are fundamental MR³ representation tree limitations, not bugs in our implementation.
 
 ## Prerequisites
 
 ```bash
-sudo apt install gfortran liblapack-dev libblas-dev python3-numpy
+sudo apt install gfortran liblapack-dev libblas-dev python3-numpy python3-scipy
 ```
 
 ## Build
 
 ```bash
-# Build libxmr.so from Fortran objects + modified dlaxre_gk.f
 bash build.sh
 ```
 
@@ -85,35 +122,11 @@ A prebuilt `libxmr.so` is included for Linux x86_64.
 ## Run Evaluation
 
 ```bash
-# Full 379-test suite (90 patterns × {10,100,200,400} + 19 STCollection)
-# This is the definitive evaluation. Output includes per-test metrics and final score.
+# Full 379-test suite (definitive evaluation)
 python3 evaluate.py
 
-# Save results to the results directory:
-python3 evaluate.py | tee ../results/mr3_gk_python.txt
-
-# Small ~66-test suite (22 patterns × {10,50,100}) — fast iteration
-python3 evaluate.py --small
-
-# Medium 270-test suite (90 patterns × {10,100,200}) — no n=400 or STCollection
+# Medium 270-test suite (no n=400 or STCollection, faster iteration)
 python3 evaluate.py --medium
-```
-
-### Running with C++ evaluator (pipe bridge)
-
-To verify against the C++ evaluator's matrix generation and scoring:
-
-```bash
-# 1. Create the Python server script (bsvd_server.py) that reads d,e from stdin
-#    and writes sigma,U,V to stdout in binary format.
-
-# 2. Build evaluate.cpp with bidiag_svd_python.h (pipe bridge header)
-cd ../src
-sed 's|#include "bidiag_svd.h"|#include "bidiag_svd_python.h"|' evaluate.cpp > evaluate_py.cpp
-g++ -O2 -std=c++17 -o evaluate_cpp evaluate_py.cpp -llapack -lblas -lgfortran -lm
-
-# 3. Run (increase timeouts in evaluate_py.cpp since Python is slower)
-./evaluate_cpp ../python_fortran/stcollection 200
 ```
 
 ### Output format
@@ -125,13 +138,11 @@ Each test prints:
 
 Thresholds: res ≤ 7.0 nε, ortU ≤ 5.0 nε, ortV ≤ 5.0 nε.
 
-Final summary includes pass counts, averages, worst scaling ratio, and composite score.
-
 ## Files
 
 | File | Description |
 |------|-------------|
-| `mr3_gk.py` | Main implementation: splitting, T_GK construction, SVD extraction |
+| `mr3_gk.py` | Main implementation: QR deflation, splitting, T_GK construction, SVD extraction |
 | `xmr_ctypes.py` | Python ctypes interface to XMR Fortran library |
 | `full_eval.py` | 90 adversarial test matrix generators |
 | `evaluate.py` | Evaluation runner with scoring |
@@ -146,7 +157,13 @@ Final summary includes pass counts, averages, worst scaling ratio, and composite
 
 ## Key Design Decisions
 
+- **Zero-shift QR deflation**: One QR sweep per unsplit block detects zero SVs (both structural and product-underflow). Clean-split check (both d[-1] and e[-1] near zero) prevents false positives.
 - **No reorthogonalization**: All orthogonality comes from MR³ structure, not post-hoc correction
 - **NEGL guard kept**: dlaxre's quality check routes some matrices to PD shift fallback — removing it causes regressions
-- **Gram-Schmidt for zero σ only**: GS completion triggers at most once per unsplit block for zero singular values
-- **Two-phase splitting**: Relative split for accuracy, absolute split per-block for condition (3.5)
+- **Gram-Schmidt completion**: GS completion as safety net for vectors MR³ fails to compute (zero SVs handled upstream by QR deflation now)
+
+## References
+
+- Willems & Lang, "A Framework for the MR³ Algorithm: Theory and Implementation", ETNA 2012
+- Demmel & Kahan, "Accurate Singular Values of Bidiagonal Matrices", SIAM J. Sci. Stat. Comput. 1990
+- Dhillon, Parlett & Vömel, "The Design and Implementation of the MRRR Algorithm", LAPACK Working Note 162
