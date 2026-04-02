@@ -524,3 +524,48 @@ def xmr_eigenvectors(root_repr, e_off, all_evals, wil, wiu,
 
     evecs = z_out.reshape((n, nwant), order='F')
     return w_out, evecs, info
+
+
+def xmr_eigenvectors_v(root_repr, e_off, all_evals, wil, wiu,
+                        spdiam=None, gaptol=1e-3):
+    """Like xmr_eigenvectors but also returns the dlaxre shift tau_re."""
+    n = root_repr.n
+    nwant = wiu - wil + 1
+    if spdiam is None:
+        spdiam = all_evals[-1] - all_evals[0]
+
+    # Register the C function if not already done
+    if not hasattr(_lib, '_xmr_eigvec_v_registered'):
+        _lib.xmr_eigenvectors_v.restype = ctypes.c_int
+        _lib.xmr_eigenvectors_v.argtypes = [
+            ctypes.c_int,                          # n
+            ctypes.POINTER(ctypes.c_double),       # e_1based
+            ctypes.POINTER(ctypes.c_double),       # rootr
+            ctypes.POINTER(ctypes.c_int),          # rooti
+            ctypes.POINTER(ctypes.c_double),       # evals_in
+            ctypes.c_int,                          # wil
+            ctypes.c_int,                          # wiu
+            ctypes.c_double,                       # spdiam
+            ctypes.c_double,                       # gaptol
+            ctypes.POINTER(ctypes.c_double),       # w_out
+            ctypes.POINTER(ctypes.c_double),       # z_out
+            ctypes.POINTER(ctypes.c_double),       # tau_re_out
+        ]
+        _lib._xmr_eigvec_v_registered = True
+
+    e_1b = np.zeros(n, dtype=np.float64)
+    for i in range(n - 1):
+        e_1b[i + 1] = e_off[i]
+
+    evals_arr = np.array(all_evals, dtype=np.float64)
+    w_out = np.zeros(nwant, dtype=np.float64)
+    z_out = np.zeros(n * nwant, dtype=np.float64)
+    tau_re_out = np.zeros(1, dtype=np.float64)
+
+    info = _lib.xmr_eigenvectors_v(
+        n, _ptr(e_1b), _ptr(root_repr.repr), _iptr(root_repr.repi),
+        _ptr(evals_arr), wil, wiu, spdiam, gaptol,
+        _ptr(w_out), _ptr(z_out), _ptr(tau_re_out))
+
+    evecs = z_out.reshape((n, nwant), order='F')
+    return w_out, evecs, info, tau_re_out[0]

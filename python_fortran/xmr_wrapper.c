@@ -5,6 +5,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /* Fortran COMMON block /XMRSTATS/ - must match the Fortran declaration exactly */
 struct {
@@ -359,4 +360,112 @@ int xmr_eigenvectors(
     free(w); free(z);
 
     return info;
+}
+
+/* Expose last dlaxre shift for debugging */
+static double g_last_tau_re = 0.0;
+static int g_last_info_re = 0;
+
+int xmr_eigenvectors_v(
+    int n, double *e_1based, double *rootr, int *rooti,
+    double *evals_in, int wil, int wiu,
+    double spdiam, double gaptol,
+    double *w_out, double *z_out,
+    double *tau_re_out)
+{
+    int nwant = wiu - wil + 1;
+    double *d_arr = (double *)calloc(n, sizeof(double));
+    double *e_arr = (double *)calloc(n, sizeof(double));
+    for (int i = 0; i < n; i++) d_arr[i] = 0.0;
+    for (int i = 0; i < n - 1; i++) e_arr[i] = e_1based[i + 1];
+    e_arr[n - 1] = 0.0;
+
+    double gl = evals_in[0] - 0.01 * (evals_in[0] > 0 ? evals_in[0] : -evals_in[0]) - 1e-20;
+    double gu = evals_in[n-1] + 0.01 * (evals_in[n-1] > 0 ? evals_in[n-1] : -evals_in[n-1]) + 1e-20;
+    double abserr = 0.0;
+
+    double *repr = (double *)calloc(4 * n + 3, sizeof(double));
+    int *repi = (int *)calloc(6 + n + n / 2, sizeof(int));
+    double tau_re = 0.0;
+
+    int *ewl_ae = (int *)calloc(2 * n, sizeof(int));
+    double *ewl_lu = (double *)calloc(2 * n, sizeof(double));
+    double *rwork_re = (double *)calloc(6 * n + 10, sizeof(double));
+    char emode = 'o';
+    int info_re = 0;
+
+    dlaxre_(&n, d_arr, e_arr, &gl, &gu, &abserr, &gaptol,
+            repr, repi, &tau_re,
+            ewl_ae, ewl_lu, &emode,
+            rwork_re, &info_re, 1);
+
+    free(d_arr); free(rwork_re);
+
+    g_last_tau_re = tau_re;
+    g_last_info_re = info_re;
+    *tau_re_out = tau_re;
+
+    if (info_re != 0) {
+        free(e_arr); free(repr); free(repi);
+        free(ewl_ae); free(ewl_lu);
+        return -10 - info_re;
+    }
+
+    int reqr = -1, reqi = -1;
+    wsreq_xrv_(&n, &reqr, &reqi);
+
+    double *rwork = (double *)calloc(reqr + 1, sizeof(double));
+    int *iwork = (int *)calloc(reqi + 1, sizeof(int));
+
+    double *w = (double *)calloc(nwant, sizeof(double));
+    double *z = (double *)calloc((size_t)n * nwant, sizeof(double));
+    int *isuppz = (int *)calloc(2 * nwant, sizeof(int));
+    int ldz = n;
+    int info = 0;
+
+    dlaxrv_(&n, e_arr, repr, repi,
+            ewl_ae, ewl_lu,
+            &wil, &wiu, &spdiam, &gaptol,
+            w, z, &ldz, isuppz,
+            rwork, &reqr, iwork, &reqi, &info);
+
+    for (int j = 0; j < nwant; j++) {
+        w_out[j] = w[j] + tau_re;
+        for (int i = 0; i < n; i++) {
+            z_out[i + n * j] = z[i + n * j];
+        }
+    }
+
+    free(e_arr); free(repr); free(repi);
+    free(ewl_ae); free(ewl_lu);
+    free(rwork); free(iwork); free(isuppz);
+    free(w); free(z);
+
+    return info;
+}
+
+/* Debug print helpers called from Fortran (avoids Fortran I/O runtime) */
+
+void dbg_node_(int *depth, int *il, int *iu, double *taubar) {
+    fprintf(stderr, "  [dlaxrv] depth=%d IL=%d IU=%d taubar=%.13e\n",
+            *depth, *il, *iu, *taubar);
+    fflush(stderr);
+}
+
+void dbg_singleton_(int *depth, int *i, double *lambda, double *taubar, double *w) {
+    fprintf(stderr, "  [dlaxrv] SINGLETON depth=%d i=%d lambda=%.13e taubar=%.13e w=%.13e\n",
+            *depth, *i, *lambda, *taubar, *w);
+    fflush(stderr);
+}
+
+void dbg_cluster_(int *depth, int *i, int *j, double *tau, double *new_taubar) {
+    fprintf(stderr, "  [dlaxrv] CLUSTER SHIFT depth=%d i=%d j=%d tau=%.13e new_taubar=%.13e\n",
+            *depth, *i, *j, *tau, *new_taubar);
+    fflush(stderr);
+}
+
+void dbg_cluster_fail_(int *depth, int *i, int *j, int *xrfsta) {
+    fprintf(stderr, "  [dlaxrv] CLUSTER FAIL depth=%d i=%d j=%d xrfsta=%d\n",
+            *depth, *i, *j, *xrfsta);
+    fflush(stderr);
 }

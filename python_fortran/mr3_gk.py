@@ -21,6 +21,12 @@ MAX_DEPTH = 50
 ELG_THRESH = 8
 MAXRELCOND = 10
 
+# Verbose mode
+_verbose = False
+def set_verbose(v=True):
+    global _verbose
+    _verbose = v
+
 # ============================================================
 # Metrics
 # ============================================================
@@ -370,7 +376,7 @@ def _solve_tgk_block(bc, bte, m, bk_hint=None):
     and Z has the corresponding eigenvectors.
     bk_hint: if given, number of non-negative eigenvalues expected = ceil(m/2).
     """
-    from xmr_ctypes import xmr_eigenvectors, build_repr_from_tridiag
+    from xmr_ctypes import xmr_eigenvectors, xmr_eigenvectors_v, build_repr_from_tridiag
     n_nonneg = (m + 1) // 2  # ceil(m/2): number of non-negative eigenvalues
     if bk_hint is not None:
         n_nonneg = bk_hint
@@ -380,13 +386,33 @@ def _solve_tgk_block(bc, bte, m, bk_hint=None):
     all_evals = np.sort(bisect_evals(bc, bte, m, 1, m))
     spdiam = all_evals[-1] - all_evals[0] if len(all_evals) > 0 else 0.0
 
+    if _verbose:
+        print(f'  [_solve_tgk_block] m={m}, n_nonneg={n_nonneg}, wil={wil}, wiu={wiu}')
+        print(f'  [_solve_tgk_block] spdiam={spdiam:.10e}')
+        print(f'  [_solve_tgk_block] evals range=[{all_evals[0]:.10e}, {all_evals[-1]:.10e}]')
+
     root = build_repr_from_tridiag(bc, bte, m, k=m)
-    w, Z, info = xmr_eigenvectors(root, bte, all_evals,
-                                    wil=wil, wiu=wiu,
-                                    spdiam=spdiam, gaptol=GAPTOL)
+
+    if _verbose:
+        w, Z, info, tau_re = xmr_eigenvectors_v(root, bte, all_evals,
+                                                  wil=wil, wiu=wiu,
+                                                  spdiam=spdiam, gaptol=GAPTOL)
+        print(f'  [_solve_tgk_block] dlaxre shift tau_re={tau_re:.10e}')
+        print(f'  [_solve_tgk_block] XMR info={info}')
+        if info == 0:
+            print(f'  [_solve_tgk_block] XMR output: {len(w)} evals, range=[{w[0]:.10e}, {w[-1]:.10e}]')
+    else:
+        w, Z, info = xmr_eigenvectors(root, bte, all_evals,
+                                        wil=wil, wiu=wiu,
+                                        spdiam=spdiam, gaptol=GAPTOL)
+
     if info != 0:
+        if _verbose:
+            print(f'  [_solve_tgk_block] XMR failed (info={info}), falling back to Python MR3')
         pos_evals = all_evals[wil-1:]
         w, Z = mr3_block(bc, bte, m, pos_evals, spdiam)
+        if _verbose:
+            print(f'  [_solve_tgk_block] Python MR3 eigenvalues: {np.array2string(w[:n_nonneg], precision=10, separator=", ")}')
 
     return w[:n_nonneg], Z[:m, :n_nonneg]
 
@@ -404,13 +430,27 @@ def mr3_tgk_multiblock(d_bidiag, e_bidiag, n, bbeg, bend):
     if bk > 1:
         bte[1::2] = be[:bk-1]
 
-    # Check for zeros in bte that split T_GK into independent sub-blocks
-    zero_positions = np.where(np.abs(bte) < SAFMIN)[0]
+    if _verbose:
+        print(f'\n[mr3_tgk_multiblock] block [{bbeg},{bend}] bk={bk} m2k={m2k}')
+        if bk <= 20:
+            print(f'  input bidiag: d[{bbeg}:{bend+1}] = {np.array2string(d_bidiag[bbeg:bend+1], precision=10, separator=", ")}')
+            print(f'  input bidiag: e[{bbeg}:{bend}]   = {np.array2string(e_bidiag[bbeg:bend], precision=10, separator=", ")}')
+        else:
+            print(f'  input bidiag: d range=[{np.min(np.abs(d_bidiag[bbeg:bend+1])):.3e}, {np.max(np.abs(d_bidiag[bbeg:bend+1])):.3e}]')
+            print(f'  input bidiag: e range=[{np.min(np.abs(e_bidiag[bbeg:bend])):.3e}, {np.max(np.abs(e_bidiag[bbeg:bend])):.3e}]')
+        print(f'  T_GK off-diagonal bte ({len(bte)} entries), range [{np.min(bte):.3e}, {np.max(bte):.3e}]')
 
-    if len(zero_positions) == 0:
-        # No splits — standard path (most common case)
-        w, Z = _solve_tgk_block(bc, bte, m2k, bk_hint=bk)
-        return w[:bk], Z[:m2k, :bk]
+    w, Z = _solve_tgk_block(bc, bte, m2k, bk_hint=bk)
+
+    if _verbose:
+        print(f'  [mr3_tgk_multiblock] result: {bk} eigenvalues, range [{w[0]:.10e}, {w[min(bk-1,len(w)-1)]:.10e}]')
+        # Check GK structure: even/odd norms should be equal
+        even_norms = np.array([np.linalg.norm(Z[0::2, j]) for j in range(bk)])
+        odd_norms = np.array([np.linalg.norm(Z[1::2, j]) for j in range(bk)])
+        max_norm_diff = np.max(np.abs(even_norms - odd_norms))
+        print(f'    GK structure: max|even_norm - odd_norm| = {max_norm_diff:.3e}')
+
+    return w[:bk], Z[:m2k, :bk]
 
     # =========================================================
     # T_GK has zeros in off-diagonal — split into sub-blocks
@@ -534,11 +574,39 @@ def bidiag_svd(d, e):
                 np.array([[1.0 if d[0]>=0 else -1.0]]),
                 np.array([[1.0]]), 0)
 
+    if _verbose:
+        print(f'\n{"="*60}')
+        print(f'[bidiag_svd] n={n}')
+        if n <= 20:
+            print(f'  d = {np.array2string(d, precision=10, separator=", ")}')
+            print(f'  e = {np.array2string(e, precision=10, separator=", ")}')
+        else:
+            print(f'  d range=[{np.min(d):.3e}, {np.max(d):.3e}], e range=[{np.min(e):.3e}, {np.max(e):.3e}]')
+
+    # Pre-scaling: scale so max entry ~ 1. Doesn't affect U,V since
+    # B = U·Σ·V^T  =>  (αB) = U·(αΣ)·V^T
+    bnorm_scale = max(np.max(np.abs(d)), np.max(np.abs(e)) if n > 1 else 0.0)
+    if bnorm_scale > 0.0:
+        scale_factor = 1.0 / bnorm_scale
+        d *= scale_factor
+        e *= scale_factor
+    else:
+        scale_factor = 1.0
+
+    if _verbose:
+        print(f'  bnorm_scale={bnorm_scale:.10e}, scale_factor={scale_factor:.10e}')
+        if scale_factor != 1.0:
+            print(f'  d (scaled) = {np.array2string(d, precision=10, separator=", ")}')
+            print(f'  e (scaled) = {np.array2string(e, precision=10, separator=", ")}')
+
     # Split bidiagonal and zero split entries
     blocks = split_bidiag(d, e, n)
     for bbeg, bend in blocks:
         if bend < n-1:
             e[bend] = 0.0
+
+    if _verbose:
+        print(f'  bidiag splits: {len(blocks)} blocks: {blocks}')
 
     # D1, D2 sign matrices (O(n) scalar loop — sequential dependency)
     d1 = np.ones(n); d2 = np.ones(n)
@@ -548,6 +616,10 @@ def bidiag_svd(d, e):
         d2[i+1] = s_e / d1[i] if abs(d1[i]) > 0 else s_e
         s_d = np.sign(d[i+1]) if d[i+1] != 0 else 1.0
         d1[i+1] = s_d / d2[i+1] if abs(d2[i+1]) > 0 else s_d
+
+    if _verbose:
+        print(f'  D1 = {d1}')
+        print(f'  D2 = {d2}')
 
     sigma = np.zeros(n)
     U = np.zeros((n, n))
@@ -567,6 +639,10 @@ def bidiag_svd(d, e):
             multi_blocks.append((bbeg, bend, bk, col))
             col += bk
 
+    if _verbose:
+        print(f'  singletons: {len(sing_rows)}')
+        print(f'  multi-blocks: {len(multi_blocks)} -> {[(b,e,k) for b,e,k,_ in multi_blocks][:10]}{"..." if len(multi_blocks)>10 else ""}')
+
     # --- Singletons: O(n) total, no intermediate matrix ---
     if sing_rows:
         sr = np.array(sing_rows)
@@ -574,8 +650,6 @@ def bidiag_svd(d, e):
         sigma[sc] = np.abs(d[sr])
         V[sr, sc] = d2[sr]   # ±1, already unit vectors
         U[sr, sc] = d1[sr]   # ±1, already unit vectors
-        # Sign is automatically correct: d1[i]*d2[i] = sign(d[i])
-        # so d[i]*d2[i] = |d[i]|*d1[i], meaning B*v = σ*u holds exactly.
 
     # --- Multi-element blocks: XMR eigensolver ---
     multi_col_list = []
@@ -591,13 +665,24 @@ def bidiag_svd(d, e):
         sigma[c_slice] = np.abs(w[:nc])
         multi_col_list.extend(range(col_offset, col_offset + nc))
 
+        if _verbose:
+            print(f'  [extraction] block [{bbeg},{bend}] -> cols [{col_offset},{col_offset+nc}], sigma range [{np.min(sigma[c_slice]):.3e}, {np.max(sigma[c_slice]):.3e}]')
+
     # --- Post-processing: only on multi-block columns ---
     if multi_col_list:
         mc = np.array(multi_col_list)
 
+        if _verbose:
+            print(f'\n[post-processing] {len(mc)} multi-block columns')
+
         # Normalize
         nv_mc = np.linalg.norm(V[:, mc], axis=0)
         nu_mc = np.linalg.norm(U[:, mc], axis=0)
+
+        if _verbose:
+            print(f'  [normalize] V norms: {np.array2string(nv_mc, precision=6, separator=", ")}')
+            print(f'  [normalize] U norms: {np.array2string(nu_mc, precision=6, separator=", ")}')
+
         max_norms = np.maximum(nv_mc, nu_mc)
         norm_thresh = max_norms * 1e-4
         v_good = (nv_mc > norm_thresh) & (nv_mc > SAFMIN)
@@ -606,6 +691,12 @@ def bidiag_svd(d, e):
         V[:, mc] *= scale_v[None, :]
         scale_u = np.where(u_good, 1.0 / np.maximum(nu_mc, SAFMIN), 0.0)
         U[:, mc] *= scale_u[None, :]
+
+        if _verbose:
+            bad_v = mc[~v_good]
+            bad_u = mc[~u_good]
+            if len(bad_v): print(f'  [normalize] V bad (zeroed): cols {bad_v.tolist()}')
+            if len(bad_u): print(f'  [normalize] U bad (zeroed): cols {bad_u.tolist()}')
 
         # Bv recovery
         sigma_max = np.max(sigma)
@@ -618,6 +709,7 @@ def bidiag_svd(d, e):
 
         if np.any(recover_u):
             idx = mc[recover_u]
+            if _verbose: print(f'  [Bv recovery] recovering U for cols {idx.tolist()}')
             BV = _bidiag_matvec_batch(d, e, V[:, idx])
             U_new = BV / sigma[idx][None, :]
             norms = np.maximum(np.linalg.norm(U_new, axis=0), SAFMIN)
@@ -625,6 +717,7 @@ def bidiag_svd(d, e):
 
         if np.any(recover_v):
             idx = mc[recover_v]
+            if _verbose: print(f'  [Bv recovery] recovering V for cols {idx.tolist()}')
             BTU = _bidiagT_matvec_batch(d, e, U[:, idx])
             V_new = BTU / sigma[idx][None, :]
             norms = np.maximum(np.linalg.norm(V_new, axis=0), SAFMIN)
@@ -637,20 +730,24 @@ def bidiag_svd(d, e):
             sig_idx = sigma[idx]
             res_v = np.linalg.norm(BV - sig_idx[None, :] * U[:, idx], axis=0)
             res_u = np.linalg.norm(BTU - sig_idx[None, :] * V[:, idx], axis=0)
-            # Use bnorm-based threshold, not sigma-based.
-            # For tiny sigma, sigma-based threshold is too small and triggers
-            # recovery that amplifies roundoff via division by tiny sigma.
             bnorm_val = max(np.max(np.abs(d)), np.max(np.abs(e[:n-1])) if n > 1 else 0.0)
             thresh_arr = 10 * n * EPS * np.maximum(sig_idx, bnorm_val)
             fix_v = (res_v > thresh_arr) & (res_v > res_u)
             fix_u = (res_u > thresh_arr) & (res_u > res_v) & (~fix_v)
+            if _verbose:
+                n_fix_v = np.sum(fix_v)
+                n_fix_u = np.sum(fix_u)
+                if n_fix_v or n_fix_u:
+                    print(f'  [Bv check] {len(idx)} cols checked, {n_fix_v} fix_v, {n_fix_u} fix_u, max_res_v={np.max(res_v):.3e}, max_res_u={np.max(res_u):.3e}')
             if np.any(fix_v):
                 fv_idx = idx[fix_v]
+                if _verbose: print(f'  [Bv recovery] fixing V for cols {fv_idx.tolist()}')
                 V_new = BTU[:, fix_v] / sigma[fv_idx][None, :]
                 norms = np.maximum(np.linalg.norm(V_new, axis=0), SAFMIN)
                 V[:, fv_idx] = V_new / norms[None, :]
             if np.any(fix_u):
                 fu_idx = idx[fix_u]
+                if _verbose: print(f'  [Bv recovery] fixing U for cols {fu_idx.tolist()}')
                 U_new = BV[:, fix_u] / sigma[fu_idx][None, :]
                 norms = np.maximum(np.linalg.norm(U_new, axis=0), SAFMIN)
                 U[:, fu_idx] = U_new / norms[None, :]
@@ -662,47 +759,57 @@ def bidiag_svd(d, e):
             BV = _bidiag_matvec_batch(d, e, V[:, idx])
             dots = np.sum(BV * U[:, idx], axis=0)
             sign_flip = np.where(dots < 0, -1.0, 1.0)
+            if _verbose:
+                flipped = idx[sign_flip < 0]
+                if len(flipped): print(f'  [sign fix] flipped U sign for cols {flipped.tolist()}')
             U[:, idx] *= sign_flip[None, :]
 
-        # GS completion — only multi-block columns with zero sigma
-        # Vectorized: project using BLAS matrix ops instead of Python loops
+        # GS completion — at most 1 zero singular value per bidiag split,
+        # so at most 1 zero-V col and 1 zero-U col. The missing vector
+        # is the unique orthogonal complement of the other n-1 columns.
         all_v_norms = np.linalg.norm(V, axis=0)
         all_u_norms = np.linalg.norm(U, axis=0)
         zero_v_mc = mc[all_v_norms[mc] < 0.5]
         zero_u_mc = mc[all_u_norms[mc] < 0.5]
         if len(zero_v_mc) > 0 or len(zero_u_mc) > 0:
-            print(f'  GS_COMPLETION: {len(zero_v_mc)} zero-V cols, {len(zero_u_mc)} zero-U cols')
+            if _verbose:
+                print(f'  [GS completion] {len(zero_v_mc)} zero-V cols {zero_v_mc.tolist()}, {len(zero_u_mc)} zero-U cols {zero_u_mc.tolist()}')
         for j in zero_v_mc:
             good_mask = np.arange(n) != j
             good_mask &= all_v_norms > 0.5
             V_good = V[:, good_mask]
-            for attempt in range(n+5):
-                if attempt < n:
-                    v_cand = np.zeros(n); v_cand[attempt] = 1.0
-                else:
-                    v_cand = np.random.randn(n)
-                v_cand -= V_good @ (V_good.T @ v_cand)
-                nrm = np.linalg.norm(v_cand)
-                if nrm > 0.1:
-                    V[:,j] = v_cand / nrm
-                    all_v_norms[j] = 1.0  # update so next iteration includes this column
-                    print(f'    filled V[:,{j}] at attempt {attempt}')
-                    break
+            # Two-pass MGS with random start
+            v_cand = np.random.randn(n)
+            v_cand -= V_good @ (V_good.T @ v_cand)  # pass 1
+            v_cand -= V_good @ (V_good.T @ v_cand)  # pass 2
+            nrm = np.linalg.norm(v_cand)
+            if nrm > 1e-14:
+                V[:,j] = v_cand / nrm
+                if _verbose: print(f'    filled V[:,{j}] via orthogonal complement')
         for j in zero_u_mc:
             good_mask = np.arange(n) != j
             good_mask &= all_u_norms > 0.5
             U_good = U[:, good_mask]
-            for attempt in range(n+5):
-                if attempt < n:
-                    u_cand = np.zeros(n); u_cand[attempt] = 1.0
-                else:
-                    u_cand = np.random.randn(n)
-                u_cand -= U_good @ (U_good.T @ u_cand)
-                nrm = np.linalg.norm(u_cand)
-                if nrm > 0.1:
-                    U[:,j] = u_cand / nrm
-                    all_u_norms[j] = 1.0  # update so next iteration includes this column
-                    print(f'    filled U[:,{j}] at attempt {attempt}')
-                    break
+            # Two-pass MGS with random start
+            u_cand = np.random.randn(n)
+            u_cand -= U_good @ (U_good.T @ u_cand)  # pass 1
+            u_cand -= U_good @ (U_good.T @ u_cand)  # pass 2
+            nrm = np.linalg.norm(u_cand)
+            if nrm > 1e-14:
+                U[:,j] = u_cand / nrm
+                if _verbose: print(f'    filled U[:,{j}] via orthogonal complement')
+
+    # Scale sigma back if we pre-scaled
+    if scale_factor != 1.0:
+        sigma /= scale_factor
+
+    if _verbose:
+        print(f'\n[bidiag_svd] FINAL OUTPUT:')
+        print(f'  sigma range=[{np.min(sigma):.10e}, {np.max(sigma):.10e}]')
+        ort_U = np.max(np.abs(U.T @ U - np.eye(n)))
+        ort_V = np.max(np.abs(V.T @ V - np.eye(n)))
+        print(f'  max|U^TU-I|={ort_U:.3e} ({ort_U/(n*EPS):.1f} neps)')
+        print(f'  max|V^TV-I|={ort_V:.3e} ({ort_V/(n*EPS):.1f} neps)')
+        print(f'{"="*60}\n')
 
     return sigma, U, V, 0
