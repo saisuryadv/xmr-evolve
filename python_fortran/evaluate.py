@@ -6,6 +6,7 @@ Usage:
   python3 evaluate.py              # Full 379-test suite (90 patterns × 4 sizes + 19 STCollection)
   python3 evaluate.py --small      # Small 64-test suite (22 patterns × 3 sizes, no STCollection)
   python3 evaluate.py --medium     # 270-test suite (90 patterns × 3 sizes, no STCollection)
+  python3 evaluate.py --large      # Large suite: 90 patterns at n=800 only
 """
 import numpy as np
 import sys
@@ -34,21 +35,27 @@ def load_stcoll(path):
                 e[i] = float(parts[2])
     return os.path.basename(path).replace('.dat', ''), d, e
 
-def test_one(d, e, timeout_s=30):
+def test_one(d, e, timeout_s=30, quick=False):
     n = len(d)
-    # Warmup runs (JIT, cache effects)
-    bidiag_svd(d.copy(), e.copy())
-    bidiag_svd(d.copy(), e.copy())
-    # Pre-copy arrays for timed runs
-    copies = [(d.copy(), e.copy()) for _ in range(5)]
-    # 5 timed runs, take median
-    times = []
-    for dc, ec in copies:
+    if quick:
+        # Single run, no warmup (for large n)
         t0 = time.perf_counter()
-        sigma, U, V, info = bidiag_svd(dc, ec)
-        times.append(time.perf_counter() - t0)
-    times.sort()
-    dt = times[2]  # median
+        sigma, U, V, info = bidiag_svd(d.copy(), e.copy())
+        dt = time.perf_counter() - t0
+    else:
+        # Warmup runs (JIT, cache effects)
+        bidiag_svd(d.copy(), e.copy())
+        bidiag_svd(d.copy(), e.copy())
+        # Pre-copy arrays for timed runs
+        copies = [(d.copy(), e.copy()) for _ in range(5)]
+        # 5 timed runs, take median
+        times = []
+        for dc, ec in copies:
+            t0 = time.perf_counter()
+            sigma, U, V, info = bidiag_svd(dc, ec)
+            times.append(time.perf_counter() - t0)
+        times.sort()
+        dt = times[2]  # median
     if dt > timeout_s:
         return None, float('inf'), float('inf'), float('inf'), dt
     B = np.diag(d) + np.diag(e, 1)
@@ -86,7 +93,7 @@ def main():
     parser = argparse.ArgumentParser(description='Evaluate MR³-GK bidiagonal SVD')
     parser.add_argument('--small', action='store_true', help='Small 64-test suite (22 patterns × 3 sizes)')
     parser.add_argument('--medium', action='store_true', help='Medium 270-test suite (90 patterns × 3 sizes)')
-    parser.add_argument('--scale800', action='store_true', help='Full suite + n=800, scaling from 400→800')
+    parser.add_argument('--large', action='store_true', help='Large suite: 90 patterns at n=800 only')
     parser.add_argument('--timeout', type=int, default=30, help='Per-test timeout in seconds')
     args = parser.parse_args()
 
@@ -94,21 +101,25 @@ def main():
         patterns = SMALL_PATTERNS
         test_sizes = [10, 50, 100]
         run_stcoll = False
+        quick_mode = False
         suite_name = "Small (64 tests)"
     elif args.medium:
         patterns = get_patterns()
         test_sizes = [10, 100, 200]
         run_stcoll = False
+        quick_mode = False
         suite_name = "Medium (270 tests)"
-    elif args.scale800:
+    elif args.large:
         patterns = get_patterns()
-        test_sizes = [10, 100, 400, 800]
-        run_stcoll = True
-        suite_name = "Full + n=800 (scaling from 400→800)"
+        test_sizes = [800]
+        run_stcoll = False
+        quick_mode = True
+        suite_name = "Large (90 patterns × n=800)"
     else:
         patterns = get_patterns()
         test_sizes = [10, 100, 200, 400]
         run_stcoll = True
+        quick_mode = False
         suite_name = "Full (379 tests)"
 
     print(f"=== {suite_name} ===\n")
@@ -128,7 +139,7 @@ def main():
             n = len(d)
             sz_total += 1; total += 1
             try:
-                ok, res, ou, ov, dt = test_one(d, e, args.timeout)
+                ok, res, ou, ov, dt = test_one(d, e, args.timeout, quick=quick_mode)
                 if ok is None:
                     failed_list.append(f"{pat}@{sz} TIMEOUT({dt:.0f}s)")
                 elif ok:
