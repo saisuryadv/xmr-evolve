@@ -27,6 +27,42 @@ def set_verbose(v=True):
     global _verbose
     _verbose = v
 
+def zero_shift_qr_sweep(d, e):
+    """One downward sweep of implicit zero-shift QR on upper bidiagonal.
+    Modifies d, e in place. Returns (right_rots, left_rots).
+    Zero-shift QR = inverse iteration on B^TB (Demmel-Kahan 1990, Sec 3).
+    When sigma_min = 0, converges in one sweep."""
+    from scipy.linalg.lapack import dlartg
+    n = len(d)
+    if n <= 1:
+        return [], []
+    right_rots = []; left_rots = []
+    cs = 1.0; oldcs = 1.0; oldsn = 0.0
+    for i in range(n - 1):
+        d1 = d[i] * cs
+        cs, sn, r = dlartg(d1, e[i])
+        right_rots.append((cs, sn, i))
+        if i > 0:
+            e[i-1] = oldsn * r
+        d1 = oldcs * r
+        d2 = d[i+1] * sn
+        oldcs, oldsn, d[i] = dlartg(d1, d2)
+        left_rots.append((oldcs, oldsn, i))
+    h = d[n-1] * cs
+    d[n-1] = h * oldcs
+    e[n-2] = h * oldsn
+    return right_rots, left_rots
+
+def _apply_givens_to_rows(M, rots, row_offset=0):
+    """Apply G_0 @ G_1 @ ... @ G_{m-1} to M from the left (reversed order).
+    G_i = [cs, -sn; sn, cs] at rows (row_offset+i, row_offset+i+1)."""
+    for cs, sn, i in reversed(rots):
+        ri = row_offset + i
+        r0 = M[ri, :].copy()
+        r1 = M[ri+1, :].copy()
+        M[ri, :]   = cs * r0 - sn * r1
+        M[ri+1, :] = sn * r0 + cs * r1
+
 # ============================================================
 # Metrics
 # ============================================================
@@ -625,7 +661,11 @@ def bidiag_svd(d, e):
     V = np.zeros((n, n))
 
     # Classify blocks into singletons and multi-blocks
+    # For multi-blocks: apply one zero-shift QR sweep to detect zero SVs
+    # (Demmel-Kahan 1990: zero-shift QR = inverse iteration, converges in 1 step for σ=0)
     sing_rows = []; sing_cols = []; multi_blocks = []
+    qr_deflated_cols = []
+    zero_sv_thresh = SAFMIN  # only catch truly zero SVs, not just small ones
     col = 0
     for bbeg, bend in blocks:
         bk = bend - bbeg + 1
@@ -635,8 +675,34 @@ def bidiag_svd(d, e):
             sing_cols.append(col)
             col += 1
         else:
-            multi_blocks.append((bbeg, bend, bk, col))
-            col += bk
+            # Sweep-then-check: one QR sweep to detect zero SV
+            d_sw = d[bbeg:bend+1].copy()
+            e_sw = e[bbeg:bend].copy()
+            right_rots, left_rots = zero_shift_qr_sweep(d_sw, e_sw)
+            if abs(d_sw[-1]) < zero_sv_thresh:
+                # Zero SV detected — deflate
+                if _verbose:
+                    print(f'  [QR deflation] block [{bbeg},{bend}] bk={bk}: d[-1]={d_sw[-1]:.3e} < thresh={zero_sv_thresh:.3e}')
+                # Solve (bk-1) sub-problem (unscale for recursive call)
+                sigma_sub, U_sub, V_sub, _ = bidiag_svd(
+                    d_sw[:-1] / scale_factor, e_sw[:-1] / scale_factor)
+                # Embed into bk×bk: top-left = sub-solution, bottom-right = 1
+                U_blk = np.eye(bk); U_blk[:-1, :-1] = U_sub
+                V_blk = np.eye(bk); V_blk[:-1, :-1] = V_sub
+                # Apply QR rotations: B_orig = U_qr @ B_swept @ V_qr^T
+                _apply_givens_to_rows(V_blk, right_rots)
+                _apply_givens_to_rows(U_blk, left_rots)
+                # Store results (sigma in prescaled form for final /= scale_factor)
+                c_slice = slice(col, col + bk)
+                sigma[c_slice] = np.concatenate([sigma_sub * scale_factor, [abs(d_sw[-1])]])
+                U[bbeg:bend+1, c_slice] = U_blk
+                V[bbeg:bend+1, c_slice] = V_blk
+                qr_deflated_cols.extend(range(col, col + bk))
+                col += bk
+            else:
+                # No zero SV — use MR³ on original (d, e unchanged)
+                multi_blocks.append((bbeg, bend, bk, col))
+                col += bk
 
     if _verbose:
         print(f'  singletons: {len(sing_rows)}')
