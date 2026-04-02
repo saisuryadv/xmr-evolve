@@ -429,10 +429,14 @@ def _solve_tgk_block(bc, bte, m, bk_hint=None):
 
     root = build_repr_from_tridiag(bc, bte, m, k=m)
 
+    # For small blocks, use stricter gap tolerance to force more clustering
+    # (MR3 singleton quality degrades at small n due to limited twist choices)
+    block_gaptol = max(GAPTOL, 5e-3) if n_nonneg <= 20 else GAPTOL
+
     if _verbose:
         w, Z, info, tau_re = xmr_eigenvectors_v(root, bte, all_evals,
                                                   wil=wil, wiu=wiu,
-                                                  spdiam=spdiam, gaptol=GAPTOL)
+                                                  spdiam=spdiam, gaptol=block_gaptol)
         print(f'  [_solve_tgk_block] dlaxre shift tau_re={tau_re:.10e}')
         print(f'  [_solve_tgk_block] XMR info={info}')
         if info == 0:
@@ -440,7 +444,7 @@ def _solve_tgk_block(bc, bte, m, bk_hint=None):
     else:
         w, Z, info = xmr_eigenvectors(root, bte, all_evals,
                                         wil=wil, wiu=wiu,
-                                        spdiam=spdiam, gaptol=GAPTOL)
+                                        spdiam=spdiam, gaptol=block_gaptol)
 
     if info != 0:
         if _verbose:
