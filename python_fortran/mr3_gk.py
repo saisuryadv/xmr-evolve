@@ -429,9 +429,10 @@ def _solve_tgk_block(bc, bte, m, bk_hint=None):
 
     root = build_repr_from_tridiag(bc, bte, m, k=m)
 
-    # For small blocks, use stricter gap tolerance to force more clustering
-    # (MR3 singleton quality degrades at small n due to limited twist choices)
-    block_gaptol = max(GAPTOL, 5e-3) if n_nonneg <= 20 else GAPTOL
+    # Adaptive GAPTOL: MR3 singleton orthogonality ~ C*m*eps/relgap.
+    # For small n, need larger relgap → stricter GAPTOL.
+    # Converges to standard GAPTOL for n >= 20.
+    block_gaptol = max(GAPTOL, 0.02 / n_nonneg)
 
     if _verbose:
         w, Z, info, tau_re = xmr_eigenvectors_v(root, bte, all_evals,
