@@ -292,6 +292,7 @@ C      IF( (DMAX-DMIN) .LE. 2*ABSERR )THEN
          I = 1
          DO
             DL = ( D(I) - VL ) - AUXL
+            IF( ABS(DL).LT.PIVBASE )  DL = -PIVBASE
             IF( DL.LT.ZERO )  NEGL = NEGL+1
             IF( I .EQ. N )THEN
                EXIT
