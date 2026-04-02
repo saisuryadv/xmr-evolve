@@ -189,7 +189,7 @@ c@extract -b parameters.inc.f procname=laxrb_clssfy
       INTEGER           NRBL, NRBU, NNOCR, IOCR
       INTEGER           JXG, JXNGN, TWIST
 
-      LOGICAL           SEEKL, SEEKU, DOAVG
+      LOGICAL           SEEKL, SEEKU, DOAVG, GAPOK
 
       INTEGER           BISCNT
       COMMON /XMRSTATS/
@@ -269,8 +269,7 @@ c@extract -b parameters.inc.f procname=laxrb_clssfy
      $                 ABS(REPR(JXNGN+TWIST+1)) )
 
 *        Scale with DEPTH to account for larger residual effects
-         AVGTOL = MAX(SPDIAM,REPELG)
-     $     * ((MAX(DEPTH,1) * AVGAPFAC) / (N-1))
+         AVGTOL = MAX(SPDIAM,REPELG) * ((DEPTH * AVGAPFAC) / (N-1))
          DOAVG  = .TRUE.
       ELSE
          AVGTOL = ZERO
@@ -359,7 +358,12 @@ c@extract -b parameters.inc.f procname=laxrb_clssfy
          ABSMAX = MAX( ABS(LB), ABS(UB) )
          SPREAD = UB - LB
 
-         IF( SPREAD .GE. MIN( AVGTHRESH, ABSMAX*GAPTHRESH ) )THEN
+         IF( AVGTHRESH .GT. ZERO )THEN
+            GAPOK = SPREAD.GE.MIN(AVGTHRESH,ABSMAX*GAPTHRESH)
+         ELSE
+            GAPOK = SPREAD .GE. ABSMAX*GAPTHRESH
+         ENDIF
+         IF( GAPOK )THEN
 *           Yes, there must be a gap between J and I.
             RGINFO(J) = GI_FULLGAP
          ELSE
@@ -410,7 +414,12 @@ c@extract -b parameters.inc.f procname=laxrb_clssfy
                   UB = EWL_LU(2*KL)
                   ABSMAX = MAX( ABS(LB), ABS(UB) )
                   SPREAD = UB - LB
-                  IF( SPREAD .GE. MIN( AVGTHRESH, ABSMAX*GAPTHRESH ) )
+                  IF( AVGTHRESH .GT. ZERO )THEN
+                     GAPOK=SPREAD.GE.MIN(AVGTHRESH,ABSMAX*GAPTHRESH)
+                  ELSE
+                     GAPOK = SPREAD.GE.ABSMAX*GAPTHRESH
+                  ENDIF
+                  IF( GAPOK )
      $            THEN
 *                    Yes, this still looks like it holds a gap
                      IF( KLX .EQ. KL-1 )THEN
@@ -436,7 +445,12 @@ c@extract -b parameters.inc.f procname=laxrb_clssfy
                   UB = EWL_LU(2*KUX)
                   ABSMAX = MAX( ABS(LB), ABS(UB) )
                   SPREAD = UB - LB
-                  IF( SPREAD .GE. MIN( AVGTHRESH, ABSMAX*GAPTHRESH ) )
+                  IF( AVGTHRESH .GT. ZERO )THEN
+                     GAPOK=SPREAD.GE.MIN(AVGTHRESH,ABSMAX*GAPTHRESH)
+                  ELSE
+                     GAPOK = SPREAD.GE.ABSMAX*GAPTHRESH
+                  ENDIF
+                  IF( GAPOK )
      $            THEN
                      IF( KU .EQ. KUX-1 )THEN
                         RGINFO(KU) = GI_FULLGAP
