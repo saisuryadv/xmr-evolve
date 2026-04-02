@@ -594,8 +594,6 @@ Cextract -b parameters.inc.f procname=laxrv
          IXREP = IXROOT + DEPTH*RSTRIDER
          JXREP = JXROOT + DEPTH*RSTRIDEI
 
-         CALL DBG_NODE(DEPTH, IL, IU, TAUBAR)
-
 
          IF( ANC(DEPTH) .EQ. IL )THEN
 *
@@ -690,7 +688,6 @@ C     $           )
      $              )
 
                W(I) = LAMBDA + TAUBAR
-               CALL DBG_SINGLETON(DEPTH, I, LAMBDA, TAUBAR, W(I))
 
                NPAIRS = NPAIRS + 1
             ELSE
@@ -757,13 +754,11 @@ C                  XRFMODE = 2
                   IF( XRFSTA .NE. 0 )THEN
 *                    Could not find a child representation
                      STATUS = -2
-                     CALL DBG_CLUSTER_FAIL(DEPTH, I, J, XRFSTA)
                   ELSE
                      DO K = 0, 2*(J-I+1)-1
                         EWL_LU(2*I-1 + K) = RWORK(IXCEWB + K)
                         EWL_AE(2*I-1 + K) = IWORK(JXCEWB + K)
                      ENDDO
-                     CALL DBG_CLUSTER(DEPTH, I, J, TAU, TAUBAR+TAU)
                   ENDIF
                ENDIF
 
