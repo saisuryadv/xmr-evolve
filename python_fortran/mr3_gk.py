@@ -444,7 +444,6 @@ def mr3_tgk_multiblock(d_bidiag, e_bidiag, n, bbeg, bend):
 
     if _verbose:
         print(f'  [mr3_tgk_multiblock] result: {bk} eigenvalues, range [{w[0]:.10e}, {w[min(bk-1,len(w)-1)]:.10e}]')
-        # Check GK structure: even/odd norms should be equal
         even_norms = np.array([np.linalg.norm(Z[0::2, j]) for j in range(bk)])
         odd_norms = np.array([np.linalg.norm(Z[1::2, j]) for j in range(bk)])
         max_norm_diff = np.max(np.abs(even_norms - odd_norms))
