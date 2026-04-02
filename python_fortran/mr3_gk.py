@@ -665,7 +665,7 @@ def bidiag_svd(d, e):
     # (Demmel-Kahan 1990: zero-shift QR = inverse iteration, converges in 1 step for σ=0)
     sing_rows = []; sing_cols = []; multi_blocks = []
     qr_deflated_cols = []
-    zero_sv_thresh = SAFMIN  # only catch truly zero SVs, not just small ones
+    zero_sv_thresh = n * EPS  # after prescaling, ||B||≈1
     col = 0
     for bbeg, bend in blocks:
         bk = bend - bbeg + 1
@@ -676,10 +676,14 @@ def bidiag_svd(d, e):
             col += 1
         else:
             # Sweep-then-check: one QR sweep to detect zero SV
+            # (Demmel-Kahan 1990: zero-shift QR = inverse iteration,
+            #  drives both d[-1] AND e[-1] to zero when σ_min = 0)
             d_sw = d[bbeg:bend+1].copy()
             e_sw = e[bbeg:bend].copy()
             right_rots, left_rots = zero_shift_qr_sweep(d_sw, e_sw)
-            if abs(d_sw[-1]) < zero_sv_thresh:
+            # Clean split requires BOTH d[-1] and e[-1] near zero
+            clean_split = abs(d_sw[-1]) < zero_sv_thresh and abs(e_sw[-1]) < zero_sv_thresh
+            if clean_split:
                 # Zero SV detected — deflate
                 if _verbose:
                     print(f'  [QR deflation] block [{bbeg},{bend}] bk={bk}: d[-1]={d_sw[-1]:.3e} < thresh={zero_sv_thresh:.3e}')
