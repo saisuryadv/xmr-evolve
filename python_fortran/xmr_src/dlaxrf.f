@@ -540,8 +540,6 @@ CC~
      $     )
 *     Note: can use full IWORK, as not yet in use
 
-      CALL DBG_SELSHF(ICBEG, ICEND, FLGAP, FUGAP, TAUBAR,
-     $       FEWL_LU(2*ICBEG-1), FEWL_LU(2*ICEND), NCAND)
       IF( NCAND .EQ. 0 )THEN
          INFO = 1
          RETURN

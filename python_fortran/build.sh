@@ -1,35 +1,84 @@
 #!/bin/bash
-# Build libxmr.so from Fortran objects + C wrapper
+# Build libxmr.so from Willems' XMR source (tdsolver/xmr/SRC/O) + our modifications.
+#
 # Prerequisites: gfortran, gcc, liblapack-dev, libblas-dev
+#
+# Source: xmr_src/        — original Willems XMR Fortran source
+# Fixes:  dlaxrb_clssfy_fix.f — depth-0 classification bug fix
+#         dlaxre_gk.f          — GK-aware root representation
+#         xmr_wrapper.c        — C wrapper with debug callbacks
+#
+# Compilation flags must match original: -fPIC -O2 -std=legacy -w -fno-second-underscore
 set -e
 
 cd "$(dirname "$0")"
 
-echo "Compiling dlaxre_gk.f (GK-enabled root representation)..."
-gfortran -c -fPIC -O2 dlaxre_gk.f -o fortran_objects/dlaxre_gk.o
+FC="gfortran"
+FFLAGS="-fPIC -O2 -std=legacy -w -fno-second-underscore"
+OBJDIR="fortran_objects"
+
+mkdir -p "$OBJDIR"
+
+# XMR source files compiled unmodified from xmr_src/
+XMR_UNMODIFIED="
+  dlaxrr dlaxrs_stat dlaxrs_prog dlaxrs
+  dlaxrt_stat dlaxrt_prog dlaxrt
+  dlaxrn_stat dlaxrn dlaxrn0
+  dlaxrc dlaxrg dlaxrx
+  dlaxrb_refcls dlaxrb_refsng
+  dlaxrf_selshf dlaxrf_seltw_part dlaxrf_seltw
+  dlaxrf_cob dlaxrf_iib
+  dlaxrf_env dlaxrf_grpenv
+  dlaxrl_refine dlaxrl_update dlaxrl_reset
+  dlaxrf
+  dlaxrm_stat2 dlaxrm_stat4 dlaxrm_stat8
+  dlaxrm_stat16 dlaxrm_stat32 dlaxrm_stat64
+  dlaxrm
+  dlaxre_initewldqds
+  dlaxrv
+"
+
+echo "Compiling XMR source files from xmr_src/..."
+COMPILED=0
+for name in $XMR_UNMODIFIED; do
+    src="xmr_src/${name}.f"
+    if [ -f "$src" ]; then
+        $FC $FFLAGS -c "$src" -o "$OBJDIR/${name}.o"
+        COMPILED=$((COMPILED + 1))
+    else
+        echo "  WARNING: $src not found"
+    fi
+done
+echo "  Compiled $COMPILED unmodified XMR files"
+
+echo "Compiling dlaxrb_clssfy_fix.f (depth-0 classification fix)..."
+$FC $FFLAGS -c dlaxrb_clssfy_fix.f -o "$OBJDIR/dlaxrb_clssfy.o"
+
+echo "Compiling dlaxre_gk.f (GK-aware root representation)..."
+$FC -c -fPIC -O2 dlaxre_gk.f -o "$OBJDIR/dlaxre_gk.o"
 
 echo "Compiling xmr_wrapper.c..."
-gcc -c -fPIC -O2 xmr_wrapper.c -o fortran_objects/xmr_wrapper.o
+gcc -c -fPIC -O2 xmr_wrapper.c -o "$OBJDIR/xmr_wrapper.o"
 
 echo "Linking libxmr.so..."
 gcc -shared -o libxmr.so \
-  fortran_objects/dlaxrr.o \
-  fortran_objects/dlaxrs_stat.o fortran_objects/dlaxrs_prog.o fortran_objects/dlaxrs.o \
-  fortran_objects/dlaxrt_stat.o fortran_objects/dlaxrt_prog.o fortran_objects/dlaxrt.o \
-  fortran_objects/dlaxrn_stat.o fortran_objects/dlaxrn.o fortran_objects/dlaxrn0.o \
-  fortran_objects/dlaxrc.o fortran_objects/dlaxrg.o fortran_objects/dlaxrx.o \
-  fortran_objects/dlaxrb_clssfy.o fortran_objects/dlaxrb_refcls.o fortran_objects/dlaxrb_refsng.o \
-  fortran_objects/dlaxrf_selshf.o fortran_objects/dlaxrf_seltw_part.o fortran_objects/dlaxrf_seltw.o \
-  fortran_objects/dlaxrf_cob.o fortran_objects/dlaxrf_iib.o \
-  fortran_objects/dlaxrf_env.o fortran_objects/dlaxrf_grpenv.o \
-  fortran_objects/dlaxrl_refine.o fortran_objects/dlaxrl_update.o fortran_objects/dlaxrl_reset.o \
-  fortran_objects/dlaxrf.o \
-  fortran_objects/dlaxrm_stat2.o fortran_objects/dlaxrm_stat4.o fortran_objects/dlaxrm_stat8.o \
-  fortran_objects/dlaxrm_stat16.o fortran_objects/dlaxrm_stat32.o fortran_objects/dlaxrm_stat64.o \
-  fortran_objects/dlaxrm.o \
-  fortran_objects/dlaxre_initewldqds.o fortran_objects/dlaxre_gk.o \
-  fortran_objects/dlaxrv.o \
-  fortran_objects/xmr_wrapper.o \
+  $OBJDIR/dlaxrr.o \
+  $OBJDIR/dlaxrs_stat.o $OBJDIR/dlaxrs_prog.o $OBJDIR/dlaxrs.o \
+  $OBJDIR/dlaxrt_stat.o $OBJDIR/dlaxrt_prog.o $OBJDIR/dlaxrt.o \
+  $OBJDIR/dlaxrn_stat.o $OBJDIR/dlaxrn.o $OBJDIR/dlaxrn0.o \
+  $OBJDIR/dlaxrc.o $OBJDIR/dlaxrg.o $OBJDIR/dlaxrx.o \
+  $OBJDIR/dlaxrb_clssfy.o $OBJDIR/dlaxrb_refcls.o $OBJDIR/dlaxrb_refsng.o \
+  $OBJDIR/dlaxrf_selshf.o $OBJDIR/dlaxrf_seltw_part.o $OBJDIR/dlaxrf_seltw.o \
+  $OBJDIR/dlaxrf_cob.o $OBJDIR/dlaxrf_iib.o \
+  $OBJDIR/dlaxrf_env.o $OBJDIR/dlaxrf_grpenv.o \
+  $OBJDIR/dlaxrl_refine.o $OBJDIR/dlaxrl_update.o $OBJDIR/dlaxrl_reset.o \
+  $OBJDIR/dlaxrf.o \
+  $OBJDIR/dlaxrm_stat2.o $OBJDIR/dlaxrm_stat4.o $OBJDIR/dlaxrm_stat8.o \
+  $OBJDIR/dlaxrm_stat16.o $OBJDIR/dlaxrm_stat32.o $OBJDIR/dlaxrm_stat64.o \
+  $OBJDIR/dlaxrm.o \
+  $OBJDIR/dlaxre_initewldqds.o $OBJDIR/dlaxre_gk.o \
+  $OBJDIR/dlaxrv.o \
+  $OBJDIR/xmr_wrapper.o \
   -lgfortran -llapack -lblas -lm
 
 echo "Built libxmr.so ($(wc -c < libxmr.so) bytes)"
