@@ -14,7 +14,9 @@ import numpy as np
 import os
 
 # Load the shared library
-_libpath = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libxmr.so')
+# Support override via _LIB_PATH_OVERRIDE for ablation studies
+_libpath = os.environ.get('XMR_LIB_PATH',
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'libxmr.so'))
 _lib = ctypes.CDLL(_libpath)
 
 # C function signatures
