@@ -7,6 +7,7 @@ Usage:
   python3 evaluate.py --small      # Small 64-test suite (22 patterns × 3 sizes, no STCollection)
   python3 evaluate.py --medium     # 270-test suite (90 patterns × 3 sizes, no STCollection)
   python3 evaluate.py --large      # Large suite: 90 patterns at n=800 only
+  python3 evaluate.py --sweep100   # Sweep n=100,200,...,800 (single run per test)
 """
 import numpy as np
 import sys
@@ -94,6 +95,7 @@ def main():
     parser.add_argument('--small', action='store_true', help='Small 64-test suite (22 patterns × 3 sizes)')
     parser.add_argument('--medium', action='store_true', help='Medium 270-test suite (90 patterns × 3 sizes)')
     parser.add_argument('--large', action='store_true', help='Large suite: 90 patterns at n=800 only')
+    parser.add_argument('--sweep100', action='store_true', help='Sweep n=100,200,...,800 (single run per test)')
     parser.add_argument('--timeout', type=int, default=30, help='Per-test timeout in seconds')
     args = parser.parse_args()
 
@@ -115,6 +117,12 @@ def main():
         run_stcoll = False
         quick_mode = True
         suite_name = "Large (90 patterns × n=800)"
+    elif args.sweep100:
+        patterns = get_patterns()
+        test_sizes = [100, 200, 300, 400, 500, 600, 700, 800]
+        run_stcoll = False
+        quick_mode = True
+        suite_name = "Sweep n=100..800 step 100 (single run)"
     else:
         patterns = get_patterns()
         test_sizes = [10, 100, 200, 400]
