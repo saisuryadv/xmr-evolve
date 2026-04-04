@@ -138,6 +138,59 @@ Each test prints:
 
 Thresholds: res ≤ 7.0 nε, ortU ≤ 5.0 nε, ortV ≤ 5.0 nε.
 
+## Extended Test Suite (224 tests)
+
+An additional test suite (`test_dense_to_bidiag.py`) with **64 patterns / 224 tests** designed to find failure cases not covered by the 379-test suite. Same metrics and thresholds. Test sizes: {10, 100, 200, 400}.
+
+**Current results: 219/224 passed (97.8%), 5 failures found.**
+
+```bash
+# Full extended suite
+python3 test_dense_to_bidiag.py
+
+# Quick mode (sizes {10, 100} only)
+python3 test_dense_to_bidiag.py --quick
+
+# Run only Part 1 (dense-to-bidiag) or Part 2 (paper tests)
+python3 test_dense_to_bidiag.py --part1
+python3 test_dense_to_bidiag.py --part2
+```
+
+### Part 1: Dense-to-Bidiagonal Tests (22 patterns)
+
+Constructs dense matrices with prescribed singular value distributions, reduces to bidiagonal via Householder (equivalent to LAPACK DGEBRD), then tests `bidiag_svd` on the result. The bidiagonal produced by dense reduction has different entry structure than hand-crafted bidiagonals, even for the same SV distribution (Demmel-Kahan 1990: "reduction to bidiagonal form may produce completely inaccurate bidiagonal entries").
+
+Sources: LAPACK dchkbd.f Types 3-16, LAPACK ddrvbd.f Types 3-5, LAPACK bug #316 (DGESDD companion matrix), Willems-Lang 2012 Examples 4.1/4.8, classical matrices (Hilbert, Kahan, Vandermonde, Frank, Toeplitz).
+
+### Part 2: Missing Paper Test Cases (42 patterns)
+
+Bidiagonal test matrices from the literature not covered in the 379-test suite:
+
+| Category | # | Source |
+|----------|---|--------|
+| Proper Glued Wilkinson | 4 | Dhillon-Parlett-Vömel 2005, Demmel 2008 |
+| Glued versions of existing patterns | 8 | Willems-Lang 2013 Synth methodology |
+| CHKBD LAPACK general (log-uniform) | 1 | LAPACK dchkbd.f Type 16 |
+| Corrected Grosser-Lang definitions | 7 | Großer-Lang 2001 DMATGEN.f IDs 200-244 |
+| Marques STEXR failure matrices | 3 | Marques-Demmel-Vasconcelos 2020 Appendix B |
+| Tridiagonal→bidiagonal (Cholesky) | 5 | Großer-Lang 2005, STCollection (Legendre/Laguerre/Hermite) |
+| Missing Demmel/Willems variants | 4 | Demmel 2008, Willems-Lang 2012, Marques 2020 |
+| Dhillon-Parlett-Vömel / LAWN 163/166 | 4 | Dhillon Thesis 1997, Großer-Lang 2005, LAWN 163/166 |
+| STCollection eigenvalue types 7/8/9 | 3 | Marques et al. 2008 Algorithm 880 |
+| Skew-Wilkinson with grading | 3 | STCollection T_SkewW21 variants |
+| W21 with varying off-diagonal gamma | 3 | STCollection T_W21_g variants |
+| Willems 2x2 block LDL* edge case | 1 | Willems Thesis 2010 |
+
+### Failures Found
+
+| Test | n | ortU | Root Cause |
+|------|---|------|------------|
+| `dense_wilkinson_sv` | 99 | 29.86 | Tight eigenvalue pairs from Wilkinson W_{2m+1}^+ as SVs |
+| `dense_wilkinson_sv` | 399 | 27.60 | Same, larger size |
+| `dense_wilkinson_sv` | 199 | 6.15 | Same, moderate |
+| `glued_wilk_5x21_sqrteps` | 105 | 13.11 | 5 copies of W_21^+ glued — near-degenerate eigenvalue clusters |
+| `marques_stexr_20` | 20 | 8.74 | Geometric eigenvalue distribution from Marques 2020 |
+
 ## Files
 
 | File | Description |
@@ -145,7 +198,8 @@ Thresholds: res ≤ 7.0 nε, ortU ≤ 5.0 nε, ortV ≤ 5.0 nε.
 | `mr3_gk.py` | Main implementation: QR deflation, splitting, T_GK construction, SVD extraction |
 | `xmr_ctypes.py` | Python ctypes interface to XMR Fortran library |
 | `full_eval.py` | 90 adversarial test matrix generators |
-| `evaluate.py` | Evaluation runner with scoring |
+| `evaluate.py` | Evaluation runner with scoring (379 tests) |
+| `test_dense_to_bidiag.py` | Extended test suite: 64 patterns, 224 tests (dense-to-bidiag + paper tests) |
 | `run_baselines.py` | Baseline comparison (DBDSQR, TGK+DSTEMR vs ours) |
 | `dlaxre_gk.f` | Modified XMR root representation with GK detection enabled |
 | `xmr_wrapper.c` | C wrapper for dlaxre_ + dlaxrv_ |
