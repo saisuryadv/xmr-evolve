@@ -27,6 +27,12 @@ def set_verbose(v=True):
     global _verbose
     _verbose = v
 
+# Ablation: use LAPACK dstemr instead of XMR for TGK eigenproblem
+_use_dstemr = False
+def set_use_dstemr(v=True):
+    global _use_dstemr
+    _use_dstemr = v
+
 def zero_shift_qr_sweep(d, e):
     """One downward sweep of implicit zero-shift QR on upper bidiagonal.
     Modifies d, e in place. Returns (right_rots, left_rots).
@@ -406,18 +412,66 @@ def mr3_block(c, e_off, nn, pos_evals, spdiam):
 # ============================================================
 # Main driver
 # ============================================================
-def _solve_tgk_block(bc, bte, m, bk_hint=None):
-    """Solve a single T_GK eigenproblem of size m.
-    Returns (w, Z) where w has the non-negative eigenvalues
-    and Z has the corresponding eigenvectors.
-    bk_hint: if given, number of non-negative eigenvalues expected = ceil(m/2).
-    """
-    from xmr_ctypes import xmr_eigenvectors, xmr_eigenvectors_v, build_repr_from_tridiag
-    n_nonneg = (m + 1) // 2  # ceil(m/2): number of non-negative eigenvalues
+def _solve_tgk_block_dstemr(bc, bte, m, bk_hint=None):
+    """Solve T_GK eigenproblem using scipy's DSTEMR (LAPACK MR3) instead of XMR.
+    For ablation study: compare LAPACK MR3 vs our XMR-based MR3 on the same TGK matrix."""
+    from scipy.linalg.lapack import _flapack
+
+    n_nonneg = (m + 1) // 2
     if bk_hint is not None:
         n_nonneg = bk_hint
-    wil = m - n_nonneg + 1  # first non-negative eigenvalue index (1-based)
-    wiu = m                  # last eigenvalue index (1-based)
+
+    tgk_d = np.array(bc, dtype=np.float64).copy()
+    tgk_e = np.array(bte, dtype=np.float64).copy()
+
+    # Workspace query
+    lwork_opt, liwork_opt, info_q = _flapack.dstemr_lwork('V', 'A', tgk_d, tgk_e,
+                                                           0.0, 0.0, 1, m, 1)
+    lwork = max(int(lwork_opt), 18 * m + 1)
+    liwork = max(int(liwork_opt), 10 * m + 1)
+
+    # Call dstemr for ALL eigenvalues
+    w, Z, m_out, isuppz, info = _flapack.dstemr('V', 'A', tgk_d.copy(), tgk_e.copy(),
+                                                  0.0, 0.0, 1, m, m,
+                                                  lwork=lwork, liwork=liwork)
+
+    if _verbose:
+        print(f'  [_solve_tgk_block_dstemr] dstemr info={info}, m_out={m_out}')
+
+    if info != 0:
+        if _verbose:
+            print(f'  [_solve_tgk_block_dstemr] dstemr failed (info={info}), falling back to XMR')
+        return _solve_tgk_block_xmr(bc, bte, m, bk_hint)
+
+    # Take the positive eigenvalues
+    all_evals = w[:m_out]
+    pos_idx = np.where(all_evals >= 0)[0]
+    if len(pos_idx) < n_nonneg:
+        sorted_idx = np.argsort(all_evals)
+        pos_idx = sorted_idx[-n_nonneg:]
+
+    w_pos = all_evals[pos_idx]
+    Z_pos = Z[:, pos_idx]
+
+    # Sort by ascending eigenvalue
+    sort_order = np.argsort(w_pos)
+    w_pos = w_pos[sort_order]
+    Z_pos = Z_pos[:, sort_order]
+
+    if _verbose:
+        print(f'  [_solve_tgk_block_dstemr] {n_nonneg} positive evals, range=[{w_pos[0]:.10e}, {w_pos[-1]:.10e}]')
+
+    return w_pos, Z_pos
+
+
+def _solve_tgk_block_xmr(bc, bte, m, bk_hint=None):
+    """Original XMR-based TGK solver (renamed from _solve_tgk_block)."""
+    from xmr_ctypes import xmr_eigenvectors, xmr_eigenvectors_v, build_repr_from_tridiag
+    n_nonneg = (m + 1) // 2
+    if bk_hint is not None:
+        n_nonneg = bk_hint
+    wil = m - n_nonneg + 1
+    wiu = m
 
     all_evals = np.sort(bisect_evals(bc, bte, m, 1, m))
     spdiam = all_evals[-1] - all_evals[0] if len(all_evals) > 0 else 0.0
@@ -428,10 +482,6 @@ def _solve_tgk_block(bc, bte, m, bk_hint=None):
         print(f'  [_solve_tgk_block] evals range=[{all_evals[0]:.10e}, {all_evals[-1]:.10e}]')
 
     root = build_repr_from_tridiag(bc, bte, m, k=m)
-
-    # Adaptive GAPTOL: MR3 singleton orthogonality ~ C*m*eps/relgap.
-    # For small n, need larger relgap → stricter GAPTOL.
-    # Converges to standard GAPTOL for n >= 20.
     block_gaptol = max(GAPTOL, 0.02 / n_nonneg)
 
     if _verbose:
@@ -456,6 +506,18 @@ def _solve_tgk_block(bc, bte, m, bk_hint=None):
             print(f'  [_solve_tgk_block] Python MR3 eigenvalues: {np.array2string(w[:n_nonneg], precision=10, separator=", ")}')
 
     return w[:n_nonneg], Z[:m, :n_nonneg]
+
+
+def _solve_tgk_block(bc, bte, m, bk_hint=None):
+    """Solve a single T_GK eigenproblem of size m.
+    Dispatches to DSTEMR or XMR based on _use_dstemr flag.
+    Returns (w, Z) where w has the non-negative eigenvalues
+    and Z has the corresponding eigenvectors.
+    """
+    if _use_dstemr:
+        return _solve_tgk_block_dstemr(bc, bte, m, bk_hint)
+    else:
+        return _solve_tgk_block_xmr(bc, bte, m, bk_hint)
 
 
 def mr3_tgk_multiblock(d_bidiag, e_bidiag, n, bbeg, bend):
