@@ -408,6 +408,7 @@ def main():
     parser.add_argument('--dim-step', type=int, default=1, help='Dimension step for Synth (default: 1, i.e. every integer)')
     parser.add_argument('--quick', action='store_true', help='Quick: dim step=10, max-dim=50, econd=[1,4]')
     parser.add_argument('--medium', action='store_true', help='Medium: dim step=5, max-dim=100, all econd')
+    parser.add_argument('--paper', action='store_true', help='Paper (2012): dim step=1, max-dim=100, econd=[1,4] → ~18,400 tests')
     args = parser.parse_args()
 
     if not args.synth and not args.pract:
@@ -421,6 +422,10 @@ def main():
         args.max_dim = 100
         args.dim_step = 5
         econd_list = [1, 2, 3, 4, 5, 6]
+    elif args.paper:
+        args.max_dim = 100
+        args.dim_step = 1
+        econd_list = [1, 4]   # paper uses 1/sqrt(eps) and 1/eps
     else:
         econd_list = [1, 2, 3, 4, 5, 6]
 
