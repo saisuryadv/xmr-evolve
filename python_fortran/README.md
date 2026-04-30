@@ -138,6 +138,65 @@ Each test prints:
 
 Thresholds: res ≤ 7.0 nε, ortU ≤ 5.0 nε, ortV ≤ 5.0 nε.
 
+## Pure-Fortran Build & Validation
+
+In addition to the Python+Fortran hybrid above, the same algorithm is available as a pure-Fortran driver `mr3gk_fortran/mr3gk_run`. It uses the same `libxmr.so` kernel and orchestrates the bidiagonal-SVD layer (splitting, sign matrices, T_GK construction, post-processing) in Fortran instead of Python.
+
+### Build
+
+```bash
+# Step 1: build libxmr.so (kernel)
+bash build.sh
+
+# Step 2: build the pure-Fortran driver
+cd mr3gk_fortran && bash build.sh && cd ..
+# produces mr3gk_fortran/mr3gk_run
+```
+
+### Validate
+
+```bash
+# One-time: cache the Python+Fortran hybrid baseline (~5 min)
+python3 test_fortran_match.py --gen-baseline
+
+# Compare pure-Fortran output to baseline on 379 specs (~2 min)
+python3 test_fortran_match.py
+# expect: PASS: 379/379  Worst sigma diff: 0  Worst U diff: 1.110e-16  Worst V diff: 2.272e-19
+```
+
+### Headline result (combined 21,375-spec validation)
+
+| Suite | Specs | Pass @ 2·eps | Worst σ | Worst U | Worst V |
+|---|---|---|---|---|---|
+| 379-spec match | 379 | 379/379 | 0 | 1.110e-16 | 2.272e-19 |
+| 1,130-spec extended | 1130 | 1130/1130 | 0 | 0 | 0 |
+| 19,866-spec full sweep | 19866 | 19866/19866 | 0 | 1.110e-16 | 2.272e-19 |
+| **Total** | **21,375** | **21,375 / 21,375** | **0** | **1.110e-16** | **2.272e-19** |
+
+Singular values are bit-identical between Python+Fortran and pure-Fortran on every test bidiagonal; U/V differ by at most ~1 ULP on a handful of `gl_wilkw / gl_wilk2w` adversarial cases. See `docs/01_fortran_test_report.md` for the full breakdown.
+
+### Documentation
+
+`docs/` contains a closing-the-loop deliverable for the conversion:
+
+| File | Topic |
+|---|---|
+| **`docs/presentation.html`** | **Single-page advisor presentation with embedded visualizations (open in any browser, no internet required)** |
+| **`docs/mr3_tree_gallery.html`** | **MR3 representation-tree gallery (Python-instrumented): 31 trees with hover-tooltips** |
+| **`docs/mr3_tree_gallery_fortran.html`** | **MR3 representation-tree gallery captured from the actual Fortran kernel (dlaxrf_traced.f), dual NCD coloring per node** |
+| **`docs/conversion_slide.html`** | **One-screen slide for "How we did the Python→Fortran conversion" (paste-into-Slides)** |
+| **`docs/BUGREPORT.md`** | **Advisor-ready single-page bug report: every change vs upstream XMR + empirical ablation** |
+| `docs/01_fortran_test_report.md` | Consolidated test report (379 + 1130 + 19,866 specs) |
+| `docs/02_xmr_modifications.md` | Bug report — code diffs **and** empirical test-suite ablation showing what each XMR patch fixes |
+| `docs/03_build_flags.md` | Compilation flags audit (root + `mr3gk_fortran/`) |
+| `docs/04_ncd_audit.md` | `(max−min)/min` vs `(max−min)/max` audit across all trees |
+| `docs/05_tgk_path.md` | T_GK bidiagonal-SVD path: upstream XMR vs our code |
+| `docs/06_cluster_tree_trace.md` | Per-node tree + per-pair NCD trace on highly-clustered matrices |
+
+Diagnostic harnesses in `experiments/`:
+- `cluster_tree_trace.py` — produces `cluster_tree_log.{json,csv}`, `cluster_tree.png`, `ncd_per_adjacent_pair.png`, `ncd_progression.png` for `docs/06`.
+- `ablation_xmr_patches.py` — runs the 379-spec evaluation under each combination of the two XMR patches (patched / revert-dlaxre / revert-clssfy / revert-both) for `docs/02`. Writes `ablation_results.json`.
+
 ## Extended Test Suite (224 tests)
 
 An additional test suite (`test_dense_to_bidiag.py`) with **64 patterns / 224 tests** designed to find failure cases not covered by the 379-test suite. Same metrics and thresholds. Test sizes: {10, 100, 200, 400}.

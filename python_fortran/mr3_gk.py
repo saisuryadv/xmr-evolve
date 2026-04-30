@@ -13,6 +13,56 @@ Implements from paper and XMR:
 
 import numpy as np
 from scipy.linalg.lapack import _flapack
+import ctypes as _ct
+import ctypes.util as _ctutil
+# LAPACK DLARNV used for reproducible random vectors in GS completion.
+# Using the same call (and same fixed seed) on the Fortran side guarantees
+# bit-identical results.
+_lapack_lib = _ct.CDLL(_ctutil.find_library('lapack'))
+
+def _dlarnv_normal(n, seed):
+    """Generate n N(0,1) samples via LAPACK DLARNV (IDIST=3).
+    seed: tuple of 4 ints (must be in 0..4095, last must be odd)."""
+    iseed = (_ct.c_int * 4)(*seed)
+    n_c = _ct.c_int(n)
+    idist = _ct.c_int(3)
+    x = np.zeros(n, dtype=np.float64)
+    _lapack_lib.dlarnv_(_ct.byref(idist), iseed, _ct.byref(n_c),
+                        x.ctypes.data_as(_ct.POINTER(_ct.c_double)))
+    return x
+
+# Unified DNRM2 via system BLAS (bit-matches Fortran's dnrm2 call).
+_blas_lib = _ct.CDLL(_ctutil.find_library('blas') or _ctutil.find_library('lapack'))
+_blas_lib.dnrm2_.restype = _ct.c_double
+_blas_lib.dnrm2_.argtypes = [_ct.POINTER(_ct.c_int),
+                              _ct.POINTER(_ct.c_double),
+                              _ct.POINTER(_ct.c_int)]
+
+def _system_dnrm2(x):
+    """Vector 2-norm via system BLAS DNRM2 — matches the Fortran side bit-for-bit."""
+    x_arr = np.ascontiguousarray(x, dtype=np.float64)
+    n_c = _ct.c_int(x_arr.size)
+    inc = _ct.c_int(1)
+    return _blas_lib.dnrm2_(_ct.byref(n_c),
+                            x_arr.ctypes.data_as(_ct.POINTER(_ct.c_double)),
+                            _ct.byref(inc))
+
+def _system_dnrm2_axis0(M):
+    """Column-wise DNRM2 of a 2D array, matching Fortran's per-column dnrm2 calls."""
+    M_arr = np.ascontiguousarray(M, dtype=np.float64)
+    rows, cols = M_arr.shape
+    out = np.zeros(cols, dtype=np.float64)
+    for j in range(cols):
+        # Column j: contiguous memory in column-major (Fortran-order),
+        # but our M may be row-major; use vector slice.
+        col = M_arr[:, j]
+        col_c = np.ascontiguousarray(col)
+        n_c = _ct.c_int(rows)
+        inc = _ct.c_int(1)
+        out[j] = _blas_lib.dnrm2_(_ct.byref(n_c),
+                                   col_c.ctypes.data_as(_ct.POINTER(_ct.c_double)),
+                                   _ct.byref(inc))
+    return out
 
 EPS = np.finfo(np.float64).eps
 SAFMIN = np.finfo(np.float64).tiny
@@ -811,9 +861,9 @@ def bidiag_svd(d, e):
         if _verbose:
             print(f'\n[post-processing] {len(mc)} multi-block columns')
 
-        # Normalize
-        nv_mc = np.linalg.norm(V[:, mc], axis=0)
-        nu_mc = np.linalg.norm(U[:, mc], axis=0)
+        # Normalize (use system DNRM2 for bit-match with Fortran)
+        nv_mc = _system_dnrm2_axis0(V[:, mc])
+        nu_mc = _system_dnrm2_axis0(U[:, mc])
 
         if _verbose:
             print(f'  [normalize] V norms: {np.array2string(nv_mc, precision=6, separator=", ")}')
@@ -848,7 +898,7 @@ def bidiag_svd(d, e):
             if _verbose: print(f'  [Bv recovery] recovering U for cols {idx.tolist()}')
             BV = _bidiag_matvec_batch(d, e, V[:, idx])
             U_new = BV / sigma[idx][None, :]
-            norms = np.maximum(np.linalg.norm(U_new, axis=0), SAFMIN)
+            norms = np.maximum(_system_dnrm2_axis0(U_new), SAFMIN)
             U[:, idx] = U_new / norms[None, :]
 
         if np.any(recover_v):
@@ -856,7 +906,7 @@ def bidiag_svd(d, e):
             if _verbose: print(f'  [Bv recovery] recovering V for cols {idx.tolist()}')
             BTU = _bidiagT_matvec_batch(d, e, U[:, idx])
             V_new = BTU / sigma[idx][None, :]
-            norms = np.maximum(np.linalg.norm(V_new, axis=0), SAFMIN)
+            norms = np.maximum(_system_dnrm2_axis0(V_new), SAFMIN)
             V[:, idx] = V_new / norms[None, :]
 
         if np.any(both_good):
@@ -864,8 +914,8 @@ def bidiag_svd(d, e):
             BV = _bidiag_matvec_batch(d, e, V[:, idx])
             BTU = _bidiagT_matvec_batch(d, e, U[:, idx])
             sig_idx = sigma[idx]
-            res_v = np.linalg.norm(BV - sig_idx[None, :] * U[:, idx], axis=0)
-            res_u = np.linalg.norm(BTU - sig_idx[None, :] * V[:, idx], axis=0)
+            res_v = _system_dnrm2_axis0(BV - sig_idx[None, :] * U[:, idx])
+            res_u = _system_dnrm2_axis0(BTU - sig_idx[None, :] * V[:, idx])
             bnorm_val = max(np.max(np.abs(d)), np.max(np.abs(e[:n-1])) if n > 1 else 0.0)
             thresh_arr = 10 * n * EPS * np.maximum(sig_idx, bnorm_val)
             fix_v = (res_v > thresh_arr) & (res_v > res_u)
@@ -879,13 +929,13 @@ def bidiag_svd(d, e):
                 fv_idx = idx[fix_v]
                 if _verbose: print(f'  [Bv recovery] fixing V for cols {fv_idx.tolist()}')
                 V_new = BTU[:, fix_v] / sigma[fv_idx][None, :]
-                norms = np.maximum(np.linalg.norm(V_new, axis=0), SAFMIN)
+                norms = np.maximum(_system_dnrm2_axis0(V_new), SAFMIN)
                 V[:, fv_idx] = V_new / norms[None, :]
             if np.any(fix_u):
                 fu_idx = idx[fix_u]
                 if _verbose: print(f'  [Bv recovery] fixing U for cols {fu_idx.tolist()}')
                 U_new = BV[:, fix_u] / sigma[fu_idx][None, :]
-                norms = np.maximum(np.linalg.norm(U_new, axis=0), SAFMIN)
+                norms = np.maximum(_system_dnrm2_axis0(U_new), SAFMIN)
                 U[:, fu_idx] = U_new / norms[None, :]
 
         # Sign fix — only multi-block columns
@@ -903,8 +953,8 @@ def bidiag_svd(d, e):
         # GS completion — at most 1 zero singular value per bidiag split,
         # so at most 1 zero-V col and 1 zero-U col. The missing vector
         # is the unique orthogonal complement of the other n-1 columns.
-        all_v_norms = np.linalg.norm(V, axis=0)
-        all_u_norms = np.linalg.norm(U, axis=0)
+        all_v_norms = _system_dnrm2_axis0(V)
+        all_u_norms = _system_dnrm2_axis0(U)
         zero_v_mc = mc[all_v_norms[mc] < 0.5]
         zero_u_mc = mc[all_u_norms[mc] < 0.5]
         if len(zero_v_mc) > 0 or len(zero_u_mc) > 0:
@@ -914,11 +964,12 @@ def bidiag_svd(d, e):
             good_mask = np.arange(n) != j
             good_mask &= all_v_norms > 0.5
             V_good = V[:, good_mask]
-            # Two-pass MGS with random start
-            v_cand = np.random.randn(n)
+            # Two-pass MGS with random start. Deterministic seed = (1, 3, 5, 7+2j+1)
+            # so we get reproducibility (and bit-match between Python+Fortran).
+            v_cand = _dlarnv_normal(n, (1, 3, 5, (2*int(j) + 1) & 4095 | 1))
             v_cand -= V_good @ (V_good.T @ v_cand)  # pass 1
             v_cand -= V_good @ (V_good.T @ v_cand)  # pass 2
-            nrm = np.linalg.norm(v_cand)
+            nrm = _system_dnrm2(v_cand)
             if nrm > 1e-14:
                 V[:,j] = v_cand / nrm
                 if _verbose: print(f'    filled V[:,{j}] via orthogonal complement')
@@ -926,11 +977,11 @@ def bidiag_svd(d, e):
             good_mask = np.arange(n) != j
             good_mask &= all_u_norms > 0.5
             U_good = U[:, good_mask]
-            # Two-pass MGS with random start
-            u_cand = np.random.randn(n)
+            # Two-pass MGS with random start. Different fixed seed than V loop.
+            u_cand = _dlarnv_normal(n, (2, 4, 6, (2*int(j) + 3) & 4095 | 1))
             u_cand -= U_good @ (U_good.T @ u_cand)  # pass 1
             u_cand -= U_good @ (U_good.T @ u_cand)  # pass 2
-            nrm = np.linalg.norm(u_cand)
+            nrm = _system_dnrm2(u_cand)
             if nrm > 1e-14:
                 U[:,j] = u_cand / nrm
                 if _verbose: print(f'    filled U[:,{j}] via orthogonal complement')
