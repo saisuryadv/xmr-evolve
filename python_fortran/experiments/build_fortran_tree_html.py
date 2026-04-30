@@ -61,6 +61,16 @@ text.edge-label { font-family: SF Mono, Menlo, Consolas, monospace;
               background: #f6f8fa; padding: 0.4em 0.6em; border-radius: 3px;
               font-family: SF Mono, Menlo, Consolas, monospace;
               white-space: pre; margin-top: 0.4em; }
+.half-card { background: #fcfcfd; border: 1px solid #e2e6ea;
+             border-radius: 3px; padding: 0.4em 0.5em; }
+.half-card h4 { margin: 0 0 0.2em; font-size: 0.9em; color: #024;
+                font-family: SF Mono, Menlo, Consolas, monospace; }
+.head-stats { font-size: 0.78em; color: #444; margin-bottom: 0.3em;
+              font-family: SF Mono, Menlo, Consolas, monospace; }
+.head-stats .stats { color: #555; }
+.head-stats .stats b { color: #06335c; }
+.bad { color: #b22; font-weight: bold; }
+.ok  { color: #2a2; font-weight: bold; }
 .banner { background: #fef9e7; border-left: 4px solid #c80; padding: 0.6em 0.9em;
           border-radius: 3px; margin-top: 1em; font-size: 0.92em; }
 .legend { display: flex; gap: 1em; align-items: center; font-size: 0.86em;
@@ -247,40 +257,71 @@ def render_svg(label, nodes, color_field, max_width_px=620,
     return "\n".join(svg)
 
 
-def card_html(label, info):
-    nodes = info["nodes"]
+def _ncd_summary(nodes):
     if not nodes:
-        return (f'<div class="tree-card"><h3>{label}</h3>'
+        return None
+    vals = sorted(n["ncd_recon"] for n in nodes)
+    return {"min": vals[0], "median": vals[len(vals)//2], "max": vals[-1]}
+
+
+def _half_card(variant_label, info):
+    """Render one half of the dual-variant card (BLK or NB)."""
+    if not info or not info.get("nodes"):
+        return (f'<div class="half-card"><h4>{variant_label}</h4>'
                 f'<div style="color:#888; font-size:0.86em;">'
-                f'No descent occurred — every eigenvalue resolved as a '
-                f'singleton or zero-width batch at the root level. '
-                f'(Tree depth 0; <code>dlaxrf</code> not invoked or never '
-                f'produced a successful child.)</div></div>')
+                f'No <code>dlaxrf</code> descent — depth-0 root only.'
+                f'</div></div>')
+    nodes = info["nodes"]
     md = info["max_depth"]
-    ncd_vals = sorted(n["ncd_recon"] for n in nodes)
-    ncd_min = ncd_vals[0]
-    ncd_max = ncd_vals[-1]
-    ncd_med = ncd_vals[len(ncd_vals) // 2]
-    head = (f'{label} — {len(nodes)} child-nodes, max depth {md} '
-            f'(matrix n={info["n_in_matrix"]}) &nbsp;|&nbsp; '
-            f'NCD_recon min={ncd_min:.3e} '
-            f'median={ncd_med:.3e} '
-            f'max={ncd_max:.3e}')
+    ncd = _ncd_summary(nodes)
+    head = (f'{len(nodes)} child-nodes, depth 0..{md}<br>'
+            f'<span class="stats">NCD min={ncd["min"]:.2e} '
+            f'median={ncd["median"]:.2e} '
+            f'<b>max={ncd["max"]:.2e}</b></span>')
     detail = []
-    for n in nodes[:30]:
+    for n in nodes[:20]:
         detail.append(
-            f'd={n["depth"]}  ic=[{n["icbeg"]:>3},{n["icend"]:>3}]  '
-            f'n={n["n_in_node"]:>4}  tau={n["tau"]:+.3e}  '
-            f'NCD_recon={n["ncd_recon"]:.3e}  '
+            f'd={n["depth"]}  n={n["n_in_node"]:>4}  '
+            f'NCD={n["ncd_recon"]:.2e}  '
             f'recon=[{n["recon_dmin"]:+.2e},{n["recon_dmax"]:+.2e}]'
         )
-    if len(nodes) > 30:
-        detail.append(f'… ({len(nodes) - 30} more)')
+    if len(nodes) > 20:
+        detail.append(f'… ({len(nodes) - 20} more)')
     detail_block = "<pre class='detail-box'>" + "\n".join(detail) + "</pre>"
-    svg_recon = render_svg(label, nodes, "ncd_recon")
+    svg_recon = render_svg(variant_label, nodes, "ncd_recon")
+    return (f'<div class="half-card"><h4>{variant_label}</h4>'
+            f'<div class="head-stats">{head}</div>'
+            f'{svg_recon}{detail_block}</div>')
+
+
+def card_html(label, variants):
+    """variants = {"blocks": info, "noblocks": info} or single info (back-compat)."""
+    # Back-compat: if variants is a single info dict (has "nodes"), wrap it.
+    if isinstance(variants, dict) and "nodes" in variants:
+        variants = {"blocks": variants}
+
+    blk = variants.get("blocks")
+    nob = variants.get("noblocks")
+
+    blk_max = _ncd_summary(blk["nodes"])["max"] if blk and blk.get("nodes") else None
+    nob_max = _ncd_summary(nob["nodes"])["max"] if nob and nob.get("nodes") else None
+
+    diff_note = ""
+    if blk_max is not None and nob_max is not None:
+        if blk_max > 0 and nob_max > 0 and blk_max / nob_max > 100:
+            diff_note = (f' &nbsp; <span class="bad">BLK NCD is {blk_max/nob_max:.1e}× '
+                         f'larger than NB NCD — block branch likely wrong</span>')
+        elif blk_max > 0 and nob_max > 0 and 0.1 < blk_max / nob_max < 10:
+            diff_note = ' &nbsp; <span class="ok">BLK ≈ NB</span>'
+
+    n_in_matrix = (blk or nob or {}).get("n_in_matrix", "?")
+    head = f'<b>{label}</b> &nbsp; matrix n={n_in_matrix}{diff_note}'
+
     return (f'<div class="tree-card"><h3>{head}</h3>'
-            f'<div class="tree-row" style="grid-template-columns:1fr;">{svg_recon}</div>'
-            f'{detail_block}</div>')
+            f'<div class="tree-row">'
+            f'{_half_card("blocks (USEBLOCKS=.TRUE.)", blk)}'
+            f'{_half_card("noblocks (USEBLOCKS=.FALSE.)", nob)}'
+            f'</div></div>')
 
 
 def main():
@@ -308,23 +349,25 @@ def main():
         ("STCollection (real-world)", stcoll),
     ]
 
-    body = ['<h1>MR3 Representation Tree — captured from the Fortran kernel</h1>',
+    body = ['<h1>MR3 Representation Tree — captured from the Fortran kernel (dual variant)</h1>',
         '<div class="controls">'
         '<p>Each tree is the <b>actual</b> output of '
-        '<code>mr3gk_fortran/mr3gk_run_traced</code>, which links a copy of '
-        '<code>dlaxrf.f</code> instrumented to write one log line per '
-        'successful child representation. <b>No Python re-implementation '
-        'is involved</b> in producing these trees — every value below is '
-        'computed inside the Fortran kernel (reconstruction in '
-        'quad precision via libquadmath) and emitted via '
-        '<code>WRITE(99, ...)</code>. The Python harness only parses the '
-        'resulting log file.</p>'
-        '<div class="formula"><b>recon_d<sub>i</sub></b> = D[i] + e[i−1]<sup>2</sup> / D[i−1]'
-        '&nbsp;&nbsp;(reconstructs the diagonal of L·D·L<sup>T</sup>)<br>'
-        '<b>NCD_recon</b> = (recon_d<sub>max</sub> − recon_d<sub>min</sub>) / |recon_d<sub>min</sub>|<br>'
+        '<code>mr3gk_fortran/mr3gk_run_traced</code> (with 2×2 block '
+        'factorization) and <code>mr3gk_run_traced_noblk</code> '
+        '(<code>USEBLOCKS=.FALSE.</code>: every node uses scalar pivots only). '
+        '<b>No Python re-implementation involved</b> in producing the '
+        'numbers — each kernel writes one log line per successful child, '
+        'reconstructing diag(N·G·N<sup>T</sup>) in quad precision via '
+        '<code>libquadmath</code>. The Python harness only parses logs.</p>'
+        '<div class="formula"><b>NCD_recon</b> = '
+        '(recon_d<sub>max</sub> − recon_d<sub>min</sub>) / |recon_d<sub>min</sub>|<br>'
         '&nbsp;&nbsp;denominator gets +1e-16 only when |recon_d<sub>min</sub>| ≤ 1e-16</div>'
-        '<p style="margin-top:0.5em;">Hover over any node circle to see '
-        'recon range and NCD_recon. Color reflects log<sub>10</sub>(NCD_recon).</p>'
+        '<p style="margin-top:0.5em;">Each card shows two columns: '
+        '<b>blocks</b> (production, USEBLOCKS=.TRUE.) on the left, '
+        '<b>noblocks</b> (USEBLOCKS=.FALSE.) on the right. '
+        'Hover any node for full per-node detail. The header flags '
+        'matrices where BLK and NB diverge by more than 100× — those '
+        'expose the difference between the two factorization regimes.</p>'
         '</div>',
         '<div class="legend">'
         '<span><span class="swatch" style="background:rgb(40,40,220)"></span>low NCD</span>'
