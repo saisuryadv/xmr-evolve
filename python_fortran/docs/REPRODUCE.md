@@ -330,18 +330,38 @@ upstream Willems XMR + the test scaffolding only (no seed Python code),
 here are the 10 prompts in order. Each is a single message to a fresh
 agent session.
 
-The starting state for Checkpoint A is:
+The starting state for Checkpoint A is the folder
+**`python_fortran/initial_code/`** in this repo. It contains exactly:
 
 ```
-python_fortran_a/
-├── xmr_src/                  # upstream Willems Fortran (44 .f files)
-├── stcollection/             # 19 STCollection .dat files
+initial_code/
+├── README.md                 # explains contents + verification steps
+├── xmr_src/                  # Paul Willems' Fortran XMR source — UNTOUCHED
+│                             #   44 .f files; both bugs from BUGREPORT.md
+│                             #   are present in their original buggy form:
+│                             #   * dlaxre.f:268      — IF(.FALSE.) (Bug #1)
+│                             #   * dlaxrb_clssfy.f:361,412,438
+│                             #                       — unguarded MIN (Bug #2)
+├── stcollection/             # 19 .dat files (Marques et al., untouched)
 ├── full_eval.py              # 90 adversarial pattern generators
 └── evaluate.py               # 379-test scoring harness
 ```
 
-(No `mr3_gk.py`, no `dlaxre_gk.f`, no `libxmr.so`, no C wrapper, no
-ctypes glue — the agent writes all of those.)
+To run the recipe, copy this folder to a fresh workspace:
+
+```
+cp -r python_fortran/initial_code /tmp/repro_workspace
+cd /tmp/repro_workspace
+# feed the prompts below in order to a fresh `claude --print` agent for each
+```
+
+The agent has to produce **everything else**:
+- `mr3_gk.py` — Python orchestration entry point
+- `xmr_wrapper.c` — C glue calling the Fortran kernel
+- `xmr_ctypes.py` — Python ctypes binding
+- `build.sh` — compiles the kernel + wrappers into `libxmr.so`
+- `dlaxre_gk.f` — patched copy of `xmr_src/dlaxre.f`, Bug #1 fix
+- `dlaxrb_clssfy_fix.f` — patched copy of `xmr_src/dlaxrb_clssfy.f`, Bug #2 fix
 
 ### Prompt A0 — read the paper and survey
 
