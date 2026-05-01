@@ -1,9 +1,29 @@
 # How to reproduce the python_fortran MR3-GK SVD with an LLM agent
 
 This document gives you the **prompt sequence** that, when fed to a Claude (or
-similar) coding agent in order, will evolve a starting state into the final
-working 379/379 implementation. It also documents what initial code we built
-on top of (Paul Willems' XMR Fortran library + the seed Python wrapper).
+similar) coding agent in order, will evolve a naive starting state into the
+final working 379/379 implementation. It also documents what initial code we
+built on top of (Paul Willems' XMR Fortran library) and the historical
+evolution that produced our seed commit.
+
+## Historical evolution (22/64 → 300/379)
+
+The `python_fortran/` directory's first commit `c6d73b2` already passed
+300/379 — but it represents the *end-state* of about two weeks of evolution
+on top of upstream Willems XMR. Each step is documented in the seed commit's
+`CHANGES.md`. The full arc:
+
+| Step | Pass rate | Key change |
+|---|---|---|
+| 0 | 22/64 | Naive Python wrapper: T_GK perfect-shuffle + LAPACK `dstebz` for eigenvalues + ctypes call to XMR for eigenvectors. No sign handling, no recovery, no splitting. |
+| 1 | 23/64 | **Negative off-diag fix**: T_GK off-diagonals can be negative when bidiagonal d_i < 0; XMR rejects them. Apply diagonal-similarity sign normalization before XMR. |
+| 2 | 142/379 | **Activate dlaxre GK branch** (Bug #1): `IF(.FALSE.)` guard on the GK-detection branch in `dlaxre.f` was disabled. Replace with `IF(ABS(DMAX)+ABS(DMIN) < EPS·EMAX)`. Also add the **D1/D2 sign matrices** for U/V recovery from |B|'s eigenvectors. |
+| 3 | 290/379 | **Bv recovery + Gram-Schmidt completion**: when one half of a T_GK eigenvector is corrupt, recompute via `u = Bv/σ` (or `v = Bᵀu/σ`); for σ=0 columns, fill in the orthogonal complement via Gram-Schmidt. |
+| 4 | **300/379** | **Two-phase splitting + singleton handling**: phase-1 relative split + phase-2 absolute split (Willems-Lang condition 3.5). Singletons (k=1 blocks) directly produce ±1 columns. ← **Seed commit `c6d73b2`** |
+
+The 6 prompts in this recipe take the 300/379 seed to 379/379. The 10 prompts
+in the optional "Checkpoint A" appendix walk through the entire 22/64 →
+379/379 arc.
 
 There are two checkpoints you can start from:
 
@@ -48,32 +68,47 @@ XMR has two latent bugs that block bidiagonal SVD entirely:
 
 You will fix both.
 
-### Checkpoint B — seed at commit `c6d73b2` (300/371)
+### Checkpoint B — seed at commit `c6d73b2` + modern evaluator (300/379)
 
-You start from the python_fortran/ first commit, which already contains:
+You start from the python_fortran/ first commit (which is the day the
+`python_fortran/` directory was first created), but with **the latest
+`evaluate.py` and `full_eval.py` overlaid from project HEAD**. The
+algorithm code being evolved (`mr3_gk.py`, `dlaxre_gk.f`, `libxmr.so`,
+`xmr_wrapper.c`, etc.) is exactly the seed-commit version; only the
+test scoreboard is upgraded.
 
-- `libxmr.so` built from upstream `xmr_src/` (with our XMR Bug #1 fix
-  patched in — `dlaxre.f` → `dlaxre_gk.f`).
-- `xmr_wrapper.c` C glue + `xmr_ctypes.py` ctypes binding.
-- `mr3_gk.py` Python orchestration (~640 lines): T_GK construction, splitting,
-  sign matrices D1/D2, Bv recovery, basic Gram-Schmidt completion.
-- `evaluate.py`, `full_eval.py`, the 19 STCollection files.
+Why the overlay: the seed-commit `evaluate.py` has a regex parsing
+bug in `get_patterns()` that misses 2 of 90 adversarial patterns
+(`chkbd_4`, `chkbd_16`, generated from a parameterized loop), so its
+suite reports 371 tests instead of 379. The modern evaluator (which
+fixed that regex with `importlib`) reports the full 379 against the
+same algorithm code. Using the modern scoreboard from the start means
+the recipe is measured against the standard 379-test suite all the
+way through, which makes the progression numbers cleaner and matches
+the headline 379/379 you're trying to reproduce.
 
-At this checkpoint, `python3 evaluate.py` reports **300/371** passing.
-The "/371" (rather than "/379") is a **regex bug** in the seed's
-`get_patterns()` — it parses `full_eval.py` source with
-`r"if\s+name\s*==\s*'(\w+)'"`, which catches 88 of the 90 patterns
-(misses `chkbd_4`, `chkbd_16` that come from a parameterized loop).
-4 sizes × 88 patterns + 19 STCollection = 371. The fix in prompt 1
-switches to `importlib` to read `adv_names` directly, recovering all
-4 × 90 + 19 = 379.
+After the overlay, the worktree contains:
 
-`evaluate.py` also reports a **SCORE** (pass-rate × O(n²) timing-ratio
-gate). At the seed it's hard-gated at `SCORE = 5.00` by timing
-outliers. Subsequent prompts both improve the pass count *and* lift
-the SCORE gate.
+- **From `c6d73b2` (the algorithm and substrate):**
+  - `libxmr.so` built from upstream `xmr_src/` (with our XMR Bug #1 fix
+    patched in — `dlaxre.f` → `dlaxre_gk.f`).
+  - `xmr_wrapper.c` C glue + `xmr_ctypes.py` ctypes binding.
+  - `mr3_gk.py` Python orchestration (~640 lines): T_GK construction,
+    splitting, sign matrices D1/D2, Bv recovery, basic GS completion.
+  - 19 STCollection `.dat` files.
 
-The remaining 71 failures fall into three groups:
+- **From HEAD (the test scoreboard only):**
+  - `evaluate.py` (modern; reports the 379-test full suite).
+  - `full_eval.py` (90 adversarial pattern generators).
+
+`python3 evaluate.py` on this configuration reports **300/379**
+passing. `evaluate.py` also reports a **SCORE** (pass-rate × O(n²)
+timing-ratio gate). At this state it's hard-gated at `SCORE = 5.00`
+by single-run timing noise; the modern evaluator's median-of-5 timing
+helps stabilize it once the prompt-1 singleton bypass also drops the
+timing outliers from the slowest tests.
+
+The remaining 79 failures fall into three groups:
 
 - ~~Singleton-block timeout~~ (~70 patterns time out in O(n³) GS)
 - Tight clusters (`demmel_S1pe_k4`, `pd_T0`, `gl_abcon3`, …)
@@ -92,47 +127,30 @@ only the current state of the working tree.
 The agent should have read/write tooling on `python_fortran/` and shell access
 to run `python3 evaluate.py`, `bash build.sh`, and Fortran compilation.
 
-### Prompt 1 — get_patterns regex + singleton-block bypass + timing robustness (300/371 → ~310/379)
+### Prompt 1 — singleton-block bypass (300/379 → ~310/379)
 
 ```
-Run `python3 evaluate.py` and observe the current score
-(you should see TOTAL: 300/371 — the suite is documented as 379 but
-only 371 tests run because of a regex bug; we'll fix that here too).
+Run `python3 evaluate.py` and observe the current score (you will see
+TOTAL: 300/379 — the chkbd_*, saw_tooth, and step_function patterns
+at n >= 200 are timing out).
 
-Three changes in this single prompt:
+The root cause is in mr3_gk.py:mr3_tgk: when the bidiagonal splitter
+produces a singleton block (k=1), the code still calls XMR on a
+trivial 2x2 T_GK matrix. XMR returns degenerate eigenvectors with
+||v||=1, ||u||=0 (only even rows populated). The post-processing
+then runs O(n^3) Gram-Schmidt on hundreds of such columns.
 
-(a) get_patterns() in evaluate.py uses the regex
-    r"if\s+name\s*==\s*'(\w+)'" to extract pattern names from
-    full_eval.py source. This misses chkbd_4 and chkbd_16 (generated
-    from a parameterized loop, not literal `==` comparisons). Replace
-    the regex parsing with importlib: load full_eval.py as a module
-    and read its `adv_names` list directly. After this fix the suite
-    grows from 88 × 4 + 19 = 371 to 90 × 4 + 19 = 379.
-
-(b) Singleton-block bypass in mr3_gk.py:mr3_tgk. When the bidiagonal
-    splitter produces a singleton block (k=1), the code still calls
-    XMR on a trivial 2x2 T_GK matrix. XMR returns degenerate
-    eigenvectors with ||v||=1, ||u||=0 (only even rows populated).
-    The post-processing then runs O(n^3) Gram-Schmidt on hundreds
-    of such columns, causing chkbd_* and saw_tooth patterns at
-    n >= 200 to time out.
-
-    Add a fast path in mr3_tgk that handles singleton blocks
-    directly, bypassing the XMR call:
-       - sigma = |d[i]|
-       - both u and v components are 1/sqrt(2) at the corresponding row
-       - apply sign matrices D1, D2 (constructed earlier in
-         bidiag_svd) to recover correct signs
-
-(c) Also add timing robustness to test_one(): two warmup runs (JIT,
-    cache effects), then 5 timed runs and take the median. This
-    stabilizes the SCORE gate (which is sensitive to single-run
-    timing noise).
+Add a fast path in mr3_tgk that handles singleton blocks directly,
+bypassing the XMR call:
+   - sigma = |d[i]|
+   - both u and v components are 1/sqrt(2) at the corresponding row
+   - apply sign matrices D1, D2 (constructed earlier in bidiag_svd)
+     to recover correct signs
 
 Do NOT modify dlaxre_gk.f or any Fortran file. Re-run evaluate.py.
-You should see TOTAL: ~310/379 (a few specs that newly appeared from
-the get_patterns fix may fail at first) and SCORE much higher than
-5.00 (the timing gate stops capping; expect ~80s).
+The chkbd patterns must no longer time out. Score should jump to
+roughly 305-320/379 and SCORE should rise above 5.00 once the
+timing outliers are gone.
 ```
 
 ### Prompt 2 — Bv recovery threshold + GS vectorization (~330 → ~340)
@@ -305,32 +323,199 @@ driver to within 2*eps.
 
 ---
 
-## Checkpoint A (full reproduction from upstream Willems) — sketch
+## Checkpoint A (full reproduction from upstream Willems — 10 prompts)
 
-If you want to reproduce from scratch (no seed code), here are the 9 prompts
-that, applied in order, evolve from upstream XMR + test scaffolding to
-379/379:
+If you want to reproduce the *entire* 22/64 → 379/379 arc starting from
+upstream Willems XMR + the test scaffolding only (no seed Python code),
+here are the 10 prompts in order. Each is a single message to a fresh
+agent session.
 
-1. **Read the paper.** "Willems & Lang 2012 ETNA Algorithm 4.1 describes an
-   O(n²) bidiagonal SVD via T_GK + MR³. Read the paper, summarize the steps,
-   identify what the existing xmr_src/ provides and what's missing."
-2. **Build libxmr.so + ctypes glue.** "Compile every .f in xmr_src/ with
-   `-fPIC -O2 -std=legacy`. Write `xmr_wrapper.c` that calls `dlaxre_` then
-   `dlaxrv_`. Write `xmr_ctypes.py` that loads `libxmr.so` and exposes
-   `xmr_eigenvectors(d, e, …)`."
-3. **First-pass `mr3_gk.py:bidiag_svd`.** "T_GK perfect-shuffle, LAPACK
-   dstebz for eigenvalues, ctypes call to XMR for eigenvectors. Return
-   (sigma, U, V). Goal: ~22/64 small-test pass."
-4. **Sign matrices D1, D2.** "T_GK uses |d|,|e|. Build D1, D2 such that
-   B = D1·|B|·D2, apply them when extracting U, V from the T_GK eigenvectors."
-5. **Activate dlaxre GK branch.** Bug #1 from BUGREPORT.md (replace
-   `IF(.FALSE.)` with `IF(ABS(DMAX)+ABS(DMIN) < EPS·EMAX)`). Score ~142/379.
-6. **Bv recovery + Gram-Schmidt completion.** Score ~290/379.
-7. **Two-phase splitting (relative + absolute condition 3.5).** "Phase 1
-   relative: split where `|e[i]| ≤ EPS·(|d[i]|+|d[i+1]|)`. Phase 2 absolute:
-   within each Phase-1 block, split where `|e[i]| ≤ k·EPS·||B_block||`.
-   Zero out e at split points." Score ~300/379.
-8. **Apply Checkpoint B prompts 1–6 in order** to reach 379/379.
+The starting state for Checkpoint A is:
+
+```
+python_fortran_a/
+├── xmr_src/                  # upstream Willems Fortran (44 .f files)
+├── stcollection/             # 19 STCollection .dat files
+├── full_eval.py              # 90 adversarial pattern generators
+└── evaluate.py               # 379-test scoring harness
+```
+
+(No `mr3_gk.py`, no `dlaxre_gk.f`, no `libxmr.so`, no C wrapper, no
+ctypes glue — the agent writes all of those.)
+
+### Prompt A0 — read the paper and survey
+
+```
+Inside python_fortran_a/ you have:
+  - xmr_src/ : Paul Willems' XMR Fortran source (44 files, ~14K LOC)
+  - stcollection/ : 19 .dat files of bidiagonal test matrices
+  - full_eval.py : 90 adversarial pattern generators (function `make`,
+    list `adv_names`)
+  - evaluate.py : 379-test scoring harness
+
+Read the Willems-Lang 2012 ETNA preprint (Algorithm 4.1, T_GK
+construction, the MR^3 representation tree). Then survey xmr_src/
+and identify:
+  - the public entry points (DSTEXR, the dlaxr* family),
+  - what XMR provides (tridiagonal eigenpairs only — no SVD),
+  - what we'll need to build on top of XMR for bidiagonal SVD.
+
+Output: a short SURVEY.md summarizing the paper's algorithm and what
+the user-side wrapper has to provide.
+```
+
+### Prompt A1 — naive Python wrapper (target: ~22/64 on small subset)
+
+```
+Build the basic Python+Fortran pipeline:
+
+(1) Compile xmr_src/*.f into libxmr.so:
+    gfortran -fPIC -O2 -std=legacy -w -fno-second-underscore -c
+    For each .f, then link with `gcc -shared -o libxmr.so *.o
+    -lgfortran -llapack -lblas -lm`. Put a build.sh script in place.
+
+(2) Write xmr_wrapper.c — a minimal C function `xmr_eigenvectors`
+    that calls `dlaxre_` (root representation) followed by
+    `dlaxrv_` (eigenvectors) and returns (eigenvalues, eigenvectors)
+    by pointer.
+
+(3) Write xmr_ctypes.py — a thin ctypes wrapper exposing
+    `xmr_eigenvectors(d, e, n_eigvecs)` from libxmr.so to Python.
+
+(4) Write mr3_gk.py:bidiag_svd(d, e):
+    - Form T_GK = perfect_shuffle([0]*2n with off-diag [|d_0|, |e_0|,
+      |d_1|, |e_1|, ...]).
+    - Call scipy.linalg.lapack.dstebz to get the n positive
+      eigenvalues of T_GK (these are the singular values).
+    - Call xmr_eigenvectors(0..0, off_diag, n) to get eigenvectors
+      of T_GK.
+    - De-interleave: V[i,j] = z[2i, j], U[i,j] = z[2i+1, j].
+    - Return (sigma, U, V, info=0).
+
+No sign handling, no Bv recovery, no GS completion, no splitting.
+
+Run `python3 evaluate.py --small` (or the smallest subset). Expect
+about 22/64 passing — the negative-bidiag matrices and tight clusters
+will fail.
+```
+
+### Prompt A2 — negative off-diagonal sign normalization (target: 23/64)
+
+```
+Several test bidiagonals have d[i] < 0 or e[i] < 0. The T_GK
+perfect-shuffle propagates those signs into off-diagonals, which
+XMR rejects. Normalize before calling XMR:
+
+  build the T_GK off-diagonal vector with absolute values: |d_i|, |e_i|
+  track sign flips
+  remember to undo them when extracting U, V.
+
+Score should creep to 23/64.
+```
+
+### Prompt A3 — activate dlaxre GK branch + sign matrices D1, D2 (target: 142/379)
+
+```
+Two changes for the big jump:
+
+(a) Activate the GK branch in dlaxre.f.
+    Copy xmr_src/dlaxre.f to python_fortran_a/dlaxre_gk.f.
+    Around line 269 you'll find:
+        IF( .FALSE. )THEN
+        C    Support for GK-type matrices deactivated.
+    Replace with:
+        IF( ABS(DMAX)+ABS(DMIN) .LT. EPS*EMAX )THEN
+        C    GK-type matrix: constant (zero) diagonal.
+    This activates the GK-aware root representation per Willems-Lang
+    Algorithm 4.1.
+
+    Modify build.sh to compile dlaxre_gk.f and link its .o in place
+    of xmr_src/dlaxre.o. Rebuild libxmr.so.
+
+(b) Sign matrices D1, D2 in mr3_gk.py.
+    T_GK uses |d|, |e|; its eigenvectors are for |B|, not B itself.
+    To recover U, V for the original B, build:
+        d1[0] = 1.0
+        d2[0] = sign(d[0]) if d[0] != 0 else 1.0
+        for i = 0..n-2:
+            s_e = sign(e[i]) if e[i] != 0 else 1.0
+            d2[i+1] = s_e / d1[i] if abs(d1[i]) > 0 else s_e
+            s_d = sign(d[i+1]) if d[i+1] != 0 else 1.0
+            d1[i+1] = s_d / d2[i+1] if abs(d2[i+1]) > 0 else s_d
+
+    Apply when extracting:
+        V[:,j] = z[0::2,j] * d2
+        U[:,j] = z[1::2,j] * d1
+
+Run `python3 evaluate.py`. Score should jump to ~142/379. This is
+the largest single improvement in the entire arc (GK structure
+preservation is the core of the algorithm).
+```
+
+### Prompt A4 — Bv recovery + Gram-Schmidt completion (target: ~290/379)
+
+```
+After step A3, many singular triplets pass but some have one corrupt
+half (e.g., ||u_j|| ≈ 0 while ||v_j|| ≈ 1, or vice versa).
+
+(a) Bv recovery. After extracting U, V, sigma:
+    - For each column j with sigma[j] > sigma_max * eps:
+      compute B*v[:,j] (one bidiagonal matvec) and B^T*u[:,j].
+      If ||B*v - sigma*u|| > threshold, recompute u = B*v/sigma.
+      If ||B^T*u - sigma*v|| > threshold, recompute v = B^T*u/sigma.
+      Both branches: re-normalize.
+
+(b) Gram-Schmidt completion. For columns j with sigma[j] near zero:
+    one half (u_j or v_j) may be all-zero; fill in via Gram-Schmidt
+    against all the other already-good columns to maintain
+    orthogonality. Two passes of MGS give numerical stability.
+
+Run evaluate.py. Score should reach ~290/379. The remaining failures
+are clustered/graded matrices and tight zero-σ cases.
+```
+
+### Prompt A5 — two-phase splitting + singleton fast-path (target: 300/379)
+
+```
+Two algorithmic refinements that bring us to the seed-commit state:
+
+(a) Two-phase bidiagonal splitting per Willems-Lang condition (3.5).
+    Phase 1 (relative): split where |e[i]| <= eps * (|d[i]| + |d[i+1]|).
+    Phase 2 (absolute): within each phase-1 block of size k_sub,
+      compute ||B_sub||_inf, split where |e[i]| <= k_sub * eps * ||B_sub||.
+    Zero out e[i] at every split point so cross-block contamination
+    can't happen during Bv recovery.
+
+(b) Singleton-block fast path: when splitting produces a 1x1 block,
+    don't call XMR. Direct write:
+      sigma = |d[i]|
+      U[i, col] = d1[i] (already +/-1)
+      V[i, col] = d2[i] (already +/-1)
+
+Re-run evaluate.py. Should now report 300/379. This matches the
+state of seed commit c6d73b2 in our git history.
+```
+
+### Prompts A6 – A10 — same as Checkpoint B prompts 1 – 6
+
+From here, follow Checkpoint B's prompts 1 through 6 verbatim.
+They take 300/379 → 379/379.
+
+| Prompt | Title | Target |
+|---|---|---|
+| A6 = B1 | (skip — already done in A5; or apply the BV-threshold tightening if you want a cleaner singleton fast-path) | – |
+| A7 = B2 | Bv recovery threshold + GS vectorization | ~325/379 |
+| A8 = B3 | T_GK sub-splitting + negative-e fix | ~325/379 |
+| A9 = B4 | Zero-shift QR deflation | ~360/379 |
+| A10 = B5 | dlaxrb_clssfy AVGTHRESH=0 fix | ~378/379 |
+| A11 = B6 | Adaptive GAPTOL | **379/379** |
+
+Total: ~10 distinct prompts to evolve from "naive Python+Fortran
+wrapper" to 379/379. The prompts A0-A5 are not validated by the
+agent harness in this repo — they're documented for reproducibility
+clarity but constructing the 22/64 starting state is itself a
+research project. The harness validates A6-A11 (= Checkpoint B)
+which is the empirically tested portion.
 
 ---
 
@@ -358,19 +543,20 @@ What it does:
 3. Writes `experiments/reproduce_results.json` with per-prompt
    (score_before, score_after, wall_time, files_changed).
 
-Expected progression:
+Expected progression (against the 379-test scoreboard from the start):
 
 | Prompt | Pass before | Pass after (expected) | What also moves |
 |---|---|---|---|
-| 1 | 300/371 | ~310/379 | Singletons no longer time out; get_patterns regex fixed → suite grows to 379; SCORE gate lifts (5.00 → ~83) |
+| 1 | 300/379 | ~310/379 | chkbd_*/saw_tooth no longer time out; SCORE gate lifts (5.00 → ~83) |
 | 2 | ~310/379 | ~325/379 | gl_gradm/chkbd ortU drops |
 | 3 | ~325/379 | ~325/379 | edge-case fixes (zero-d, neg-e) |
 | 4 | ~325/379 | ~360/379 | saw_tooth/step_function/gl_wilkp pass via zero-shift QR deflation |
 | 5 | ~360/379 | ~378/379 | Tight clusters pass (demmel_S1pe_*, three_clusters, pd_T0) via dlaxrb_clssfy fix |
 | 6 | ~378/379 | **379/379** | two_clusters@10 passes via adaptive GAPTOL |
 
-The exact numbers may shift by a few specs depending on agent execution
-nuances; the validation harness records the actual progression.
+The exact numbers may shift by a few specs depending on agent
+execution nuances; the validation harness records the actual
+progression.
 
 Cost estimate: ~30–60 min wall, depending on agent latency. Each prompt
 is independent so you can run them sequentially or interrupt and resume.
