@@ -59,12 +59,19 @@ You start from the python_fortran/ first commit, which already contains:
   sign matrices D1/D2, Bv recovery, basic Gram-Schmidt completion.
 - `evaluate.py`, `full_eval.py`, the 19 STCollection files.
 
-At this checkpoint, `python3 evaluate.py` reports **300/371** passing
-(this version of `evaluate.py` had 371 tests; the 379-test version came
-in a later commit). `evaluate.py` also reports a **SCORE** that combines
-pass-rate with an O(n²) timing-ratio gate; at the seed it's hard-gated
-at SCORE=5.00 by timing outliers. Subsequent prompts both improve the
-pass count *and* lift the SCORE gate.
+At this checkpoint, `python3 evaluate.py` reports **300/371** passing.
+The "/371" (rather than "/379") is a **regex bug** in the seed's
+`get_patterns()` — it parses `full_eval.py` source with
+`r"if\s+name\s*==\s*'(\w+)'"`, which catches 88 of the 90 patterns
+(misses `chkbd_4`, `chkbd_16` that come from a parameterized loop).
+4 sizes × 88 patterns + 19 STCollection = 371. The fix in prompt 1
+switches to `importlib` to read `adv_names` directly, recovering all
+4 × 90 + 19 = 379.
+
+`evaluate.py` also reports a **SCORE** (pass-rate × O(n²) timing-ratio
+gate). At the seed it's hard-gated at `SCORE = 5.00` by timing
+outliers. Subsequent prompts both improve the pass count *and* lift
+the SCORE gate.
 
 The remaining 71 failures fall into three groups:
 
@@ -85,28 +92,47 @@ only the current state of the working tree.
 The agent should have read/write tooling on `python_fortran/` and shell access
 to run `python3 evaluate.py`, `bash build.sh`, and Fortran compilation.
 
-### Prompt 1 — singleton-block bypass (300 → ~330)
+### Prompt 1 — get_patterns regex + singleton-block bypass + timing robustness (300/371 → ~310/379)
 
 ```
-Run `python3 evaluate.py` and observe the current score (you should see
-about 300/379). Several adversarial patterns time out — particularly
-chkbd_*, saw_tooth, and step_function at n ≥ 200. The root cause is in
-mr3_gk.py:mr3_tgk: when the bidiagonal splitter produces a singleton
-block (k=1), the code still calls XMR on a trivial 2x2 T_GK matrix.
-XMR returns degenerate eigenvectors with ||v||=1, ||u||=0 (only the
-even rows are populated). The post-processing then runs O(n^3)
-Gram-Schmidt on hundreds of such columns, causing timeout.
+Run `python3 evaluate.py` and observe the current score
+(you should see TOTAL: 300/371 — the suite is documented as 379 but
+only 371 tests run because of a regex bug; we'll fix that here too).
 
-Add a fast path in mr3_tgk that handles singleton blocks directly,
-bypassing the XMR call:
-  - sigma = |d[i]|
-  - both u and v components are 1/sqrt(2) at the corresponding row
-  - apply the sign matrices D1, D2 (which are constructed earlier in
-    bidiag_svd) to recover the correct signs
+Three changes in this single prompt:
 
-Do NOT modify dlaxre_gk.f or any Fortran file. Re-run evaluate.py and
-verify the chkbd patterns no longer time out. Score should jump to
-roughly 320–340.
+(a) get_patterns() in evaluate.py uses the regex
+    r"if\s+name\s*==\s*'(\w+)'" to extract pattern names from
+    full_eval.py source. This misses chkbd_4 and chkbd_16 (generated
+    from a parameterized loop, not literal `==` comparisons). Replace
+    the regex parsing with importlib: load full_eval.py as a module
+    and read its `adv_names` list directly. After this fix the suite
+    grows from 88 × 4 + 19 = 371 to 90 × 4 + 19 = 379.
+
+(b) Singleton-block bypass in mr3_gk.py:mr3_tgk. When the bidiagonal
+    splitter produces a singleton block (k=1), the code still calls
+    XMR on a trivial 2x2 T_GK matrix. XMR returns degenerate
+    eigenvectors with ||v||=1, ||u||=0 (only even rows populated).
+    The post-processing then runs O(n^3) Gram-Schmidt on hundreds
+    of such columns, causing chkbd_* and saw_tooth patterns at
+    n >= 200 to time out.
+
+    Add a fast path in mr3_tgk that handles singleton blocks
+    directly, bypassing the XMR call:
+       - sigma = |d[i]|
+       - both u and v components are 1/sqrt(2) at the corresponding row
+       - apply sign matrices D1, D2 (constructed earlier in
+         bidiag_svd) to recover correct signs
+
+(c) Also add timing robustness to test_one(): two warmup runs (JIT,
+    cache effects), then 5 timed runs and take the median. This
+    stabilizes the SCORE gate (which is sensitive to single-run
+    timing noise).
+
+Do NOT modify dlaxre_gk.f or any Fortran file. Re-run evaluate.py.
+You should see TOTAL: ~310/379 (a few specs that newly appeared from
+the get_patterns fix may fail at first) and SCORE much higher than
+5.00 (the timing gate stops capping; expect ~80s).
 ```
 
 ### Prompt 2 — Bv recovery threshold + GS vectorization (~330 → ~340)
@@ -332,20 +358,19 @@ What it does:
 3. Writes `experiments/reproduce_results.json` with per-prompt
    (score_before, score_after, wall_time, files_changed).
 
-Expected progression (running on the seed `evaluate.py` which has 371 tests):
+Expected progression:
 
 | Prompt | Pass before | Pass after (expected) | What also moves |
 |---|---|---|---|
-| 1 | 300/371 | 300/371 | Singletons no longer time out → SCORE gate may lift |
-| 2 | ~300 | ~310 | gl_gradm/chkbd ortU drops |
-| 3 | ~310 | ~310 | edge-case fixes |
-| 4 | ~310 | ~330 | saw_tooth/step_function pass |
-| 5 | ~330 | ~370 | tight clusters pass (demmel, three_clusters, pd_T0) |
-| 6 | ~370 | **371/371** | two_clusters@10 passes |
+| 1 | 300/371 | ~310/379 | Singletons no longer time out; get_patterns regex fixed → suite grows to 379; SCORE gate lifts (5.00 → ~83) |
+| 2 | ~310/379 | ~325/379 | gl_gradm/chkbd ortU drops |
+| 3 | ~325/379 | ~325/379 | edge-case fixes (zero-d, neg-e) |
+| 4 | ~325/379 | ~360/379 | saw_tooth/step_function/gl_wilkp pass via zero-shift QR deflation |
+| 5 | ~360/379 | ~378/379 | Tight clusters pass (demmel_S1pe_*, three_clusters, pd_T0) via dlaxrb_clssfy fix |
+| 6 | ~378/379 | **379/379** | two_clusters@10 passes via adaptive GAPTOL |
 
-(The "300 → 379" arc happens once `evaluate.py` is updated to the 379-test
-suite at commit `59c1364`; the seed harness only sees 371 tests because
-n=400 wasn't yet in the size grid.)
+The exact numbers may shift by a few specs depending on agent execution
+nuances; the validation harness records the actual progression.
 
 Cost estimate: ~30–60 min wall, depending on agent latency. Each prompt
 is independent so you can run them sequentially or interrupt and resume.

@@ -41,16 +41,25 @@ DEFAULT_OUT = ROOT / "experiments" / "reproduce_results.json"
 CHECKPOINT_B_PROMPTS = [
     {
         "id": 1,
-        "title": "singleton-block bypass",
-        "expected_after": (315, 345),
-        "prompt": """Run `python3 evaluate.py` and observe the current score (you should see about 300/379). Several adversarial patterns time out — particularly chkbd_*, saw_tooth, and step_function at n >= 200. The root cause is in mr3_gk.py:mr3_tgk: when the bidiagonal splitter produces a singleton block (k=1), the code still calls XMR on a trivial 2x2 T_GK matrix. XMR returns degenerate eigenvectors with ||v||=1, ||u||=0. The post-processing then runs O(n^3) Gram-Schmidt on hundreds of such columns, causing timeout.
+        "title": "get_patterns regex + singleton bypass + timing robustness",
+        "expected_after": (305, 320),
+        "expected_total_after": 379,
+        "prompt": """Run `python3 evaluate.py` and observe the current score (you will see TOTAL: 300/371 — the suite is documented as 379 but only 371 tests run because of a regex bug; we will fix that too).
+
+Three changes in this prompt:
+
+(a) get_patterns() in evaluate.py uses regex r"if\\s+name\\s*==\\s*'(\\w+)'" to extract pattern names from full_eval.py source. This misses chkbd_4 and chkbd_16 (generated from a parameterized loop, not literal `==` comparisons). Replace the regex parsing with importlib: load full_eval.py as a module and read its `adv_names` list directly. After this fix the suite grows from 88 × 4 + 19 = 371 to 90 × 4 + 19 = 379.
+
+(b) Singleton-block bypass in mr3_gk.py:mr3_tgk. When the bidiagonal splitter produces a singleton block (k=1), the code still calls XMR on a trivial 2x2 T_GK matrix. XMR returns degenerate eigenvectors with ||v||=1, ||u||=0 (only even rows populated). The post-processing then runs O(n^3) Gram-Schmidt on hundreds of such columns, causing chkbd_* and saw_tooth patterns at n >= 200 to time out.
 
 Add a fast path in mr3_tgk that handles singleton blocks directly, bypassing the XMR call:
   - sigma = |d[i]|
-  - both u and v components are 1/sqrt(2)
-  - apply the sign matrices D1, D2 (constructed earlier in bidiag_svd) to recover correct signs
+  - both u and v components are 1/sqrt(2) at the corresponding row
+  - apply sign matrices D1, D2 (constructed earlier in bidiag_svd) to recover correct signs
 
-Do NOT modify dlaxre_gk.f or any Fortran file. Re-run evaluate.py. The chkbd patterns must no longer time out. Score should jump to roughly 320-340.""",
+(c) Add timing robustness to test_one(): two warmup runs (JIT, cache effects), then 5 timed runs and take the median. This stabilizes the SCORE gate (which is sensitive to single-run timing noise).
+
+Do NOT modify dlaxre_gk.f or any Fortran file. Re-run evaluate.py. You should see TOTAL: ~305-320/379 and SCORE much higher than 5.00.""",
     },
     {
         "id": 2,
