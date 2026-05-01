@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MR3-GK Bidiagonal SVD — Comprehensive Bug Report</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, sans-serif;
+       max-width: 1100px; margin: 1em auto; color: #222; line-height: 1.55;
+       padding: 0 1em 4em; }
+nav { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ccc;
+      padding: 0.5em 0; margin-bottom: 1em; z-index: 10; }
+nav ul { display: flex; flex-wrap: wrap; gap: 0.4em 1em; list-style: none; padding: 0;
+         margin: 0; font-size: 12px; }
+nav a { color: #06c; text-decoration: none; }
+nav a:hover { text-decoration: underline; }
+section { padding: 1.4em 0; border-bottom: 1px solid #eee; }
+section:last-child { border-bottom: none; }
+h1 { color: #06335c; font-size: 1.8em; margin-bottom: 0.3em; }
+h2 { color: #06335c; border-left: 4px solid #06c; padding-left: 0.5em;
+     margin-bottom: 0.5em; font-size: 1.55em; }
+h3 { color: #244; font-size: 1.18em; margin-top: 1.4em; }
+h4 { color: #024; font-size: 1.0em; margin-top: 1.0em; margin-bottom: 0.25em;
+     text-transform: uppercase; letter-spacing: 0.04em; }
+p.subtitle { font-size: 1.05em; color: #555; }
+p.meta { color: #888; font-size: 0.9em; }
+p.note { background: #fef9e7; border-left: 4px solid #c80; padding: 0.6em 0.9em;
+         border-radius: 3px; }
+p.tldr { background: #eef6ff; border-left: 4px solid #06c; padding: 0.7em 1em;
+         border-radius: 3px; }
+table { border-collapse: collapse; margin: 0.5em 0; font-size: 0.92em; }
+table th, table td { border: 1px solid #ccc; padding: 0.35em 0.7em; text-align: left;
+                      vertical-align: top; }
+table th { background: #eef; }
+table.kv th { width: 130px; background: #fafafa; }
+tr:nth-child(2n) td { background: #fafafa; }
+pre { background: #f6f8fa; border: 1px solid #ddd; border-radius: 4px; padding: 0.8em;
+      overflow-x: auto; font-size: 0.85em; line-height: 1.4; }
+code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 0.92em; }
+pre code { font-size: inherit; }
+p > code, li > code, td > code, table th > code { background: #f0f3f5;
+        padding: 0.05em 0.3em; border-radius: 2px; }
+.bug { background: #fff; border: 1px solid #d8dee5; border-radius: 6px;
+       padding: 1em 1.2em 0.6em; margin: 1em 0;
+       box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.bug h3 { margin-top: 0.2em; color: #6b1e1e; }
+.bug.k h3 { color: #6b1e1e; }      /* kernel patch */
+.bug.p h3 { color: #1e4f6b; }      /* python orchestration */
+.bug.h h3 { color: #4f6b1e; }      /* harmonization */
+.bug.c h3 { color: #6b4f1e; }      /* configuration */
+.tag { display: inline-block; padding: 0.05em 0.5em; border-radius: 3px;
+       font-size: 0.78em; font-weight: 600; vertical-align: middle;
+       margin-left: 0.4em; }
+.tag.k { background: #fbe4e4; color: #6b1e1e; }
+.tag.p { background: #e1edf4; color: #1e4f6b; }
+.tag.h { background: #e7f0d8; color: #4f6b1e; }
+.tag.c { background: #f4ecd8; color: #6b4f1e; }
+.tag.fail { background: #fbe4e4; color: #6b1e1e; }
+.tag.ok { background: #e7f5e0; color: #2a5a1e; }
+ul, ol { padding-left: 1.6em; }
+li { margin: 0.18em 0; }
+.muted { color: #888; }
+hr { border: none; border-top: 1px solid #ddd; margin: 1.2em 0; }
+.legend { font-size: 0.86em; color: #555; }
+.legend span { margin-right: 1.2em; }
+</style>
+</head>
+<body>
+<nav><ul>
+<li><a href="#title">Title</a></li>
+<li><a href="#tldr">TL;DR</a></li>
+<li><a href="#summary">Summary table</a></li>
+<li><a href="#kernel">Kernel patches (K1–K2)</a></li>
+<li><a href="#orchestration">Orchestration bugs (P1–P9)</a></li>
+<li><a href="#harmonization">Harmonization (H1–H2)</a></li>
+<li><a href="#config">Configuration (C1)</a></li>
+<li><a href="#ablation">Ablation</a></li>
+<li><a href="#repro">Reproduce</a></li>
+<li><a href="#refs">References</a></li>
+</ul></nav>
+
+<main>
+
+<section id="title">
+<h1>MR3-GK Bidiagonal SVD — Comprehensive Bug Report</h1>
+<p class="subtitle">All defects discovered while making Willems' XMR kernel solve the
+bidiagonal SVD problem of Willems &amp; Lang 2012 — both kernel patches and the
+orchestration-layer bugs surfaced during the Python and Fortran ports.</p>
+<p class="meta">2026-04-30 · <code>python_fortran/</code> · supersedes
+<code>BUGREPORT.md</code> (4 entries) and <code>CHANGES.md</code> (chronological).</p>
+<p class="legend">
+<span><span class="tag k">K</span> XMR kernel patch (Fortran)</span>
+<span><span class="tag p">P</span> Python orchestration bug</span>
+<span><span class="tag h">H</span> Py↔Fortran harmonization</span>
+<span><span class="tag c">C</span> Configuration / ablation</span>
+</p>
+</section>
+
+<section id="tldr">
+<h2>TL;DR</h2>
+<p class="tldr">
+Two patches to Willems' XMR Fortran kernel and nine bug fixes in the Python orchestration
+were needed to take MR3-GK from <strong>0/64 specs passing</strong> at the initial port to
+<strong>379/379 specs at 100%</strong>. The kernel patches together unlock 190 specs (out of
+379); the orchestration fixes account for the remaining ~150. Two more harmonization shims
+(reproducible RNG, unified BLAS) were needed to get bit-identity between the Python and
+Fortran orchestrations.
+</p>
+<p>
+This document explains what each defect was, the root cause, the fix, and the empirical
+evidence that the fix matters. Bug IDs follow the convention used in the audit
+(K = kernel, P = Python, H = harmonization, C = config); chronology is given in the
+"From commit" column.
+</p>
+</section>
+
+<section id="summary">
+<h2>Summary of all defects</h2>
+
+<table>
+<thead><tr>
+<th>ID</th><th>Where</th><th>What it broke</th><th>From commit</th>
+</tr></thead>
+<tbody>
+<tr><td>K1</td><td><code>dlaxre_gk.f:269</code></td>
+    <td>GK-path was disabled (<code>IF(.FALSE.)</code>); 146/379 fail</td>
+    <td>c6d73b2 (initial port)</td></tr>
+<tr><td>K2</td><td><code>dlaxrb_clssfy_fix.f</code> (×3 sites)</td>
+    <td><code>AVGTHRESH=0</code> at depth 0 → every gap classified "full"; 49/379 fail</td>
+    <td>6319178 → 6f42a80</td></tr>
+<tr><td>P1</td><td><code>mr3_gk.py</code> (Phase 2)</td>
+    <td>XMR's <code>dlaxre</code> requires positive off-diagonals; B has signed entries</td>
+    <td>c6d73b2 (Phase 2)</td></tr>
+<tr><td>P2</td><td><code>mr3_gk.py:bidiag_svd</code></td>
+    <td>T_GK eigenvectors are for |B|, not B; raw output gives wrong U, V signs</td>
+    <td>c6d73b2 (Phase 2)</td></tr>
+<tr><td>P3</td><td><code>mr3_gk.py:mr3_tgk_multiblock:370</code></td>
+    <td>T_GK off-diagonal still signed → wrong T_GK matrix</td>
+    <td>30803e2</td></tr>
+<tr><td>P4</td><td><code>mr3_gk.py:mr3_tgk_multiblock</code></td>
+    <td>T_GK with zero off-diag is reducible; XMR returns garbage on one half</td>
+    <td>f623667</td></tr>
+<tr><td>P5</td><td><code>mr3_gk.py:mr3_tgk</code></td>
+    <td>Singleton blocks invoke XMR on trivial 2×2 → only half the eigenvector populated → O(n³) GS catastrophe</td>
+    <td>4bcdee9</td></tr>
+<tr><td>P6</td><td><code>mr3_gk.py:bidiag_svd:517</code></td>
+    <td>Bv recovery threshold scaled with σ → fired on tiny σ → divided by tiny σ → roundoff blow-up</td>
+    <td>965fd82</td></tr>
+<tr><td>P7</td><td><code>mr3_gk.py:bidiag_svd</code> (GS completion)</td>
+    <td>O(n³) candidate-vector search; chkbd@400 timed out (&gt;60 s)</td>
+    <td>ab5b004</td></tr>
+<tr><td>P8</td><td><code>mr3_gk.py:bidiag_svd</code> (zero-shift QR)</td>
+    <td>σ_min = 0 from product underflow can't be deflated by XMR; ortU blows up</td>
+    <td>37412b8 → d1e8109</td></tr>
+<tr><td>P9</td><td><code>mr3_gk.py:_solve_tgk_block:429</code></td>
+    <td>MR3 singleton orthogonality scales as <code>m·EPS/relgap</code>; small <em>n</em> needs stricter GAPTOL</td>
+    <td>a23d535 → 9fb2235</td></tr>
+<tr><td>H1</td><td><code>mr3_gk.py:_dlarnv_normal</code></td>
+    <td>numpy's RNG ≠ Fortran's DLARNV → Py/Fortran orchestrations differed by 1–2 ULP on σ=0 specs</td>
+    <td>(post-port) 2026-04-29</td></tr>
+<tr><td>H2</td><td><code>mr3_gk.py:_system_dnrm2</code></td>
+    <td>numpy's DNRM2 ≠ system DNRM2 → Py/Fortran differed by ~1 ULP on every normalization</td>
+    <td>(post-port) 2026-04-29</td></tr>
+<tr><td>C1</td><td><code>xmr_src/dlaxrs_stat.f:68</code></td>
+    <td><code>USEBLOCKS=.TRUE.</code> (Willems-Lang 2011 2×2 blocks). Upstream default; ablation drops 379→373</td>
+    <td>(no change vs upstream)</td></tr>
+</tbody>
+</table>
+
+<p class="note">
+<strong>Total upstream XMR Fortran changed: 32 lines across 2 files.</strong> Everything
+below "K2" lives in our own orchestration code (<code>mr3_gk.py</code>, ~640 lines, and
+<code>mr3gk_fortran/*.f90</code>, ~1,400 lines). The XMR kernel itself is otherwise
+byte-identical to <code>tdsolver/xmr/SRC/O</code>.
+</p>
+</section>
+
+<!-- =============================== KERNEL =============================== -->
+
+<section id="kernel">
+<h2>XMR kernel patches (linked into <code>libxmr.so</code>)</h2>
+
+<div class="bug k">
+<h3>K1 — <code>dlaxre_gk.f</code>: GK-path was disabled <span class="tag k">kernel</span></h3>
+
+<h4>Symptom</h4>
+<p>
+For any T_GK matrix (the perfect-shuffle of a bidiagonal B whose diagonal is identically
+zero — the matrix MR3-GK actually solves), the eigenvectors XMR returned were garbage.
+Singular values were correct (DSTEBZ computes them independently); orthogonality blew
+up to 10¹¹ × n·ε.
+</p>
+
+<h4>Root cause</h4>
+<p>
+<code>xmr_src/dlaxre.f</code> contains a branch dedicated to constant-diagonal
+tridiagonals (lines 269–340). It is guarded by <code>IF(.FALSE.)THEN</code> with a
+revealing comment:
+</p>
+<pre><code>      IF( .FALSE. )THEN
+C        Support for GK-type matrices deactivated.
+C        Reason: One should call a specific SVD routine in this case,
+*         see below. We ran into problems for GRO-type synthetics,
+*         mainly because full blocks in the root restrict possible
+*         choices for blocks in the children too much, due to
+*         overlap sequences.</code></pre>
+<p>
+Willems disabled this branch in production because his test workload (general SYM/PD
+tridiagonals) was better served by Gershgorin shifts. But for bidiagonal SVD, T_GK
+<em>is</em> the input — it is exactly the case Willems steered around. Without the
+GK branch, T_GK falls through to a positive-definite shift that destroys the GK
+structure (||u|| = ||v|| = 1/√2) the algorithm relies on.
+</p>
+
+<h4>Fix</h4>
+<p>Replace the always-false guard with a real test: a constant-diagonal tridiagonal is
+one whose diagonal is small relative to the off-diagonals.</p>
+<pre><code>      IF( ABS(DMAX)+ABS(DMIN) .LT. EPS*EMAX )THEN
+C        GK-type matrix: constant (zero) diagonal.
+C        Use T_GK directly as root per Algorithm 4.1 (Willems-Lang 2012).
+C        No outside shift needed — preserves GK structure.</code></pre>
+
+<h4>Empirical evidence</h4>
+<p>Reverting only K1 (variant <code>libxmr_origre.so</code>) on the 379-spec suite:</p>
+<ul>
+<li><strong>233 / 379 pass</strong> (146 failures) <span class="tag fail">−146</span></li>
+<li>Worst regressions (ortU column, patched values in parens):
+  <code>exponential_graded@10</code> 1.32 × 10¹² (0.15);
+  <code>gl_gradp@100</code> 5.89 × 10¹¹ (0.03);
+  <code>huge_condition@100</code> 4.57 × 10¹¹ (0.28).</li>
+</ul>
+
+<h4>Reference</h4>
+<p>Willems &amp; Lang, <em>Computing the bidiagonal SVD using MR³</em>, ETNA 39 (2012),
+Algorithm 4.1; LAWN 163 §5.4.</p>
+</div>
+
+<div class="bug k">
+<h3>K2 — <code>dlaxrb_clssfy_fix.f</code>: <code>MIN(0, x)</code> collapse at depth 0
+   <span class="tag k">kernel</span></h3>
+
+<h4>Symptom</h4>
+<p>
+On tight-cluster matrices (Demmel S1, three_clusters, pd_T0, gl_abcon, gl_wilkw), the
+representation tree never created clusters — every adjacent eigenvalue pair was classified
+as a "full gap". Singletons multiplied; orthogonality degraded to 30–2800 × n·ε on the
+worst specs.
+</p>
+
+<h4>Root cause</h4>
+<p>
+The classifier in <code>xmr_src/dlaxrb_clssfy.f</code> (and twice more at lines 414, 445)
+decides whether a candidate gap is a real cluster boundary:
+</p>
+<pre><code>      AVGTHRESH = TWO * AVGTOL          ! AVGTOL ∝ 2^(-DEPTH)
+      GAPTHRESH = TWO * GAPTOL
+      ...
+      IF( SPREAD .GE. MIN( AVGTHRESH, ABSMAX*GAPTHRESH ) )THEN
+         RGINFO(J) = GI_FULLGAP
+      ELSE
+         RGINFO(J) = GI_NOFULL
+      ENDIF</code></pre>
+<p>
+At depth 0, the parent has not yet computed an average gap, so <code>AVGTOL = 0</code> →
+<code>AVGTHRESH = 0</code> → <code>MIN(0, ABSMAX·GAPTHRESH) = 0</code>. The test
+becomes <code>SPREAD ≥ 0</code> — trivially true. <strong>Every gap is a full gap</strong>,
+clusters never form, and the subsequent MR3 pipeline runs without the protection that
+clustering provides for tightly-spaced eigenvalues.
+</p>
+
+<h4>Fix</h4>
+<p>Case-split: if AVGTHRESH has underflowed to zero, fall back to the relative-only
+test. Three sites, each one wrapped in:</p>
+<pre><code>      LOGICAL  ::  GAPOK
+      ...
+      IF( AVGTHRESH .GT. ZERO )THEN
+         GAPOK = SPREAD .GE. MIN( AVGTHRESH, ABSMAX*GAPTHRESH )
+      ELSE
+         GAPOK = SPREAD .GE. ABSMAX*GAPTHRESH
+      ENDIF
+      IF( GAPOK )THEN
+         RGINFO(J) = GI_FULLGAP
+      ELSE
+         RGINFO(J) = GI_NOFULL
+      ENDIF</code></pre>
+
+<h4>Empirical evidence</h4>
+<p>Reverting only K2 (variant <code>libxmr_origcls.so</code>):</p>
+<ul>
+<li><strong>330 / 379 pass</strong> (49 failures) <span class="tag fail">−49</span></li>
+<li>Worst regressions: <code>ST_B_20_graded</code> ortU 2782 (0.26);
+  <code>demmel_S1pe_k4@100</code> ortU 33.2 (3.62);
+  <code>three_clusters@100</code> ortU 21.6 (0.23).</li>
+</ul>
+<p>K1 and K2 are <strong>synergistic</strong>: 13 specs pass under either single revert
+but fail under double revert (variant <code>libxmr_origboth.so</code>: 189/379).</p>
+
+<h4>Reference</h4>
+<p>Discovered while debugging score 86.37 → 92.39 transition (commits
+<code>6319178</code>, <code>6f42a80</code>, 2026-04-02). The 6f42a80 cleanup removed
+an earlier <code>MAX(DEPTH, 1)</code> hack in favor of the explicit conditional.</p>
+</div>
+</section>
+
+<!-- =========================== ORCHESTRATION =========================== -->
+
+<section id="orchestration">
+<h2>Python orchestration bugs (in <code>mr3_gk.py</code>)</h2>
+
+<p>These are bugs in <strong>our wrapper code</strong> — not in XMR. They were
+discovered while building the bidiagonal-SVD layer on top of XMR's tridiagonal
+eigenvector kernel. None of them existed in XMR; XMR doesn't do bidiagonal SVD at all,
+so it can't have these bugs.</p>
+
+<div class="bug p">
+<h3>P1 — Negative off-diagonal in T_GK breaks XMR's <code>dlaxre</code>
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+When the bidiagonal B has any negative entry in d or e, XMR's root-representation
+builder produced wrong eigenvectors (residuals 0.86, not 1e-15). Singular values were
+fine.
+</p>
+
+<h4>Root cause</h4>
+<p>
+T_GK = perfect_shuffle(0, |d|, |e|) is the matrix MR3 actually solves. For B with sign
+pattern, T_GK gets <em>signed</em> off-diagonals at positions 2i. XMR's
+<code>dlaxre</code> assumes positive off-diagonals throughout (its qd-form factorization
+uses <code>e</code> directly as a square root). Negative e[i] silently builds a
+representation for a different matrix.
+</p>
+
+<h4>Fix</h4>
+<p>Apply a diagonal similarity transform <code>D·T_GK·D</code> with
+<code>D = diag(±1)</code> chosen so all off-diagonals are positive, then undo the
+similarity on the eigenvectors:</p>
+<pre><code>signs = np.ones(m2n)
+for i in range(m2n - 1):
+    if tgk_e[i] &lt; 0: signs[i+1] = -signs[i]
+    else:             signs[i+1] =  signs[i]
+tgk_e_pos = np.abs(tgk_e)
+# Call XMR on positive-offdiag matrix:
+w, Z, info = xmr_eigenvectors(root, tgk_e_pos, …)
+# Undo similarity on eigenvectors:
+Z[:, j] *= signs</code></pre>
+
+<h4>Reference</h4>
+<p>Phase 2 of the initial port (CHANGES.md). The diagonal-similarity trick is
+standard for sign-asymmetric tridiagonals.</p>
+</div>
+
+<div class="bug p">
+<h3>P2 — T_GK eigenvectors are for |B|, not B; need D1, D2 sign matrices
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+Even after P1, the U and V columns reconstructed from T_GK eigenvectors gave the wrong
+SVD: σ values matched, but B − UΣVᵀ was huge.
+</p>
+
+<h4>Root cause</h4>
+<p>
+T_GK is built from <code>|d|</code> and <code>|e|</code> (XMR needs positive entries).
+Its eigenvectors therefore correspond to <code>|B|</code>, the bidiagonal with all
+entries replaced by their absolute values. To recover singular vectors of the original
+B, we need diagonal sign matrices D1 (for U) and D2 (for V) such that
+<code>B = D1 · |B| · D2</code>.
+</p>
+
+<h4>Fix</h4>
+<pre><code>d1 = np.empty(n); d2 = np.empty(n)
+d1[0] = 1.0
+d2[0] = np.sign(d[0])
+for i in range(n - 1):
+    d2[i+1] = np.sign(e[i])    / d1[i]
+    d1[i+1] = np.sign(d[i+1])  / d2[i+1]
+# After XMR returns eigenvector pairs (V_part, U_part):
+V[:, j] = ev[0::2] * d2     # even rows of T_GK eigenvector → V column, scaled by d2
+U[:, j] = ev[1::2] * d1     # odd rows → U column, scaled by d1</code></pre>
+
+<h4>Reference</h4>
+<p>Initial port (Phase 2). Standard derivation of GK from B; see Lawn 163 §5.</p>
+</div>
+
+<div class="bug p">
+<h3>P3 — Bidiagonal e signed even after P1; T_GK builder also needs <code>abs(e)</code>
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+Latent bug behind P1: even though the call into XMR was abs-cleaned, the construction
+of the T_GK matrix that we feed into XMR was using the raw signed e. The two paths
+disagreed and the result was corrupted entries 2i of T_GK.
+</p>
+
+<h4>Root cause</h4>
+<p>
+Single-line oversight in <code>mr3_tgk_multiblock</code>:
+</p>
+<pre><code># wrong:
+be = e_bidiag[bbeg:bend].copy()
+# correct:
+be = np.abs(e_bidiag[bbeg:bend])</code></pre>
+
+<h4>Fix</h4>
+<p>Take <code>abs</code> at construction time. The sign is recovered later via D1/D2
+(P2).</p>
+
+<h4>Reference</h4>
+<p>Commit <code>30803e2</code>, 2026-03-25 ("Fix T_GK construction for negative e
+entries"). One-line patch but the symptom looked identical to P1 and was caught
+separately.</p>
+</div>
+
+<div class="bug p">
+<h3>P4 — T_GK with zero off-diagonal is reducible; XMR returns garbage on one half
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+On any matrix with an exact zero in <code>e</code> (not from underflow — from the test
+generator: <code>diagonal_only</code>, certain glued matrices, etc.), one half of the
+output U or V was correct and the other half had ortU ~ 1.
+</p>
+
+<h4>Root cause</h4>
+<p>
+If <code>bte[i] ≈ 0</code> for some i, the T_GK block is <strong>reducible</strong>:
+rows [start..i] and [i+1..end] are decoupled. XMR doesn't detect this — it builds
+a single representation across the boundary, and the eigenvectors mix
+contributions across two truly independent sub-problems. The sub-problem with the
+larger eigenvalues "wins"; the smaller-eigenvalue sub-block gets a degenerate
+eigenvector.
+</p>
+
+<h4>Fix</h4>
+<p>Detect zero positions and split T_GK into independent sub-blocks before calling
+XMR:</p>
+<pre><code>zero_positions = np.where(np.abs(bte) &lt; SAFMIN)[0]
+if len(zero_positions) == 0:
+    w, Z = _solve_tgk_block(bc, bte, m2k, bk_hint=bk)   # standard path
+    return w[:bk], Z[:m2k, :bk]
+# else: split into [start..zp+1) sub-blocks, solve each independently
+boundaries = []
+start = 0
+for zp in zero_positions:
+    boundaries.append((start, zp + 1))
+    start = zp + 1
+if start &lt; m2k:
+    boundaries.append((start, m2k))
+# solve each, assemble the global (w, Z)</code></pre>
+
+<h4>Reference</h4>
+<p>Commit <code>f623667</code>, 2026-03-25. Standard "irreducibility" reasoning for
+unreduced tridiagonals.</p>
+</div>
+
+<div class="bug p">
+<h3>P5 — Singleton blocks trigger O(n³) GS pathology
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+<code>chkbd@400</code> timed out (&gt;60 s) at the GS-completion stage. Profiling showed
+&gt;99% of time in <code>bidiag_svd</code>'s orthogonal-completion loop.
+</p>
+
+<h4>Root cause</h4>
+<p>
+After bidiagonal splitting, many blocks have size 1 (singletons). For a singleton, the
+2×2 T_GK is trivially diagonal: σ = |d|, eigenvector = e_i for B-row, e_j for the other
+side. Calling XMR on the trivial 2×2 wastes time but, worse, XMR returns vectors with
+||v||=1 on one side and ||u||=0 on the other. <code>bidiag_svd</code>'s completion
+loop then sees hundreds of columns with ||u|| &lt; 0.5 and runs Gram-Schmidt for each
+one against the n basis vectors → O(n²) per column × n columns = O(n³). For n=400
+that is 64 million flops, dominated by Python overhead.
+</p>
+
+<h4>Fix</h4>
+<p>Bypass XMR for singletons: σ = |d_i|, both U and V contributions = 1/√2 directly.</p>
+<pre><code>for bbeg, bend in blocks:
+    if bend == bbeg:                           # singleton block
+        sigma[col]   = abs(d[bbeg])
+        U[:, col]    = e_unit(2*bbeg + 1)      # row 2k+1 of T_GK  → U
+        V[:, col]    = e_unit(2*bbeg)          # row 2k   of T_GK  → V
+        col += 1
+        continue</code></pre>
+
+<h4>Empirical evidence</h4>
+<p><code>chkbd@400</code>: &gt;60 s timeout → 0.025 s. Score 5.0 → 82.97.</p>
+
+<h4>Reference</h4>
+<p>Commit <code>4bcdee9</code>, 2026-03-24 ("Singleton bypass optimization").</p>
+</div>
+
+<div class="bug p">
+<h3>P6 — Bv recovery threshold scaled with σ instead of ||B||
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+On matrices with a wide singular-value spectrum (σ_min ≪ σ_max), the <em>tiny</em>
+columns of U/V developed huge orthogonality errors. The very largest σ were fine.
+</p>
+
+<h4>Root cause</h4>
+<p>
+After the MR3 solve, <code>bidiag_svd</code> checks B·v vs σ·u. If one side has worse
+residual it recomputes that side from the other. The threshold for "this side is bad"
+was <code>10·n·ε·σ_idx</code>. For tiny σ this threshold is <em>tiny</em>, so the
+recovery <em>fires</em>, and the recovery formula <code>u_new = (B·v)/σ</code> divides
+by tiny σ, amplifying any residual roundoff catastrophically.
+</p>
+
+<h4>Fix</h4>
+<p>Threshold should be a property of the matrix, not the singular value:</p>
+<pre><code># wrong (sigma-based):
+thresh_arr = 10 * n * EPS * sig_idx
+# correct (bnorm-based, never collapses):
+bnorm_val  = max(np.max(np.abs(d)), np.max(np.abs(e[:n-1])) if n &gt; 1 else 0.0)
+thresh_arr = 10 * n * EPS * np.maximum(sig_idx, bnorm_val)</code></pre>
+
+<h4>Reference</h4>
+<p>Commit <code>965fd82</code>, 2026-03-24 ("Fix Bv recovery threshold").</p>
+</div>
+
+<div class="bug p">
+<h3>P7 — GS completion: O(n³) candidate-vector search → two-pass MGS
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+After P5 fixed the singleton case, larger blocks still suffered: when a few columns
+genuinely needed completion, the completion loop searched <strong>n candidate basis
+vectors</strong> per column, each search O(n²). Total: O(n³). Caused timing-budget
+failures even on matrices that were numerically correct.
+</p>
+
+<h4>Root cause</h4>
+<p>
+The original code, for each column j with ||v_j|| &lt; 0.5, did:
+</p>
+<pre><code>for j in needs_completion:
+    v_cand = random_unit_vector(n)
+    for k in range(n):                         # ← n basis vectors
+        if k != j and np.linalg.norm(V[:,k]) &gt; 0.5:
+            v_cand -= np.dot(v_cand, V[:,k]) * V[:,k]    # ← n flops, in Python
+    V[:, j] = v_cand / np.linalg.norm(v_cand)</code></pre>
+
+<h4>Fix</h4>
+<p>Vectorize the projection as a single BLAS matmul (one pass), then do a second
+pass for stability — classical two-pass MGS:</p>
+<pre><code>good_mask = (all_v_norms &gt; 0.5) & (np.arange(n) != j)
+V_good = V[:, good_mask]                       # n × m matrix (m ≤ n)
+v_cand -= V_good @ (V_good.T @ v_cand)         # ← one BLAS call, O(n·m) total
+v_cand -= V_good @ (V_good.T @ v_cand)         # second pass for stability
+V[:, j] = v_cand / np.linalg.norm(v_cand)</code></pre>
+
+<h4>Empirical evidence</h4>
+<p>worst_ratio (timing-bound metric): 5.97 → 4.30. Score 5.0 → 85.77 (combined with
+P5 and P6).</p>
+
+<h4>Reference</h4>
+<p>Commit <code>ab5b004</code>, 2026-04-02. Classical Gram-Schmidt with re-orthogonalization
+(Björck, <em>Numerics of GS Orthogonalization</em>, 1994) — one of the few cases where
+"do it twice" really does help.</p>
+</div>
+
+<div class="bug p">
+<h3>P8 — Zero singular value from product underflow can't be deflated by XMR
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+Some specs (e.g. matrices where σ_min underflows due to a long product chain
+<code>d_1·d_2·…·d_n</code>) had <strong>σ exactly 0 in IEEE-754 even though no individual
+e[i] was zero</strong>. XMR's classifier doesn't deflate this case (it keys on e, not
+on σ); the all-zero singular value is treated as a regular singleton, leading to
+ortU ~ n.
+</p>
+
+<h4>Root cause</h4>
+<p>
+Floating-point underflow in the σ product. Cannot be detected from looking at d, e
+alone — only revealed when σ is computed.
+</p>
+
+<h4>Fix (Demmel-Kahan 1990 zero-shift QR sweep)</h4>
+<p>
+A zero-shift QR sweep on an upper bidiagonal is mathematically equivalent to inverse
+iteration on B B<sup>T</sup>; if σ_min = 0, <em>one</em> sweep drives both
+<code>d[-1]</code> AND <code>e[-1]</code> to zero (numerically, below n·ε after
+prescaling). This gives a clean split: solve the (n−1)-subproblem, embed the σ=0
+column at index n.
+</p>
+<pre><code>def zero_shift_qr_sweep(d, e):
+    """One downward sweep of implicit zero-shift QR. Modifies d,e in place.
+       Demmel-Kahan 1990, Sec 3."""
+    n = len(d)
+    if n &lt;= 1: return [], []
+    cs, oldcs, oldsn = 1.0, 1.0, 0.0
+    right_rots, left_rots = [], []
+    for i in range(n - 1):
+        cs, sn, r = dlartg(d[i] * cs, e[i])
+        right_rots.append((cs, sn, i))
+        if i &gt; 0: e[i-1] = oldsn * r
+        oldcs, oldsn, d[i] = dlartg(oldcs * r, d[i+1] * sn)
+        left_rots.append((oldcs, oldsn, i))
+    h = d[n-1] * cs
+    d[n-1] = h * oldcs
+    e[n-2] = h * oldsn
+    return right_rots, left_rots
+# In bidiag_svd:
+d_sw, e_sw = d[bbeg:bend+1].copy(), e[bbeg:bend].copy()
+right_rots, left_rots = zero_shift_qr_sweep(d_sw, e_sw)
+clean_split = abs(d_sw[-1]) &lt; n*EPS  AND  abs(e_sw[-1]) &lt; n*EPS
+if clean_split:
+    sigma_sub, U_sub, V_sub, _ = bidiag_svd(d_sw[:-1] / scale, e_sw[:-1] / scale)
+    # embed (bk-1) sub-solution into bk×bk, then apply Givens rotations</code></pre>
+
+<h4>Why both <code>d[-1]</code> AND <code>e[-1]</code></h4>
+<p>
+A zero-shift QR sweep transforms B → R Bᵀ Q where the bottom-right is exactly zero
+when σ_min = 0. Checking only <code>d[-1]</code> can misclassify near-singular cases
+where the sweep moved energy into <code>e[-1]</code> instead. Demmel-Kahan §3
+guarantees both vanish only when σ_min is exactly representable as zero.
+</p>
+
+<h4>Reference</h4>
+<p>Commits <code>37412b8</code> (zero-shift sweep) and <code>d1e8109</code>
+(refined check, 2026-04-02). Demmel &amp; Kahan, <em>Accurate Singular Values of
+Bidiagonal Matrices</em>, SIAM J. Sci. Stat. Comput. 11 (1990), §3.</p>
+</div>
+
+<div class="bug p">
+<h3>P9 — Adaptive GAPTOL: small blocks need stricter clustering
+   <span class="tag p">orchestration</span></h3>
+
+<h4>Symptom</h4>
+<p>
+<code>two_clusters@10</code> failed even with K1, K2, P1–P8 in place. ortU sat at
+~10 for n_nonneg=10 specs. GS-completion couldn't recover because the underlying MR3
+output was bad to begin with.
+</p>
+
+<h4>Root cause</h4>
+<p>
+MR3's singleton orthogonality bound is roughly <code>C · m · ε / relgap</code>, where
+relgap is the relative gap between adjacent eigenvalues. The default
+<code>GAPTOL = 1e-3</code> works for moderate n but is too loose for n &lt; 20: when the
+suite is small, the gap test fires too often, MR3 emits singletons too eagerly, and the
+<code>m·ε/relgap</code> term blows up because relgap is small for tightly-spaced σ in
+small blocks.
+</p>
+
+<h4>Fix</h4>
+<p>Scale GAPTOL with 1/n_nonneg so small blocks force tighter clustering:</p>
+<pre><code># for each block:
+block_gaptol = max(GAPTOL, 0.02 / n_nonneg)
+# then call xmr_eigenvectors with gaptol=block_gaptol</code></pre>
+<p>
+<code>0.02 / 20 = 1e-3 = GAPTOL</code> — converges to the standard threshold at n=20
+and gets stricter from there.
+</p>
+
+<h4>Reference</h4>
+<p>Commits <code>a23d535</code> (initial 5e-3 floor for n≤20) and <code>9fb2235</code>
+(smooth <code>0.02/n</code>), 2026-04-02. Pushed final score to 379/379.</p>
+</div>
+</section>
+
+<!-- =========================== HARMONIZATION =========================== -->
+
+<section id="harmonization">
+<h2>Cross-implementation harmonization (Py↔Fortran bit-identity)</h2>
+
+<p>
+The orchestration logic was ported from Python (<code>mr3_gk.py</code>, ~640 lines) to
+Fortran (<code>mr3gk_fortran/*.f90</code>, ~1,400 lines). The goal was that running the
+two on the same input produces bit-identical σ and ≤1 ULP differences in U/V across
+21,375 specs at 2·ε. Two harmonization shims were needed:
+</p>
+
+<div class="bug h">
+<h3>H1 — Reproducible RNG via LAPACK DLARNV
+   <span class="tag h">harmonization</span></h3>
+
+<h4>Symptom</h4>
+<p>~6 / 379 specs differed by 1–2 ULP between Py and Fortran orchestrations on
+σ=0 specs (where GS completion fills in random vectors).</p>
+
+<h4>Root cause</h4>
+<p>
+<code>np.random.randn</code> uses Mersenne Twister; even with a fixed seed, the bytes
+that come out are different from LAPACK's <code>DLARNV(IDIST=3)</code>. So the Python
+side fed completion with one set of random vectors, the Fortran side with a different
+set, and the resulting orthonormal completions differed at the last bit.
+</p>
+
+<h4>Fix</h4>
+<p>Bind LAPACK <code>DLARNV</code> via ctypes on the Python side; use the same
+deterministic 4-tuple seed (derived from column index) on both sides:</p>
+<pre><code>_lapack_lib = _ct.CDLL(_ctutil.find_library('lapack'))
+def _dlarnv_normal(n, seed):
+    """N(0,1) samples via LAPACK DLARNV (IDIST=3).
+       seed: 4 ints, each 0..4095, last must be odd."""
+    iseed = (_ct.c_int * 4)(*seed)
+    n_c, idist = _ct.c_int(n), _ct.c_int(3)
+    x = np.zeros(n, dtype=np.float64)
+    _lapack_lib.dlarnv_(_ct.byref(idist), iseed, _ct.byref(n_c),
+                        x.ctypes.data_as(_ct.POINTER(_ct.c_double)))
+    return x
+# At call sites:
+v_random = _dlarnv_normal(n, (1, 3, 5, (2*j + 1) & 4095 | 1))    # V completion
+u_random = _dlarnv_normal(n, (2, 4, 6, (2*j + 3) & 4095 | 1))    # U completion</code></pre>
+<p>The Fortran side calls <code>DLARNV(3, iseed, n, …)</code> with the identical seed
+sequence (<code>mr3gk_postproc.f90:371-377, 439-443</code>).</p>
+
+<h4>Empirical evidence</h4>
+<p>Pre-fix: 6 ULP-level mismatches. Post-fix: bit-identical or ≤1 ULP across
+21,375 specs.</p>
+</div>
+
+<div class="bug h">
+<h3>H2 — Unified DNRM2 via system BLAS
+   <span class="tag h">harmonization</span></h3>
+
+<h4>Symptom</h4>
+<p>Even after H1, a handful of <code>gl_wilkw</code>/<code>gl_wilk2w</code> specs
+differed by ~1 ULP between Py and Fortran.</p>
+
+<h4>Root cause</h4>
+<p>
+<code>np.linalg.norm</code> calls numpy's <strong>bundled</strong> OpenBLAS. The Fortran
+side calls <strong>system</strong> reference BLAS (whatever <code>-lblas</code> links).
+The two implementations differ at the last bit on tricky inputs (different summation
+orders, different fused-multiply-adds). Every normalization in <code>bidiag_svd</code>
+inherited that 1-ULP delta.
+</p>
+
+<h4>Fix</h4>
+<p>Bind the <em>same</em> BLAS the Fortran side uses, via ctypes, and route every
+Python normalization through it:</p>
+<pre><code>_blas_lib = _ct.CDLL(_ctutil.find_library('blas') or _ctutil.find_library('lapack'))
+_blas_lib.dnrm2_.restype  = _ct.c_double
+_blas_lib.dnrm2_.argtypes = [_ct.POINTER(_ct.c_int),
+                              _ct.POINTER(_ct.c_double),
+                              _ct.POINTER(_ct.c_int)]
+
+def _system_dnrm2(x):
+    x_arr = np.ascontiguousarray(x, dtype=np.float64)
+    n_c, inc = _ct.c_int(x_arr.size), _ct.c_int(1)
+    return _blas_lib.dnrm2_(_ct.byref(n_c),
+                            x_arr.ctypes.data_as(_ct.POINTER(_ct.c_double)),
+                            _ct.byref(inc))
+# Plus a column-wise variant _system_dnrm2_axis0 for matrix normalization.</code></pre>
+<p>Used at 10 sites in <code>bidiag_svd</code>'s post-processing
+(<code>mr3_gk.py:865-984</code>).</p>
+
+<h4>Empirical evidence</h4>
+<p>Combined with H1: 379/379 of the bit-match test pass at 2·ε. Worst U diff =
+1.110 × 10⁻¹⁶ (1 ULP), worst V diff = 2.272 × 10⁻¹⁹.</p>
+</div>
+</section>
+
+<!-- ============================= CONFIG ============================= -->
+
+<section id="config">
+<h2>Configuration knob worth knowing about</h2>
+
+<div class="bug c">
+<h3>C1 — <code>USEBLOCKS = .TRUE.</code>: 2×2 block factorizations
+   <span class="tag c">configuration</span></h3>
+
+<h4>What it is</h4>
+<p>
+<code>xmr_src/dlaxrs_stat.f:68</code> exposes a compile-time switch
+<code>LOGICAL, PARAMETER :: USEBLOCKS = .TRUE.</code>. When true, XMR uses the
+generalized LDL* twisted factorizations of Willems-Lang 2011 (ETNA 38), in which D may
+contain 2×2 blocks. During the shift T_GK − τI = L·D·L*, whenever a pivot would become
+dangerously small (signaling element growth), a 2×2 block absorbs the growth.
+The criterion: <code>|d_plus(i) · c_plus| &lt; (1/8) · gnsq(i)</code>.
+</p>
+
+<h4>Why it matters</h4>
+<p>
+The 2012 paper's Example 4.8 shows that shifting a GK matrix by α ≪ 1 produces element
+growth ~1/α² in the standard LDL*. For B = [[1, 1], [0, α]], shifting by −α gives
+D(2) = (1 − α²) / (α · (2 − α²)) ≈ 1/α — destroys the relative-robust-representation
+property MR3 depends on. 2×2 blocks act as numerical shock absorbers: they store
+d⁺ᵢ·d⁺ᵢ₊₁ as a single 2×2 determinant instead of two separate pivots, avoiding the
+cancellation.
+</p>
+
+<h4>Status</h4>
+<p>
+<code>USEBLOCKS = .TRUE.</code> is the upstream default and we keep it. <strong>We did
+not modify this</strong> — but it's worth documenting because turning it OFF reveals
+which specs depend on it.
+</p>
+
+<h4>Empirical evidence (ablation)</h4>
+<table>
+<thead><tr><th>Configuration</th><th>Pass rate</th><th>Score</th></tr></thead>
+<tbody>
+<tr><td><code>USEBLOCKS=.TRUE.</code> (default)</td>
+    <td><strong>379/379 (100%)</strong></td><td><strong>92.58</strong></td></tr>
+<tr><td><code>USEBLOCKS=.FALSE.</code></td>
+    <td>373/379 (98.4%)</td><td>91.89</td></tr>
+</tbody></table>
+
+<p>The 6 failing specs without blocks all have tightly-clustered tiny singular values
+where the shift τ is small and element growth ~1/τ² is catastrophic:</p>
+<table>
+<thead><tr><th>Spec</th><th>ortU (blocks)</th><th>ortU (no blocks)</th><th>×</th></tr></thead>
+<tbody>
+<tr><td>spike@200</td><td>0.451</td><td>15.197</td><td>34</td></tr>
+<tr><td>demmel_S1ps@100</td><td>3.100</td><td>7.375</td><td>2.4</td></tr>
+<tr><td>demmel_S1ps@400</td><td>1.282</td><td>26.815</td><td>21</td></tr>
+<tr><td>demmel_S1pe_k4@400</td><td>1.476</td><td>22.367</td><td>15</td></tr>
+<tr><td>demmel_S1pe_k8@100</td><td>3.944</td><td>7.777</td><td>2.0</td></tr>
+<tr><td>demmel_S1pe_k8@400</td><td>1.624</td><td>29.635</td><td>18</td></tr>
+</tbody></table>
+
+<h4>Reference</h4>
+<p>Willems &amp; Lang, <em>Block factorizations and qd-type transformations for the
+MR3 algorithm</em>, ETNA 38 (2011), pp. 363-400; full ablation in
+<code>ablations.md</code>.</p>
+</div>
+</section>
+
+<!-- ============================ ABLATION ============================ -->
+
+<section id="ablation">
+<h2>Combined ablation — which K-patches matter</h2>
+
+<p>Same 379-spec evaluation, four library variants:</p>
+
+<table>
+<thead><tr><th>Variant</th><th>K1 (<code>dlaxre</code>)</th>
+    <th>K2 (<code>dlaxrb_clssfy</code>)</th><th>Pass</th><th>Fail</th></tr></thead>
+<tbody>
+<tr><td><strong>patched</strong> (current)</td><td>fixed</td><td>fixed</td>
+    <td><strong>379 / 379</strong></td><td>0</td></tr>
+<tr><td><code>libxmr_origre.so</code></td><td>upstream</td><td>fixed</td>
+    <td>233 / 379</td><td>146</td></tr>
+<tr><td><code>libxmr_origcls.so</code></td><td>fixed</td><td>upstream</td>
+    <td>330 / 379</td><td>49</td></tr>
+<tr><td><code>libxmr_origboth.so</code></td><td>upstream</td><td>upstream</td>
+    <td>189 / 379</td><td>190</td></tr>
+</tbody></table>
+
+<p>
+The two patches are <strong>synergistic</strong>: 13 specs pass under either single
+revert but fail under the double revert. Applying only one is not safe.
+</p>
+
+<p class="note">
+The Python orchestration bugs (P1–P9) cannot be ablated this way because they were fixed
+along the path from 0/64 → 379/379, not as independent toggles. Their evidence is in the
+git log (each fix's commit message records the score delta) and in
+<code>CHANGES.md</code>.
+</p>
+</section>
+
+<!-- ============================== REPRO ============================== -->
+
+<section id="repro">
+<h2>Reproduce every claim in this report</h2>
+
+<pre><code>cd python_fortran
+
+# Build the patched libxmr.so:
+bash build.sh
+
+# 1. Production pass rate (validates K1, K2, P1–P9):
+python3 evaluate.py
+#   → 379/379 PASS
+
+# 2. Py↔Fortran bit-identity (validates H1, H2):
+cd mr3gk_fortran && bash build.sh && cd ..
+python3 test_fortran_match.py
+#   → PASS: 379/379  Worst sigma diff: 0
+#   → Worst U diff: 1.110e-16  Worst V diff: 2.272e-19
+
+# 3. K-patch ablation (Section above) — about 12 minutes:
+python3 experiments/ablation_xmr_patches.py
+#   → writes experiments/ablation_results.json with the 4 variant counts
+
+# 4. C1 (USEBLOCKS) ablation — manual, see ablations.md
+</code></pre>
+</section>
+
+<!-- ============================== REFS ============================== -->
+
+<section id="refs">
+<h2>References</h2>
+
+<ul>
+<li>Willems &amp; Lang, <em>Computing the bidiagonal SVD using MR³</em>, ETNA 39 (2012),
+    pp. 144-180. — Algorithm 4.1, Theorem 4.5, Example 4.8.</li>
+<li>Willems &amp; Lang, <em>Block factorizations and qd-type transformations for the
+    MR3 algorithm</em>, ETNA 38 (2011), pp. 363-400. — 2×2 block factorizations (C1).</li>
+<li>Demmel &amp; Kahan, <em>Accurate Singular Values of Bidiagonal Matrices</em>,
+    SIAM J. Sci. Stat. Comput. 11(5) (1990), pp. 873-912. — Zero-shift QR (P8).</li>
+<li>Björck, <em>Numerics of Gram-Schmidt Orthogonalization</em>, Linear Algebra and
+    its Applications 197 (1994), pp. 297-316. — Two-pass MGS rationale (P7).</li>
+<li>Christof Willems, <em>XMR Fortran source</em>, <code>tdsolver/xmr/SRC/O</code>.
+    — Pristine upstream; <code>xmr_src/</code> is byte-identical except for the
+    two patches K1, K2.</li>
+</ul>
+
+<h2>Files of interest</h2>
+
+<table>
+<thead><tr><th>Topic</th><th>File</th><th>Lines</th></tr></thead>
+<tbody>
+<tr><td>K1 patch (kernel)</td><td><code>dlaxre_gk.f</code> vs
+    <code>xmr_src/dlaxre.f</code></td><td>269-275 (7 lines)</td></tr>
+<tr><td>K2 patch (kernel)</td><td><code>dlaxrb_clssfy_fix.f</code> vs
+    <code>xmr_src/dlaxrb_clssfy.f</code></td><td>192, 358-366, 414-417, 445-453 (~25 lines)</td></tr>
+<tr><td>P1–P9 (orchestration)</td><td><code>mr3_gk.py</code></td>
+    <td>throughout, esp. <code>bidiag_svd</code> (lines ~617–984)</td></tr>
+<tr><td>H1 (RNG)</td><td><code>mr3_gk.py</code></td><td>18–32; Fortran side
+    <code>mr3gk_fortran/mr3gk_postproc.f90:371-377, 439-443</code></td></tr>
+<tr><td>H2 (DNRM2)</td><td><code>mr3_gk.py</code></td><td>34-65; called at 10 sites in
+    <code>bidiag_svd</code></td></tr>
+<tr><td>Build (production)</td><td><code>build.sh</code></td><td>—</td></tr>
+<tr><td>Build (Fortran orchestration)</td><td><code>mr3gk_fortran/build.sh</code></td>
+    <td>—</td></tr>
+<tr><td>Validation suite</td><td><code>evaluate.py</code></td><td>—</td></tr>
+<tr><td>Bit-match test</td><td><code>test_fortran_match.py</code></td><td>—</td></tr>
+<tr><td>Ablation harness</td><td><code>experiments/ablation_xmr_patches.py</code></td>
+    <td>—</td></tr>
+<tr><td>Block-factorization ablation</td><td><code>ablations.md</code></td><td>—</td></tr>
+<tr><td>Cluster-tree NCD trace</td><td><code>experiments/run_fortran_traced.py</code>,
+    <code>docs/mr3_tree_gallery_fortran.html</code></td><td>—</td></tr>
+<tr><td>Project status (advisor view)</td><td><code>docs/presentation.html</code></td>
+    <td>—</td></tr>
+</tbody>
+</table>
+
+<hr/>
+<p class="meta">
+This report supersedes <code>docs/BUGREPORT.md</code> (which only covered K1, K2, H1, H2)
+and consolidates the chronological notes in <code>CHANGES.md</code>.
+The plain-Markdown version remains for <code>git log</code> compatibility but is no
+longer the primary source of truth.
+</p>
+</section>
+
+</main>
+</body>
+</html>

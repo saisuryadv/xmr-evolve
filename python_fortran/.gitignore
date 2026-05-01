@@ -1,2 +1,22 @@
 __pycache__/
 *.pyc
+
+# Build outputs (rebuild via build*.sh)
+*.so
+*.mod
+mr3gk_fortran/*.o
+mr3gk_fortran/mr3gk_run
+mr3gk_fortran/mr3gk_run_traced
+mr3gk_fortran/mr3gk_run_traced_noblk
+fortran_objects/*.o
+
+# Regeneratable test caches
+baseline_cache/
+/tmp/
+
+# Stray fortran output / handoff archives
+fort.[0-9]*
+*.zip
+
+# Trace logs (regen via experiments/run_fortran_traced.py)
+experiments/*.log
