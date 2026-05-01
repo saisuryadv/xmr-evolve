@@ -141,7 +141,10 @@ Verify: python3 evaluate.py should now report TOTAL: 379/379.""",
 
 
 def run_evaluate(workdir: Path, timeout: int = 600):
-    """Run python3 evaluate.py in workdir; return (passed, total) or (None, None)."""
+    """Run python3 evaluate.py in workdir; return (passed, total, score, err).
+    Captures the LAST `TOTAL: X/Y` line (the full-suite total, not any
+    intermediate per-size subtotal) and the SCORE line if present.
+    """
     try:
         r = subprocess.run(
             ["python3", "evaluate.py"],
@@ -151,13 +154,21 @@ def run_evaluate(workdir: Path, timeout: int = 600):
             timeout=timeout,
         )
     except subprocess.TimeoutExpired:
-        return None, None, "timeout"
+        return None, None, None, "timeout"
     out = r.stdout + "\n" + r.stderr
-    # Look for "TOTAL: X/Y passed" line
-    m = re.search(r"TOTAL:\s*(\d+)\s*/\s*(\d+)", out)
-    if m:
-        return int(m.group(1)), int(m.group(2)), None
-    return None, None, "no_total_line"
+    # Last "TOTAL: X/Y passed" wins (final summary)
+    matches = re.findall(r"TOTAL:\s*(\d+)\s*/\s*(\d+)", out)
+    score = None
+    sm = re.search(r"SCORE:\s*([\-+\d.]+)", out)
+    if sm:
+        try:
+            score = float(sm.group(1))
+        except ValueError:
+            pass
+    if matches:
+        passed, total = matches[-1]
+        return int(passed), int(total), score, None
+    return None, None, score, "no_total_line"
 
 
 def make_worktree(commit: str, dest: Path):
@@ -270,14 +281,15 @@ def main():
 
     # Initial baseline
     print("\n=== Initial evaluate.py ===")
-    p0, t0_total, err0 = run_evaluate(workdir)
-    print(f"Score: {p0}/{t0_total}  (err={err0})")
+    p0, t0_total, sc0, err0 = run_evaluate(workdir)
+    print(f"Score: {p0}/{t0_total}  evaluate.py SCORE={sc0}  (err={err0})")
 
     results = {
         "checkpoint": args.checkpoint,
         "seed_commit": SEED_COMMIT,
         "worktree": str(worktree),
-        "initial_score": {"passed": p0, "total": t0_total, "err": err0},
+        "initial_score": {"passed": p0, "total": t0_total,
+                           "evaluate_score": sc0, "err": err0},
         "steps": [],
     }
 
@@ -287,7 +299,8 @@ def main():
         prompt = spec["prompt"]
         print(f"\n=== Prompt {pid}: {title} ===")
         score_before = run_evaluate(workdir)
-        print(f"Score before: {score_before[0]}/{score_before[1]}")
+        print(f"Score before: {score_before[0]}/{score_before[1]}  "
+              f"SCORE={score_before[2]}")
 
         agent_out, rc, wall = run_agent(prompt, workdir,
                                          max_turns=args.max_turns,
@@ -297,15 +310,18 @@ def main():
 
         score_after = run_evaluate(workdir)
         changed = list_changed_files(worktree)
-        print(f"Score after:  {score_after[0]}/{score_after[1]}")
+        print(f"Score after:  {score_after[0]}/{score_after[1]}  "
+              f"SCORE={score_after[2]}")
         print(f"Files changed: {len(changed)}")
 
         step = {
             "id": pid,
             "title": title,
             "prompt": prompt,
-            "score_before": {"passed": score_before[0], "total": score_before[1]},
-            "score_after":  {"passed": score_after[0],  "total": score_after[1]},
+            "score_before": {"passed": score_before[0], "total": score_before[1],
+                              "evaluate_score": score_before[2]},
+            "score_after":  {"passed": score_after[0],  "total": score_after[1],
+                              "evaluate_score": score_after[2]},
             "agent_returncode": rc,
             "agent_wall_s": wall,
             "agent_stdout_tail": agent_out[-2000:] if agent_out else "",
@@ -323,12 +339,14 @@ def main():
         remove_worktree(worktree)
 
     print(f"\n=== Summary ===")
-    print(f"{'#':>2}  {'before':>8}  {'after':>8}  {'expected':>14}  {'wall':>7}  title")
+    print(f"{'#':>2}  {'before':>10}  {'after':>10}  {'sc_before':>9}  {'sc_after':>8}  {'wall':>7}  title")
     for s in results["steps"]:
         b = f"{s['score_before']['passed']}/{s['score_before']['total']}"
         a = f"{s['score_after']['passed']}/{s['score_after']['total']}"
-        e = f"{s['expected_after_range'][0]}-{s['expected_after_range'][1]}"
-        print(f"{s['id']:>2}  {b:>8}  {a:>8}  {e:>14}  {s['agent_wall_s']:>6.0f}s  {s['title']}")
+        scb = f"{s['score_before']['evaluate_score']}"
+        sca = f"{s['score_after']['evaluate_score']}"
+        print(f"{s['id']:>2}  {b:>10}  {a:>10}  {scb:>9}  {sca:>8}  "
+              f"{s['agent_wall_s']:>6.0f}s  {s['title']}")
     print(f"\nWrote {args.out}")
 
 

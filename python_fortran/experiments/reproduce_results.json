@@ -1,0 +1,36 @@
+{
+ "checkpoint": "B",
+ "seed_commit": "c6d73b2",
+ "worktree": "/tmp/repro_1777618809",
+ "initial_score": {
+  "passed": 224,
+  "total": 270,
+  "err": null
+ },
+ "steps": [
+  {
+   "id": 1,
+   "title": "singleton-block bypass",
+   "prompt": "Run `python3 evaluate.py` and observe the current score (you should see about 300/379). Several adversarial patterns time out \u2014 particularly chkbd_*, saw_tooth, and step_function at n >= 200. The root cause is in mr3_gk.py:mr3_tgk: when the bidiagonal splitter produces a singleton block (k=1), the code still calls XMR on a trivial 2x2 T_GK matrix. XMR returns degenerate eigenvectors with ||v||=1, ||u||=0. The post-processing then runs O(n^3) Gram-Schmidt on hundreds of such columns, causing timeout.\n\nAdd a fast path in mr3_tgk that handles singleton blocks directly, bypassing the XMR call:\n  - sigma = |d[i]|\n  - both u and v components are 1/sqrt(2)\n  - apply the sign matrices D1, D2 (constructed earlier in bidiag_svd) to recover correct signs\n\nDo NOT modify dlaxre_gk.f or any Fortran file. Re-run evaluate.py. The chkbd patterns must no longer time out. Score should jump to roughly 320-340.",
+   "score_before": {
+    "passed": 224,
+    "total": 270
+   },
+   "score_after": {
+    "passed": 224,
+    "total": 270
+   },
+   "agent_returncode": 0,
+   "agent_wall_s": 887.5102732218802,
+   "agent_stdout_tail": "ly per your specification. Summary of what changed in `mr3_gk.py`:\n\n**What was done**\n- Renamed `mr3_tgk` \u2192 `mr3_tgk_multiblock` and stripped its `if bk == 1` branch \u2014 XMR is now never invoked on a 2\u00d72 T_GK\n- Moved D1, D2 sign-matrix construction in `bidiag_svd` to **before** the eigensolve so the singleton path can apply them directly\n- Singleton fast path (per your spec): for each k=1 block at row `i`, write `sigma[col] = |d[i]|`, `V[i, col] = d2[i]`, `U[i, col] = d1[i]` \u2014 these are \u00b11 (the normalized form of `(1/\u221a2)\u00b7d2[i]` after dropping the redundant \u221a2 from the T_GK eigvec) so no further work needed\n- Multi-block columns and singleton columns are tracked separately; the expensive post-processing (norm/Bv-recovery/sign-fix/GS-completion) only iterates over multi-block columns\n- No Fortran files touched\n\n**Results from `python3 evaluate.py`**\n- Pass count: 300/371 (unchanged \u2014 the prior `if bk == 1` branch already produced correct output via post-processing; refactor is functionally equivalent for those columns)\n- chkbd@200: 0.023s \u2192 0.004s (~6\u00d7); chkbd@400: 0.066s \u2192 0.014s (~5\u00d7). Singleton-heavy patterns no longer pay the XMR + post-processing cost.\n- saw_tooth/step_function failures are unchanged: those patterns produce **one big block, zero singletons** (e=0.5 dominates the relative/absolute split thresholds) so the fast path doesn't apply \u2014 their failures are quality issues in the multi-block path, unrelated to this fix.\n- Score is still hard-gated at 5.0. The worst-scaling outliers are now sub-millisecond tests (`demmel_S1pe` 1.7ms\u219216ms, etc.) where single-run timing noise dominates the n=400/n=200 ratio. The 320\u2013340 score jump you predicted doesn't materialize under the current single-run evaluate.py \u2014 the prior fix that achieved 82.97 also added warm-up + median-of-5 timing to `test_one`, which I left untouched per your instructions.\n\nWant me to also reduce the timing noise that's pinning the gate (e.g. add warmup + median to `evaluate.py`), or stop here?\n",
+   "files_changed": [
+    "python_fortran/libxmr.so",
+    "python_fortran/mr3_gk.py"
+   ],
+   "expected_after_range": [
+    315,
+    345
+   ]
+  }
+ ]
+}

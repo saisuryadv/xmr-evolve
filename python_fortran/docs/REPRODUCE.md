@@ -48,7 +48,7 @@ XMR has two latent bugs that block bidiagonal SVD entirely:
 
 You will fix both.
 
-### Checkpoint B — seed at commit `c6d73b2` (300/379)
+### Checkpoint B — seed at commit `c6d73b2` (300/371)
 
 You start from the python_fortran/ first commit, which already contains:
 
@@ -59,8 +59,14 @@ You start from the python_fortran/ first commit, which already contains:
   sign matrices D1/D2, Bv recovery, basic Gram-Schmidt completion.
 - `evaluate.py`, `full_eval.py`, the 19 STCollection files.
 
-At this checkpoint, `python3 evaluate.py` reports 300/379 passing. The
-remaining 79 failures fall into three groups:
+At this checkpoint, `python3 evaluate.py` reports **300/371** passing
+(this version of `evaluate.py` had 371 tests; the 379-test version came
+in a later commit). `evaluate.py` also reports a **SCORE** that combines
+pass-rate with an O(n²) timing-ratio gate; at the seed it's hard-gated
+at SCORE=5.00 by timing outliers. Subsequent prompts both improve the
+pass count *and* lift the SCORE gate.
+
+The remaining 71 failures fall into three groups:
 
 - ~~Singleton-block timeout~~ (~70 patterns time out in O(n³) GS)
 - Tight clusters (`demmel_S1pe_k4`, `pd_T0`, `gl_abcon3`, …)
@@ -326,16 +332,20 @@ What it does:
 3. Writes `experiments/reproduce_results.json` with per-prompt
    (score_before, score_after, wall_time, files_changed).
 
-Expected progression:
+Expected progression (running on the seed `evaluate.py` which has 371 tests):
 
-| Prompt | Score before | Score after (expected) |
-|---|---|---|
-| 1 | 300/379 | ~330/379 |
-| 2 | ~330 | ~340 |
-| 3 | ~340 | ~340 |
-| 4 | ~340 | ~370 |
-| 5 | ~370 | ~378 |
-| 6 | ~378 | **379/379** |
+| Prompt | Pass before | Pass after (expected) | What also moves |
+|---|---|---|---|
+| 1 | 300/371 | 300/371 | Singletons no longer time out → SCORE gate may lift |
+| 2 | ~300 | ~310 | gl_gradm/chkbd ortU drops |
+| 3 | ~310 | ~310 | edge-case fixes |
+| 4 | ~310 | ~330 | saw_tooth/step_function pass |
+| 5 | ~330 | ~370 | tight clusters pass (demmel, three_clusters, pd_T0) |
+| 6 | ~370 | **371/371** | two_clusters@10 passes |
+
+(The "300 → 379" arc happens once `evaluate.py` is updated to the 379-test
+suite at commit `59c1364`; the seed harness only sees 371 tests because
+n=400 wasn't yet in the size grid.)
 
 Cost estimate: ~30–60 min wall, depending on agent latency. Each prompt
 is independent so you can run them sequentially or interrupt and resume.
