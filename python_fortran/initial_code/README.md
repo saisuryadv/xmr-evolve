@@ -23,7 +23,7 @@ respectively, faithfully reproducing the bug-fixing arc.
 
 | Path | What it is | Provenance |
 |---|---|---|
-| `xmr_src/` | Paul Willems' XMR Fortran source (44 `.f` files, ~14K LOC) | **Upstream, untouched.** Source: Willems' `tdsolver/xmr/SRC/O` directory. Verified byte-identical to the in-tree `python_fortran/xmr_src/`. |
+| `xmr_src/` | Paul Willems' XMR Fortran source (44 `.f` files, ~14K LOC) | **Upstream, untouched.** Source: Willems' `tdsolver/xmr/SRC/O` directory (the "Optimized" build flavor). Verified byte-identical to the in-tree `python_fortran/xmr_src/` and to Willems' published archive — every one of the 44 `.f` files matches exactly. (Willems' archive also ships `Dcl/` 50-file and `Oc/` 47-file variants; we don't use those.) |
 | `stcollection/` | 19 STCollection real-world bidiagonal matrices (`.dat`) | From github.com/oamarques/STCollection (Marques et al.). Untouched. |
 | `evaluate.py` | 379-test scoring harness | The current `evaluate.py` from project HEAD. Reports `TOTAL: X/379` against the `mr3_gk.bidiag_svd` symbol that the agent will create. |
 | `full_eval.py` | 90 adversarial bidiagonal-matrix generators | The current `full_eval.py` from HEAD. Defines `make(name, n)` and `adv_names`. |
