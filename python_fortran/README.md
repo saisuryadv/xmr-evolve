@@ -153,6 +153,74 @@ cd mr3gk_fortran && bash build.sh && cd ..
 # produces mr3gk_fortran/mr3gk_run
 ```
 
+### Run
+
+`mr3gk_run` is a CLI executable that reads a bidiagonal `(d, e)` from a
+binary file and writes the SVD `(σ, U, V)` to another binary file.
+
+```bash
+./mr3gk_fortran/mr3gk_run <input.bin> <output.bin>
+```
+
+**Input file format** (little-endian, contiguous):
+
+| Bytes | Type | Meaning |
+|---|---|---|
+| 0–3 | `int32` | `n`, the dimension |
+| 4 … 4+8n−1 | `n × float64` | diagonal `d[0], d[1], …, d[n−1]` |
+| 4+8n … 4+8n+8(n−1)−1 | `(n−1) × float64` | super-diagonal `e[0], e[1], …, e[n−2]` |
+
+**Output file format** (little-endian, contiguous):
+
+| Bytes | Type | Meaning |
+|---|---|---|
+| 0–3 | `int32` | `info` (0 on success) |
+| 4 … 4+8n−1 | `n × float64` | singular values `σ[0] … σ[n−1]` (ascending) |
+| next 8n² bytes | `n × n × float64` | `U` in **column-major** (Fortran) order |
+| next 8n² bytes | `n × n × float64` | `V` in **column-major** order |
+
+**Minimal Python wrapper to call `mr3gk_run`:**
+
+```python
+import struct, subprocess
+import numpy as np
+
+def fortran_svd(d, e):
+    """SVD of an n×n upper-bidiagonal matrix B with diag d and super-diag e.
+    Returns (sigma, U, V) such that B ≈ U · diag(sigma) · V^T."""
+    n = len(d)
+    with open("/tmp/in.bin", "wb") as f:
+        f.write(struct.pack("i", n))
+        f.write(np.asarray(d, dtype=np.float64).tobytes())
+        f.write(np.asarray(e, dtype=np.float64).tobytes())
+
+    subprocess.run(["./mr3gk_fortran/mr3gk_run", "/tmp/in.bin", "/tmp/out.bin"],
+                   check=True)
+
+    with open("/tmp/out.bin", "rb") as f:
+        info = struct.unpack("i", f.read(4))[0]
+        sigma = np.frombuffer(f.read(8 * n), dtype=np.float64).copy()
+        U = np.frombuffer(f.read(8 * n * n), dtype=np.float64) \
+              .reshape(n, n, order="F").copy()
+        V = np.frombuffer(f.read(8 * n * n), dtype=np.float64) \
+              .reshape(n, n, order="F").copy()
+    if info != 0:
+        raise RuntimeError(f"mr3gk_run returned info={info}")
+    return sigma, U, V
+
+# Example: n=4 bidiagonal
+d = np.array([4.0, 3.0, 2.0, 1.0])
+e = np.array([0.5, 0.5, 0.5])
+sigma, U, V = fortran_svd(d, e)
+print("sigma:", sigma)        # ascending singular values
+B = np.diag(d) + np.diag(e, 1)
+print("residual:", np.max(np.abs(B - U @ np.diag(sigma) @ V.T)))
+```
+
+To call directly from Fortran, link `mr3gk_fortran/mr3gk.f90`'s
+`dmr3gk_svd(n, d, e, sigma, U, V, ldu, info)` instead of going through
+the CLI. `mr3gk_run.f90` is a ~80-line example showing how.
+
 ### Validate
 
 There are two complementary checks:
