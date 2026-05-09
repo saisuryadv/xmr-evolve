@@ -155,6 +155,25 @@ cd mr3gk_fortran && bash build.sh && cd ..
 
 ### Validate
 
+There are two complementary checks:
+
+**1. Standalone 379-spec evaluation (the same one used to score the
+Python+Fortran hybrid):**
+
+```bash
+python3 run_evaluate_fortran.py --suite evaluate
+# expect: TOTAL: 379/379 passed
+# wall: ~4 min on Linux x86_64
+```
+
+`run_evaluate_fortran.py` imports the project's `evaluate.py`, replaces
+its `bidiag_svd` symbol with a thin shim that calls `mr3gk_fortran/mr3gk_run`
+via subprocess (binary I/O), and prints the same PASS/FAIL output. Latest
+run logged at `docs/fortran_only_results/EVAL_2026-05-09.md` and
+`docs/fortran_only_results/run_2026-05-09_evaluate_379.log`.
+
+**2. Bit-identity vs Python+Fortran (cross-check):**
+
 ```bash
 # One-time: cache the Python+Fortran hybrid baseline (~5 min)
 python3 test_fortran_match.py --gen-baseline
