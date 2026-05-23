@@ -353,6 +353,10 @@ def _bidiagT_matvec_batch(d, e, M):
     return BTM
 
 def bidiag_svd(d, e):
+    import sys
+    # DK-deflation may recurse up to O(n) levels on matrices with many
+    # near-zero off-diagonals (e.g. Godunov); ensure sufficient stack.
+    sys.setrecursionlimit(max(sys.getrecursionlimit(), 2 * len(d) + 200))
     d = np.asarray(d, dtype=np.float64).copy()
     e = np.asarray(e, dtype=np.float64).copy()
     n = len(d)
@@ -457,9 +461,74 @@ def bidiag_svd(d, e):
                 qr_deflated_cols.extend(range(col, col + bk))
                 col += bk
             else:
-                # No zero SV — use MR³ on original (d, e unchanged)
-                multi_blocks.append((bbeg, bend, bk, col))
-                col += bk
+                # No zero SV — try Demmel-Kahan Convergence Criterion 1
+                # (Demmel-Kahan 1990, Section 2, page 6) to find additional
+                # split points the standard relative criterion misses.
+                #
+                # Compute the forward (lambda) and backward (mu) recurrences
+                # from equation (2.4). Set e_j = 0 wherever
+                #   |e_j / lambda_{j+1}| <= eta  OR  |e_j / mu_j| <= eta.
+                # This is safe: Theorem 4 guarantees the relative perturbation
+                # to any singular value is at most eta.
+                dk_eta = EPS  # machine-precision relative accuracy
+                # Forward recurrence: lambda (bottom-up)
+                lam = np.zeros(bk)
+                lam[bk-1] = abs(d_sw[bk-1])
+                for ii in range(bk-2, -1, -1):
+                    lam[ii] = abs(d_sw[ii]) * (lam[ii+1] / (lam[ii+1] + abs(e_sw[ii])))
+                # Backward recurrence: mu (top-down)
+                mu = np.zeros(bk)
+                mu[0] = abs(d_sw[0])
+                for ii in range(bk-1):
+                    mu[ii+1] = abs(d_sw[ii+1]) * (mu[ii] / (mu[ii] + abs(e_sw[ii])))
+                # Apply convergence criterion: zero out deflatable e entries
+                n_dk_deflated = 0
+                for ii in range(bk-1):
+                    if (abs(e_sw[ii]) <= dk_eta * lam[ii+1] or
+                        abs(e_sw[ii]) <= dk_eta * mu[ii]):
+                        e_sw[ii] = 0.0
+                        n_dk_deflated += 1
+                if n_dk_deflated > 0:
+                    if _verbose:
+                        print(f'  [DK deflation] block [{bbeg},{bend}] bk={bk}: '
+                              f'{n_dk_deflated} off-diags zeroed by DK criterion')
+                    # Re-split the DK-deflated bidiagonal
+                    dk_blocks = split_bidiag(d_sw, e_sw, bk)
+                    if _verbose:
+                        print(f'  [DK deflation] {len(dk_blocks)} sub-blocks after re-split')
+                    # Solve each sub-block recursively
+                    U_blk = np.zeros((bk, bk))
+                    V_blk = np.zeros((bk, bk))
+                    sub_sigmas = []
+                    sub_col = 0
+                    for sb_beg, sb_end in dk_blocks:
+                        sb_k = sb_end - sb_beg + 1
+                        if sb_k == 1:
+                            sub_sigmas.append(abs(d_sw[sb_beg]))
+                            U_blk[sb_beg, sub_col] = 1.0
+                            V_blk[sb_beg, sub_col] = 1.0
+                            sub_col += 1
+                        else:
+                            sig_s, U_s, V_s, _ = bidiag_svd(
+                                d_sw[sb_beg:sb_end+1] / scale_factor,
+                                e_sw[sb_beg:sb_end] / scale_factor)
+                            sub_sigmas.extend(sig_s * scale_factor)
+                            U_blk[sb_beg:sb_end+1, sub_col:sub_col+sb_k] = U_s
+                            V_blk[sb_beg:sb_end+1, sub_col:sub_col+sb_k] = V_s
+                            sub_col += sb_k
+                    # Apply QR rotations to combined block
+                    _apply_givens_to_rows(V_blk, right_rots)
+                    _apply_givens_to_rows(U_blk, left_rots)
+                    c_slice = slice(col, col + bk)
+                    sigma[c_slice] = np.array(sub_sigmas)
+                    U[bbeg:bend+1, c_slice] = U_blk
+                    V[bbeg:bend+1, c_slice] = V_blk
+                    qr_deflated_cols.extend(range(col, col + bk))
+                    col += bk
+                else:
+                    # DK criterion found nothing — use MR³ on original
+                    multi_blocks.append((bbeg, bend, bk, col))
+                    col += bk
 
     if _verbose:
         print(f'  singletons: {len(sing_rows)}')
