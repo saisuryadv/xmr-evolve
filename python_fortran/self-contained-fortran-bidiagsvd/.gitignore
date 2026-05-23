@@ -1,0 +1,9 @@
+*.so
+*.o
+*.mod
+__pycache__/
+*.pyc
+fortran_objects/
+mr3gk_fortran/mr3gk_run
+mr3gk_fortran/*.o
+mr3gk_fortran/*.mod
