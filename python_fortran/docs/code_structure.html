@@ -16,7 +16,9 @@ h1 { text-align: center; padding: 24px; color: #58a6ff; font-size: 1.5em; }
 .detail-panel { width: 480px; background: #161b22; border-left: 1px solid #30363d; overflow-y: auto; padding: 20px; }
 
 /* Graph nodes */
-svg { width: 100%; height: 100%; }
+svg { width: 100%; height: 100%; user-select: none; }
+.graph-panel { cursor: grab; }
+.graph-panel.panning { cursor: grabbing; }
 .node rect { rx: 6; ry: 6; cursor: pointer; stroke-width: 1.5; transition: all 0.15s; }
 .node rect:hover { filter: brightness(1.3); stroke-width: 2.5; }
 .node.selected rect { stroke-width: 3; filter: brightness(1.4); }
@@ -589,6 +591,77 @@ nodes.forEach(n => {
 
   g.addEventListener("click", () => selectNode(n));
   svg.appendChild(g);
+});
+
+// --- Zoom & Pan ---
+const graphPanel = document.getElementById('graphPanel');
+const graphSvg = document.getElementById('graphSvg');
+
+// Compute bounding box from node positions
+let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+nodes.forEach(n => {
+  minX = Math.min(minX, n.x - 10);
+  minY = Math.min(minY, n.y - 10);
+  maxX = Math.max(maxX, n.x + n.w + 10);
+  maxY = Math.max(maxY, n.y + n.h + 10);
+});
+const contentW = maxX - minX;
+const contentH = maxY - minY;
+
+// Viewbox state
+let vb = { x: minX - 40, y: minY - 20, w: contentW + 80, h: contentH + 60 };
+function applyViewBox() {
+  graphSvg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+}
+applyViewBox();
+
+// Mouse wheel zoom
+graphPanel.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = graphSvg.getBoundingClientRect();
+  // Mouse position in SVG coords
+  const mx = vb.x + (e.clientX - rect.left) / rect.width * vb.w;
+  const my = vb.y + (e.clientY - rect.top) / rect.height * vb.h;
+
+  const factor = e.deltaY > 0 ? 1.12 : 1 / 1.12;
+  const newW = vb.w * factor;
+  const newH = vb.h * factor;
+  // Zoom toward mouse position
+  vb.x = mx - (mx - vb.x) * factor;
+  vb.y = my - (my - vb.y) * factor;
+  vb.w = newW;
+  vb.h = newH;
+  applyViewBox();
+}, { passive: false });
+
+// Pan with mouse drag
+let isPanning = false, panStart = { x: 0, y: 0 }, vbStart = { x: 0, y: 0 };
+graphPanel.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.node')) return; // don't pan when clicking nodes
+  isPanning = true;
+  panStart = { x: e.clientX, y: e.clientY };
+  vbStart = { x: vb.x, y: vb.y };
+  graphPanel.classList.add('panning');
+});
+window.addEventListener('mousemove', (e) => {
+  if (!isPanning) return;
+  const rect = graphSvg.getBoundingClientRect();
+  const dx = (e.clientX - panStart.x) / rect.width * vb.w;
+  const dy = (e.clientY - panStart.y) / rect.height * vb.h;
+  vb.x = vbStart.x - dx;
+  vb.y = vbStart.y - dy;
+  applyViewBox();
+});
+window.addEventListener('mouseup', () => {
+  isPanning = false;
+  graphPanel.classList.remove('panning');
+});
+
+// Double-click to reset view
+graphPanel.addEventListener('dblclick', (e) => {
+  if (e.target.closest('.node')) return;
+  vb = { x: minX - 40, y: minY - 20, w: contentW + 80, h: contentH + 60 };
+  applyViewBox();
 });
 
 // Selection logic
