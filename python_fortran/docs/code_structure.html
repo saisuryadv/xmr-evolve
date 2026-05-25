@@ -112,10 +112,10 @@ V = Z[even_rows] * D2               -- extract from eigvecs
 U = Z[odd_rows] * D1
 post_process(sigma, U, V)           -- normalize, Bv, signs
 sigma /= scale`,
-    calls: ["dmr3gk_split", "dmr3gk_qrsweep", "solve_tgk_block", "post_process"] },
+    calls: ["dmr3gk_split", "dmr3gk_qrsweep", "mr3_tgk_multiblock", "post_process"] },
 
   // Layer 2: Orchestration modules
-  { id: "dmr3gk_split", x: 120, y: 260, w: 150, h: 36, label: "dmr3gk_split", sub: "Block splitting", layer: "mr3",
+  { id: "dmr3gk_split", x: 120, y: 260, w: 150, h: 36, label: "dmr3gk_split", sub: "Preprocessing", layer: "mr3",
     file: "mr3gk_fortran/mr3gk_split.f90",
     desc: "Two-phase splitting of the bidiagonal matrix. Phase 1: relative splits preserving relative accuracy (|e_i| < eps*(|d_i|+|d_{i+1}|)). Phase 2: absolute splits within each relative block per condition (3.5) of Willems-Lang 2012.",
     pseudo: `Phase 1 (relative):
@@ -127,7 +127,7 @@ Phase 2 (absolute, per relative block):
     if |e_i| <= bk*eps*bnorm: split here`,
     calls: [] },
 
-  { id: "dmr3gk_qrsweep", x: 340, y: 260, w: 160, h: 36, label: "dmr3gk_qrsweep", sub: "Zero-shift QR", layer: "mr3",
+  { id: "dmr3gk_qrsweep", x: 340, y: 260, w: 160, h: 36, label: "dmr3gk_qrsweep", sub: "Preprocessing", layer: "mr3",
     file: "mr3gk_fortran/mr3gk_qrsweep.f90",
     desc: "One downward sweep of implicit zero-shift QR on upper bidiagonal (Demmel-Kahan 1990, Section 3). Equivalent to inverse iteration on B^TB. When sigma_min=0, drives both d[-1] and e[-1] to zero in one sweep.",
     pseudo: `cs = 1; oldcs = 1; oldsn = 0
@@ -139,18 +139,25 @@ d[n-1] = d[n-1]*cs*oldcs
 e[n-2] = d[n-1]*cs*oldsn`,
     calls: [] },
 
-  { id: "solve_tgk_block", x: 560, y: 260, w: 160, h: 36, label: "solve_tgk_block", sub: "T_GK eigenproblem", layer: "mr3",
+  { id: "mr3_tgk_multiblock", x: 560, y: 260, w: 180, h: 36, label: "mr3_tgk_multiblock", sub: "Build T_GK, dispatch", layer: "mr3",
     file: "mr3gk_fortran/mr3gk_tgk.f90",
-    desc: "Solve the T_GK symmetric tridiagonal eigenproblem. Builds T_GK from bidiagonal entries, computes all eigenvalues via bisection (DSTEBZ), then calls XMR (DLAXRE + DLAXRV) for eigenvectors of the upper half of the spectrum.",
-    pseudo: `bc = zeros(m)                        -- T_GK diagonal = 0
-bte = interleave(|e|, |d|)           -- T_GK off-diag
-evals = DSTEBZ(bc, bte, 1, m)        -- all eigenvalues
+    desc: "Build T_GK from bidiagonal block entries d[bbeg:bend], e[bbeg:bend-1]. Constructs the 2*bk-sized T_GK off-diagonals by interleaving |e| and |d|, then calls solve_tgk_block for the eigenproblem.",
+    pseudo: `bk = bend - bbeg + 1;  m = 2*bk
+bc = zeros(m)                        -- T_GK diagonal = 0
+bte = interleave(|e[bbeg:]|, |d[bbeg+1:]|) -- T_GK off-diag
+call solve_tgk_block(bc, bte, m, bk, w, Z)`,
+    calls: ["solve_tgk_block"] },
+
+  { id: "solve_tgk_block", x: 560, y: 340, w: 160, h: 36, label: "solve_tgk_block", sub: "T_GK eigenproblem", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk_tgk.f90",
+    desc: "Solve the T_GK symmetric tridiagonal eigenproblem. Computes all eigenvalues via bisection (DSTEBZ), then calls XMR (DLAXRE + DLAXRV) for eigenvectors of the upper half of the spectrum.",
+    pseudo: `evals = DSTEBZ(bc, bte, 1, m)        -- all eigenvalues
 call DLAXRE(repr, repi, tau)          -- root representation
 call DLAXRV(w, Z, wil, wiu)          -- eigenvectors
 return w + tau, Z`,
     calls: ["bisect_evals", "dlaxre", "dlaxrv"] },
 
-  { id: "post_process", x: 800, y: 260, w: 150, h: 36, label: "post_process", sub: "Normalize/fix", layer: "mr3",
+  { id: "post_process", x: 800, y: 260, w: 150, h: 36, label: "post_process", sub: "Postprocessing", layer: "mr3",
     file: "mr3gk_fortran/mr3gk_postproc.f90",
     desc: "Post-processing of multi-block columns: normalize U/V, recover missing vectors via Bv/B^Tu multiplication, fix signs so B*v_i = sigma_i*u_i, complete zero-SV vectors via Gram-Schmidt.",
     pseudo: `normalize U, V columns (DNRM2)
@@ -162,7 +169,7 @@ GS completion for zero-SV columns`,
     calls: [] },
 
   // Layer 3: XMR entry points (our patches)
-  { id: "dlaxre", x: 400, y: 400, w: 140, h: 36, label: "DLAXRE", sub: "Root repr builder", layer: "patch",
+  { id: "dlaxre", x: 400, y: 440, w: 140, h: 36, label: "DLAXRE", sub: "Root repr builder", layer: "patch",
     file: "dlaxre_gk.f",
     desc: "Build root representation and initialize eigenvalue list. For GK matrices (zero diagonal), uses T_GK directly as root with alternating block structure (Algorithm 4.1, Willems-Lang 2012). Applies random perturbation to break degeneracy. OUR PATCH: conditional additive perturbation for tiny E entries to break periodic structure in shifted representations.",
     pseudo: `detect GK: |dmax|+|dmin| < eps*emax
@@ -180,9 +187,9 @@ PERTURB ROOT:
   G(i) *= (1 + random * FAC)          -- null for GK (G=0)
 call DLAXRR to build repr structure
 init eigenvalue list (Gerschgorin or DQDS)`,
-    calls: ["dlaxrn", "dlaxrr"] },
+    calls: ["dlaxrn", "dlaxrr", "dlaxre_initewldqds", "dlaxrl_update"] },
 
-  { id: "dlaxrv", x: 660, y: 400, w: 140, h: 36, label: "DLAXRV", sub: "Main eigensolver", layer: "xmr",
+  { id: "dlaxrv", x: 660, y: 440, w: 140, h: 36, label: "DLAXRV", sub: "Main eigensolver", layer: "xmr",
     file: "xmr_src/dlaxrv.f",
     desc: "Main MR3 representation tree traversal. Processes eigenvalue list: classifies into singletons and clusters, computes singleton eigenvectors via RQI, and recursively builds child representations for clusters. This is the heart of the O(n^2) algorithm.",
     pseudo: `while stack S not empty:
@@ -199,7 +206,7 @@ init eigenvalue list (Gerschgorin or DQDS)`,
     calls: ["dlaxrb_clssfy", "dlaxrb_refsng", "dlaxrx", "dlaxrb_refcls", "dlaxrf_env", "dlaxrf", "dlaxrr"] },
 
   // Layer 4: Classification & singleton
-  { id: "dlaxrb_clssfy", x: 200, y: 540, w: 160, h: 36, label: "DLAXRB_CLSSFY", sub: "Classify evals", layer: "patch",
+  { id: "dlaxrb_clssfy", x: 200, y: 580, w: 160, h: 36, label: "DLAXRB_CLSSFY", sub: "Classify evals", layer: "patch",
     file: "dlaxrb_clssfy_fix.f",
     desc: "Refine eigenvalue approximations and classify into singletons (relgap >= gaptol) and clusters. OUR PATCH: fix for AVGTHRESH=0 guard when all eigenvalues are in one cluster.",
     pseudo: `refine eigenvalue bounds via bisection
@@ -208,9 +215,9 @@ for each consecutive pair (lambda_i, lambda_{i+1}):
   if relgap >= gaptol: mark as gap (singleton)
   else: mark as cluster member
 return classification array`,
-    calls: [] },
+    calls: ["dlaxrc"] },
 
-  { id: "dlaxrx", x: 440, y: 540, w: 130, h: 36, label: "DLAXRX", sub: "Singleton eigvec", layer: "xmr",
+  { id: "dlaxrx", x: 440, y: 580, w: 130, h: 36, label: "DLAXRX", sub: "Singleton eigvec", layer: "xmr",
     file: "xmr_src/dlaxrx.f",
     desc: "Compute eigenvector for a singleton eigenvalue. Builds twisted factorization at optimal twist, computes FP (Fernando-Parlett) starting vector via back-substitution, then refines via RQI (Rayleigh Quotient Iteration). Falls back to bisection if RQI stalls.",
     pseudo: `select twist K (minimize element growth)
@@ -225,7 +232,7 @@ do RQI:
 return (lambda, z)`,
     calls: ["dlaxrt", "dlaxrg0", "dlaxrg"] },
 
-  { id: "dlaxrb_refsng", x: 50, y: 540, w: 160, h: 36, label: "DLAXRB_REFSNG", sub: "Refine singletons", layer: "xmr",
+  { id: "dlaxrb_refsng", x: 50, y: 580, w: 160, h: 36, label: "DLAXRB_REFSNG", sub: "Refine singletons", layer: "xmr",
     file: "xmr_src/dlaxrb_refsng.f",
     desc: "Refine bounds for singleton eigenvalues to higher precision using targeted bisection steps.",
     pseudo: `for each singleton eigenvalue:
@@ -234,7 +241,7 @@ return (lambda, z)`,
   update bounds via DLAXRL_REFINE`,
     calls: ["dlaxrm", "dlaxrl_refine"] },
 
-  { id: "dlaxrb_refcls", x: 660, y: 540, w: 160, h: 36, label: "DLAXRB_REFCLS", sub: "Refine clusters", layer: "xmr",
+  { id: "dlaxrb_refcls", x: 660, y: 580, w: 160, h: 36, label: "DLAXRB_REFCLS", sub: "Refine clusters", layer: "xmr",
     file: "xmr_src/dlaxrb_refcls.f",
     desc: "Refine eigenvalue approximations within a cluster, revealing internal gaps that may split it into sub-clusters.",
     pseudo: `for each eigenvalue in cluster:
@@ -257,7 +264,7 @@ for each candidate shift tau:
     init inner bounds (DLAXRF_IIB)
     return child repr
 if all fail: LASTHOPE shift`,
-    calls: ["dlaxrf_selshf", "dlaxrs", "dlaxrf_seltw", "dlaxrr", "dlaxrf_cob", "dlaxrf_iib", "dlaxrl_refine"] },
+    calls: ["dlaxrf", "dlaxrf_selshf", "dlaxrs", "dlaxrf_seltw", "dlaxrr", "dlaxrf_cob", "dlaxrf_iib", "dlaxrl_refine"] },
 
   { id: "dlaxrf_env", x: 750, y: 680, w: 150, h: 36, label: "DLAXRF_ENV", sub: "Growth envelope", layer: "xmr",
     file: "xmr_src/dlaxrf_env.f",
@@ -508,19 +515,8 @@ propagate gap info`,
 return nfound eigenvalues`,
     calls: [] },
 
-  // C glue
-  { id: "xmr_wrapper", x: 500, y: 340, w: 150, h: 36, label: "xmr_wrapper.c", sub: "C glue layer", layer: "glue",
-    file: "xmr_wrapper.c",
-    desc: "Thin C interface bridging Fortran XMR routines to external callers. Sets up workspace, translates array indexing, manages the xmrstats common block. Main entry: xmr_eigenvectors() which calls DLAXRE then DLAXRV.",
-    pseudo: `xmr_eigenvectors(n, E, evals, wil, wiu):
-  D = zeros(n)     -- T_GK has zero diagonal
-  GL = evals[0] - 1%
-  GU = evals[n-1] + 1%
-  call DLAXRE(D, E, GL, GU, repr, tau)
-  call DLAXRV(E, repr, wil, wiu, w, Z)
-  w += tau  -- add back root shift
-  return w, Z`,
-    calls: ["dlaxre", "dlaxrv"] },
+  // Note: xmr_wrapper.c exists as C glue for the Python-Fortran hybrid version.
+  // In the pure Fortran package, solve_tgk_block calls dlaxre/dlaxrv directly.
 ];
 
 // Define edges from calls
