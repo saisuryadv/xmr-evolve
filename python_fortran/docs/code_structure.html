@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MR3-GK Bidiagonal SVD — Code Structure</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0d1117; color: #c9d1d9; }
+h1 { text-align: center; padding: 24px; color: #58a6ff; font-size: 1.5em; }
+.subtitle { text-align: center; color: #8b949e; margin-bottom: 20px; font-size: 0.9em; }
+
+/* Layout */
+.container { display: flex; height: calc(100vh - 100px); }
+.graph-panel { flex: 1; overflow: auto; padding: 16px; position: relative; }
+.detail-panel { width: 480px; background: #161b22; border-left: 1px solid #30363d; overflow-y: auto; padding: 20px; }
+
+/* Graph nodes */
+svg { width: 100%; height: 100%; }
+.node rect { rx: 6; ry: 6; cursor: pointer; stroke-width: 1.5; transition: all 0.15s; }
+.node rect:hover { filter: brightness(1.3); stroke-width: 2.5; }
+.node.selected rect { stroke-width: 3; filter: brightness(1.4); }
+.node text { font-size: 11px; fill: #c9d1d9; pointer-events: none; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+.node .subtitle-text { font-size: 9px; fill: #8b949e; }
+
+/* Edges */
+.edge { stroke: #30363d; stroke-width: 1.2; fill: none; marker-end: url(#arrowhead); }
+.edge.highlighted { stroke: #58a6ff; stroke-width: 2; }
+
+/* Layer labels */
+.layer-label { font-size: 13px; fill: #484f58; font-weight: 600; font-family: 'Segoe UI', sans-serif; }
+.layer-bg { fill: #0d1117; stroke: #21262d; stroke-width: 1; rx: 8; }
+
+/* Detail panel */
+.detail-panel h2 { color: #58a6ff; font-size: 1.2em; margin-bottom: 8px; }
+.detail-panel h3 { color: #d2a8ff; font-size: 0.95em; margin: 16px 0 6px; }
+.detail-panel .file { color: #8b949e; font-size: 0.8em; margin-bottom: 12px; }
+.detail-panel .desc { color: #c9d1d9; margin-bottom: 12px; line-height: 1.5; }
+.detail-panel pre { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; font-size: 0.8em; line-height: 1.6; overflow-x: auto; color: #e6edf3; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+.detail-panel .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; margin-right: 4px; margin-bottom: 4px; }
+.tag-mr3 { background: #1f3d2b; color: #3fb950; }
+.tag-xmr { background: #1c2d4f; color: #58a6ff; }
+.tag-glue { background: #3d2b1f; color: #d29922; }
+.tag-patch { background: #3d1f2b; color: #f85149; border: 1px solid #f8514955; }
+.calls-list { list-style: none; padding: 0; }
+.calls-list li { padding: 3px 0; color: #8b949e; font-size: 0.85em; cursor: pointer; }
+.calls-list li:hover { color: #58a6ff; }
+.calls-list li::before { content: "-> "; color: #484f58; }
+.empty-state { color: #484f58; text-align: center; margin-top: 40vh; font-size: 1.1em; }
+
+/* Legend */
+.legend { display: flex; gap: 16px; justify-content: center; padding: 8px; background: #161b22; border-bottom: 1px solid #30363d; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.8em; color: #8b949e; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<h1>MR3-GK Bidiagonal SVD</h1>
+<div class="subtitle">Interactive call graph of the self-contained Fortran package (40 source files)</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background:#238636"></div> Fortran orchestration (mr3gk_fortran/)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#1f6feb"></div> XMR eigenvector kernel (xmr_src/)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#da3633"></div> Our patches (dlaxre_gk, dlaxrb_clssfy_fix)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#9e6a03"></div> C glue (xmr_wrapper)</div>
+</div>
+
+<div class="container">
+  <div class="graph-panel" id="graphPanel">
+    <svg id="graphSvg" viewBox="0 0 1200 2200">
+      <defs>
+        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#30363d"/>
+        </marker>
+        <marker id="arrowhead-hl" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+  <div class="detail-panel" id="detailPanel">
+    <div class="empty-state">Click a node to see details</div>
+  </div>
+</div>
+
+<script>
+const nodes = [
+  // Layer 0: Entry point
+  { id: "mr3gk_run", x: 500, y: 50, w: 140, h: 36, label: "mr3gk_run", sub: "CLI driver", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk_run.f90",
+    desc: "Command-line entry point. Reads bidiagonal matrix (d, e) from a binary file, calls dmr3gk_svd, writes sigma/U/V to output.",
+    pseudo: `read n, d(1:n), e(1:n-1) from input.bin
+call dmr3gk_svd(n, d, e, sigma, U, V, n, info)
+write info, sigma, U, V to output.bin`,
+    calls: ["dmr3gk_svd"] },
+
+  // Layer 1: Main SVD
+  { id: "dmr3gk_svd", x: 500, y: 140, w: 150, h: 36, label: "dmr3gk_svd", sub: "Bidiag SVD", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk.f90",
+    desc: "Top-level bidiagonal SVD. Prescales B, splits into blocks, applies zero-shift QR to detect zero singular values, builds T_GK, calls XMR eigensolver, extracts U/V from eigenvectors, post-processes.",
+    pseudo: `scale = 1 / max(|d|, |e|)
+d *= scale; e *= scale
+blocks = split_bidiag(d, e)          -- two-phase split
+for each block:
+  qr_sweep(d_blk, e_blk)            -- detect zero SVs
+  if clean_split: recurse on (bk-1)
+  else: solve via T_GK eigenproblem
+V = Z[even_rows] * D2               -- extract from eigvecs
+U = Z[odd_rows] * D1
+post_process(sigma, U, V)           -- normalize, Bv, signs
+sigma /= scale`,
+    calls: ["dmr3gk_split", "dmr3gk_qrsweep", "solve_tgk_block", "post_process"] },
+
+  // Layer 2: Orchestration modules
+  { id: "dmr3gk_split", x: 120, y: 260, w: 150, h: 36, label: "dmr3gk_split", sub: "Block splitting", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk_split.f90",
+    desc: "Two-phase splitting of the bidiagonal matrix. Phase 1: relative splits preserving relative accuracy (|e_i| < eps*(|d_i|+|d_{i+1}|)). Phase 2: absolute splits within each relative block per condition (3.5) of Willems-Lang 2012.",
+    pseudo: `Phase 1 (relative):
+  for i = 1..n-1:
+    if |e_i| <= eps*(|d_i|+|d_{i+1}|): split here
+Phase 2 (absolute, per relative block):
+  bnorm = ||B_sub||_inf
+  for i in block:
+    if |e_i| <= bk*eps*bnorm: split here`,
+    calls: [] },
+
+  { id: "dmr3gk_qrsweep", x: 340, y: 260, w: 160, h: 36, label: "dmr3gk_qrsweep", sub: "Zero-shift QR", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk_qrsweep.f90",
+    desc: "One downward sweep of implicit zero-shift QR on upper bidiagonal (Demmel-Kahan 1990, Section 3). Equivalent to inverse iteration on B^TB. When sigma_min=0, drives both d[-1] and e[-1] to zero in one sweep.",
+    pseudo: `cs = 1; oldcs = 1; oldsn = 0
+for i = 0..n-2:
+  (cs, sn, r) = DLARTG(d[i]*cs, e[i])    -- right rotation
+  e[i-1] = oldsn * r
+  (oldcs, oldsn, d[i]) = DLARTG(oldcs*r, d[i+1]*sn)  -- left rotation
+d[n-1] = d[n-1]*cs*oldcs
+e[n-2] = d[n-1]*cs*oldsn`,
+    calls: [] },
+
+  { id: "solve_tgk_block", x: 560, y: 260, w: 160, h: 36, label: "solve_tgk_block", sub: "T_GK eigenproblem", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk_tgk.f90",
+    desc: "Solve the T_GK symmetric tridiagonal eigenproblem. Builds T_GK from bidiagonal entries, computes all eigenvalues via bisection (DSTEBZ), then calls XMR (DLAXRE + DLAXRV) for eigenvectors of the upper half of the spectrum.",
+    pseudo: `bc = zeros(m)                        -- T_GK diagonal = 0
+bte = interleave(|e|, |d|)           -- T_GK off-diag
+evals = DSTEBZ(bc, bte, 1, m)        -- all eigenvalues
+call DLAXRE(repr, repi, tau)          -- root representation
+call DLAXRV(w, Z, wil, wiu)          -- eigenvectors
+return w + tau, Z`,
+    calls: ["bisect_evals", "dlaxre", "dlaxrv"] },
+
+  { id: "post_process", x: 800, y: 260, w: 150, h: 36, label: "post_process", sub: "Normalize/fix", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk_postproc.f90",
+    desc: "Post-processing of multi-block columns: normalize U/V, recover missing vectors via Bv/B^Tu multiplication, fix signs so B*v_i = sigma_i*u_i, complete zero-SV vectors via Gram-Schmidt.",
+    pseudo: `normalize U, V columns (DNRM2)
+for cols with bad U: U = B*V / sigma   -- Bv recovery
+for cols with bad V: V = B^T*U / sigma
+check residuals, fix if needed
+sign_fix: if dot(B*v, u) < 0: flip u
+GS completion for zero-SV columns`,
+    calls: [] },
+
+  // Layer 3: XMR entry points (our patches)
+  { id: "dlaxre", x: 400, y: 400, w: 140, h: 36, label: "DLAXRE", sub: "Root repr builder", layer: "patch",
+    file: "dlaxre_gk.f",
+    desc: "Build root representation and initialize eigenvalue list. For GK matrices (zero diagonal), uses T_GK directly as root with alternating block structure (Algorithm 4.1, Willems-Lang 2012). Applies random perturbation to break degeneracy. OUR PATCH: conditional additive perturbation for tiny E entries to break periodic structure in shifted representations.",
+    pseudo: `detect GK: |dmax|+|dmin| < eps*emax
+if GK:
+  G = zeros, OMEGA = alternating 0/1
+  shift TAU = (dmin+dmax)/2
+else:
+  standard outside shift to make positive definite
+PERTURB ROOT:
+  for each E(i):
+    if |E(i)| < 0.1*EMAX and FAC*EMAX < |E(i)|:
+      E(i) += random * FAC * EMAX     -- ADDITIVE (our fix)
+    else:
+      E(i) *= (1 + random * FAC)      -- multiplicative
+  G(i) *= (1 + random * FAC)          -- null for GK (G=0)
+call DLAXRR to build repr structure
+init eigenvalue list (Gerschgorin or DQDS)`,
+    calls: ["dlaxrn", "dlaxrr"] },
+
+  { id: "dlaxrv", x: 660, y: 400, w: 140, h: 36, label: "DLAXRV", sub: "Main eigensolver", layer: "xmr",
+    file: "xmr_src/dlaxrv.f",
+    desc: "Main MR3 representation tree traversal. Processes eigenvalue list: classifies into singletons and clusters, computes singleton eigenvectors via RQI, and recursively builds child representations for clusters. This is the heart of the O(n^2) algorithm.",
+    pseudo: `while stack S not empty:
+  pop node (M, I, tau_bar)
+  classify eigenvalues -> singletons, clusters
+  for singletons:
+    refine eigenvalue (bisection)
+    compute eigenvector via DLAXRX (FP + RQI)
+  for clusters:
+    refine cluster bounds (DLAXRB_REFCLS)
+    compute envelope (DLAXRF_ENV)
+    find child repr (DLAXRF) -- shift + factorize
+    push child node to S`,
+    calls: ["dlaxrb_clssfy", "dlaxrb_refsng", "dlaxrx", "dlaxrb_refcls", "dlaxrf_env", "dlaxrf", "dlaxrr"] },
+
+  // Layer 4: Classification & singleton
+  { id: "dlaxrb_clssfy", x: 200, y: 540, w: 160, h: 36, label: "DLAXRB_CLSSFY", sub: "Classify evals", layer: "patch",
+    file: "dlaxrb_clssfy_fix.f",
+    desc: "Refine eigenvalue approximations and classify into singletons (relgap >= gaptol) and clusters. OUR PATCH: fix for AVGTHRESH=0 guard when all eigenvalues are in one cluster.",
+    pseudo: `refine eigenvalue bounds via bisection
+for each consecutive pair (lambda_i, lambda_{i+1}):
+  relgap = |lambda_i - lambda_{i+1}| / |lambda_i|
+  if relgap >= gaptol: mark as gap (singleton)
+  else: mark as cluster member
+return classification array`,
+    calls: [] },
+
+  { id: "dlaxrx", x: 440, y: 540, w: 130, h: 36, label: "DLAXRX", sub: "Singleton eigvec", layer: "xmr",
+    file: "xmr_src/dlaxrx.f",
+    desc: "Compute eigenvector for a singleton eigenvalue. Builds twisted factorization at optimal twist, computes FP (Fernando-Parlett) starting vector via back-substitution, then refines via RQI (Rayleigh Quotient Iteration). Falls back to bisection if RQI stalls.",
+    pseudo: `select twist K (minimize element growth)
+call DLAXRT to compute twisted factorization at K
+call DLAXRG to get FP starting vector z
+do RQI:
+  compute residual r = (T - lambda*I) * z
+  if ||r|| small enough: converge
+  solve (T - lambda*I) * delta = r
+  z += delta; lambda = Rayleigh quotient
+  if stalled: bisection burst
+return (lambda, z)`,
+    calls: ["dlaxrt", "dlaxrg0", "dlaxrg"] },
+
+  { id: "dlaxrb_refsng", x: 50, y: 540, w: 160, h: 36, label: "DLAXRB_REFSNG", sub: "Refine singletons", layer: "xmr",
+    file: "xmr_src/dlaxrb_refsng.f",
+    desc: "Refine bounds for singleton eigenvalues to higher precision using targeted bisection steps.",
+    pseudo: `for each singleton eigenvalue:
+  collect current bounds [lb, ub]
+  call DLAXRM for multi-inertia bisection
+  update bounds via DLAXRL_REFINE`,
+    calls: ["dlaxrm", "dlaxrl_refine"] },
+
+  { id: "dlaxrb_refcls", x: 660, y: 540, w: 160, h: 36, label: "DLAXRB_REFCLS", sub: "Refine clusters", layer: "xmr",
+    file: "xmr_src/dlaxrb_refcls.f",
+    desc: "Refine eigenvalue approximations within a cluster, revealing internal gaps that may split it into sub-clusters.",
+    pseudo: `for each eigenvalue in cluster:
+  bisect bounds to full precision
+  test relative gaps between consecutives
+  mark newly revealed gaps`,
+    calls: ["dlaxrc"] },
+
+  // Layer 5: Child representation
+  { id: "dlaxrf", x: 500, y: 680, w: 130, h: 36, label: "DLAXRF", sub: "Find child repr", layer: "xmr",
+    file: "xmr_src/dlaxrf.f",
+    desc: "Find a shift tau such that M-tau = child RRR. The main workhorse for tree construction. Generates shift candidates, evaluates each by computing shifted factorization, selects best twist, builds child representation, verifies bounds.",
+    pseudo: `candidates = DLAXRF_SELSHF(cluster bounds)
+for each candidate shift tau:
+  (G+, omega+) = DLAXRS(G, E, tau)   -- shifted factorization
+  (twist, eval) = DLAXRF_SELTW(G+)   -- select best twist
+  if eval acceptable:
+    call DLAXRR to build child repr
+    verify outer bounds (DLAXRF_COB)
+    init inner bounds (DLAXRF_IIB)
+    return child repr
+if all fail: LASTHOPE shift`,
+    calls: ["dlaxrf_selshf", "dlaxrs", "dlaxrf_seltw", "dlaxrr", "dlaxrf_cob", "dlaxrf_iib", "dlaxrl_refine"] },
+
+  { id: "dlaxrf_env", x: 750, y: 680, w: 150, h: 36, label: "DLAXRF_ENV", sub: "Growth envelope", layer: "xmr",
+    file: "xmr_src/dlaxrf_env.f",
+    desc: "Compute an envelope (upper bound on element growth) for the cluster. Used to pre-screen shift candidates and avoid catastrophic element growth.",
+    pseudo: `split cluster into groups
+for each group:
+  call DLAXRF_GRPENV for local envelope
+combine into cluster-level envelope`,
+    calls: ["dlaxrf_grpenv"] },
+
+  // Layer 6: Shift & twist infrastructure
+  { id: "dlaxrs", x: 200, y: 820, w: 130, h: 36, label: "DLAXRS", sub: "Shift transform", layer: "xmr",
+    file: "xmr_src/dlaxrs.f",
+    desc: "Compute shifted factorization T-tau = N+ G+ N+* for all twist positions in IA:IE. Dispatches to stationary or progressive variants. Handles block creation/breaking decisions.",
+    pseudo: `for each twist J in IA:IE:
+  call DLAXRS_STAT (stationary) or
+       DLAXRS_PROG (progressive)
+  collect G+, omega+, S for twist J
+return all shifted data`,
+    calls: ["dlaxrs_stat", "dlaxrs_prog"] },
+
+  { id: "dlaxrt", x: 440, y: 820, w: 130, h: 36, label: "DLAXRT", sub: "Twisted factor", layer: "xmr",
+    file: "xmr_src/dlaxrt.f",
+    desc: "Compute twisted factorization T = N_k G_k N_k* for all twists in J1:J2. Combines LDL* from top with UDU* from bottom, meeting at the twist index.",
+    pseudo: `for each twist J in J1:J2:
+  call DLAXRT_STAT or DLAXRT_PROG
+  collect D+, R+, Gamma, TWISTOK`,
+    calls: ["dlaxrt_stat", "dlaxrt_prog"] },
+
+  { id: "dlaxrf_seltw", x: 620, y: 820, w: 150, h: 36, label: "DLAXRF_SELTW", sub: "Select twist", layer: "xmr",
+    file: "xmr_src/dlaxrf_seltw.f",
+    desc: "Select optimal twist index K by evaluating element growth and relative condition number at each candidate. Returns EVAL score (smaller = better) combining DELG (element growth) and DRCOND (condition).",
+    pseudo: `for each twist K:
+  (growth, cond) = DLAXRF_SELTW_PART(K)
+  eval = growth + cond
+  check inertia consistency
+best_K = argmin(eval)
+return best_K, eval_score`,
+    calls: ["dlaxrf_seltw_part"] },
+
+  { id: "dlaxrr", x: 60, y: 820, w: 130, h: 36, label: "DLAXRR", sub: "Build repr struct", layer: "xmr",
+    file: "xmr_src/dlaxrr.f",
+    desc: "Set up the representation data structure (REPR, REPI) from G (diagonal pivots), OMEGA (block flags), and E (off-diagonals). Computes GNSQ=E^2, NGN=E^2/G, BDET (block determinants).",
+    pseudo: `for i = 1..N:
+  GNSQ(i) = E(i)^2
+  if omega(i+1) = 1:  -- block boundary
+    BDET(i) = G(i)*G(i+1) - GNSQ(i)
+  else:
+    NGN(i) = GNSQ(i) / G(i)
+store twist, type, block info in REPI`,
+    calls: [] },
+
+  // Layer 7: Core factorizations
+  { id: "dlaxrs_stat", x: 100, y: 960, w: 140, h: 36, label: "DLAXRS_STAT", sub: "Stationary shift", layer: "xmr",
+    file: "xmr_src/dlaxrs_stat.f",
+    desc: "Core stationary shifted factorization from position 1 to J (or N down to J). Handles block structure: keeps blocks when |G+*C+| < kblock*E^2, breaks them otherwise, creates new blocks when element growth threatens stability.",
+    pseudo: `AUX = 0; sweep from i=1 to J (or N to J):
+  SMT = AUX - tau * SHFPRT(i)
+  GPLUS(i) = G(i) + SMT
+  if source has block at i+1:
+    if |GPLUS(i)*CPLUS| < kblock*GNSQ: KEEP block
+    else: BREAK block, AUX = -GNSQ/GPLUS
+  else:
+    if creation criterion met: CREATE block
+    else: SCALAR step, AUX = NGN * SMT/GPLUS
+  overlap-control loop for block changes`,
+    calls: [] },
+
+  { id: "dlaxrs_prog", x: 270, y: 960, w: 140, h: 36, label: "DLAXRS_PROG", sub: "Progressive shift", layer: "xmr",
+    file: "xmr_src/dlaxrs_prog.f",
+    desc: "Progressive shifted factorization: accumulates offset for numerical stability. Used when stationary approach may lose precision.",
+    pseudo: `start at J1, progressively compute toward J2
+accumulate offset for stability
+return factors at J2`,
+    calls: [] },
+
+  { id: "dlaxrt_stat", x: 440, y: 960, w: 140, h: 36, label: "DLAXRT_STAT", sub: "Stationary twist", layer: "xmr",
+    file: "xmr_src/dlaxrt_stat.f",
+    desc: "Stationary twisted factorization: combines top-down and bottom-up passes meeting at twist index K. No offset accumulation.",
+    pseudo: `top-down: compute L, D from 1 to K
+bottom-up: compute U, D from N to K
+gamma_K = D_top[K] + D_bot[K] - T(K,K)`,
+    calls: [] },
+
+  { id: "dlaxrt_prog", x: 600, y: 960, w: 140, h: 36, label: "DLAXRT_PROG", sub: "Progressive twist", layer: "xmr",
+    file: "xmr_src/dlaxrt_prog.f",
+    desc: "Progressive twisted factorization with offset accumulation for improved stability.",
+    pseudo: `progressive factorization J1 -> J2
+accumulate offset
+return pivots and gamma`,
+    calls: [] },
+
+  // Layer 7 continued: eigenvector computation
+  { id: "dlaxrg", x: 780, y: 960, w: 130, h: 36, label: "DLAXRG", sub: "FP eigenvector", layer: "xmr",
+    file: "xmr_src/dlaxrg.f",
+    desc: "Compute Fernando-Parlett (FP) starting vector for RQI. Back-substitutes through the twisted factorization: set z[K]=1 at the twist, solve upward and downward using L and U factors. Quality depends on gamma_K being near zero.",
+    pseudo: `z[K] = 1  -- twist position
+-- solve upward: z[i] = -L[i] * z[i+1] for i < K
+for i = K-1 down to 1:
+  z[i] = -ell[i] * z[i+1]
+-- solve downward: z[i] = -U[i] * z[i-1] for i > K
+for i = K+1 to N:
+  z[i] = -u[i] * z[i-1]
+normalize z to unit length`,
+    calls: [] },
+
+  // Layer 8: Bisection / inertia
+  { id: "dlaxrn", x: 100, y: 1100, w: 130, h: 36, label: "DLAXRN", sub: "Single inertia", layer: "xmr",
+    file: "xmr_src/dlaxrn.f",
+    desc: "Compute Sturm count (inertia) for a single shift tau: number of eigenvalues <= tau. Uses twisted bidiagonal factorization and counts negative pivots.",
+    pseudo: `if tau = 0: count negative D entries
+else:
+  call DLAXRN_STAT (upward + downward)
+  negcount = neg_top + neg_bot + gamma_sign
+  xi = 2*negcount + is_singular`,
+    calls: ["dlaxrn_stat"] },
+
+  { id: "dlaxrm", x: 280, y: 1100, w: 130, h: 36, label: "DLAXRM", sub: "Multi-inertia", layer: "xmr",
+    file: "xmr_src/dlaxrm.f",
+    desc: "Compute Sturm counts for multiple shifts simultaneously. Dispatches to vectorized variants (2/4/8/16/32/64-way) for efficiency. Falls back to DLAXRN for remainders.",
+    pseudo: `choose batch size (2,4,8,...,64)
+call DLAXRM_STAT{K} for batches
+call DLAXRN for remaining singles`,
+    calls: ["dlaxrn"] },
+
+  { id: "dlaxrc", x: 460, y: 1100, w: 130, h: 36, label: "DLAXRC", sub: "Bisect to converge", layer: "xmr",
+    file: "xmr_src/dlaxrc.f",
+    desc: "Refine eigenvalues by repeated bisection until each interval reaches relative tolerance RTOL or absolute tolerance ABSTOL.",
+    pseudo: `repeat:
+  collect non-converged intervals
+  midpoints = (lb + ub) / 2
+  call DLAXRM for inertias at midpoints
+  call DLAXRL_REFINE to update bounds
+until all converged`,
+    calls: ["dlaxrm", "dlaxrl_refine"] },
+
+  { id: "dlaxrn_stat", x: 100, y: 1230, w: 140, h: 36, label: "DLAXRN_STAT", sub: "Core Sturm count", layer: "xmr",
+    file: "xmr_src/dlaxrn_stat.f",
+    desc: "Core stationary factorization for inertia computation. Walks through representation computing pivots, counting negatives, respecting block structure.",
+    pseudo: `negcount = 0; gamma = initial
+for i = start to end:
+  pivot = G(i) + shift_correction
+  if pivot < 0: negcount += 1
+  handle blocks via determinant
+return negcount, gamma_sign`,
+    calls: [] },
+
+  // Layer 8 continued: eigenvalue list management
+  { id: "dlaxrl_refine", x: 640, y: 1100, w: 150, h: 36, label: "DLAXRL_REFINE", sub: "Update bounds", layer: "xmr",
+    file: "xmr_src/dlaxrl_refine.f",
+    desc: "Update eigenvalue interval [lb, ub] using inertia at sample point lambda. If inertia says lambda is below eigenvalue i, lambda becomes new upper bound; above => new lower bound.",
+    pseudo: `xi = inertia at lambda
+if xi < 2*i-1: ub = lambda  -- lambda below eig i
+else:          lb = lambda  -- lambda above eig i
+update gap information`,
+    calls: [] },
+
+  { id: "dlaxrl_reset", x: 820, y: 1100, w: 150, h: 36, label: "DLAXRL_RESET", sub: "Reset ew-list", layer: "xmr",
+    file: "xmr_src/dlaxrl_reset.f",
+    desc: "Reset eigenvalue list structure, ensuring L is valid lower bound for eigenvalue IL and U is valid upper bound for eigenvalue IU.",
+    pseudo: `for i in [IL, IU]:
+  set bounds[i] = [L, U]
+  set gap flags at boundaries`,
+    calls: [] },
+
+  // Helper nodes
+  { id: "dlaxrf_selshf", x: 300, y: 820, w: 150, h: 36, label: "DLAXRF_SELSHF", sub: "Shift candidates", layer: "xmr",
+    file: "xmr_src/dlaxrf_selshf.f",
+    desc: "Generate shift candidates around a cluster. Produces outside shifts (slightly beyond cluster endpoints) and inside shifts (between consecutive eigenvalues). Uses geometric spacing and gaptol-based offsets.",
+    pseudo: `for outside shifts:
+  tau = cluster_bound +/- gaptol * gap
+for inside shifts:
+  tau = midpoint of consecutive eigenvalue pairs
+return candidates sorted by preference`,
+    calls: [] },
+
+  { id: "dlaxrf_seltw_part", x: 780, y: 820, w: 170, h: 36, label: "DLAXRF_SELTW_PART", sub: "Twist quality", layer: "xmr",
+    file: "xmr_src/dlaxrf_seltw_part.f",
+    desc: "Compute element growth and condition number at a specific twist position. Used by DLAXRF_SELTW to rank twist candidates.",
+    pseudo: `compute L, U factors at twist K
+growth = max(|D+|, |E+|) / max(|D|, |E|)
+cond = condition of pivot at K
+return growth, cond`,
+    calls: [] },
+
+  { id: "dlaxrf_cob", x: 400, y: 960, w: 140, h: 36, label: "DLAXRF_COB", sub: "Check bounds", layer: "xmr",
+    file: "xmr_src/dlaxrf_cob.f",
+    desc: "Check outer bounds of child representation: verify no eigenvalue underflow, initialize child eigenvalue list.",
+    pseudo: `clip child bounds to parent bounds
+check inertia consistency
+init child eigenvalue list`,
+    calls: ["dlaxrl_reset", "dlaxrl_update"] },
+
+  { id: "dlaxrf_iib", x: 550, y: 960, w: 140, h: 36, label: "DLAXRF_IIB", sub: "Init inner bounds", layer: "xmr",
+    file: "xmr_src/dlaxrf_iib.f",
+    desc: "Initialize inner bounds for child from parent's bounds by applying the shift transformation.",
+    pseudo: `for each parent bound:
+  child_bound = parent_bound - tau
+  if mismatch: refine via bisection`,
+    calls: ["dlaxrl_refine"] },
+
+  { id: "dlaxrf_grpenv", x: 900, y: 820, w: 160, h: 36, label: "DLAXRF_GRPENV", sub: "Group envelope", layer: "xmr",
+    file: "xmr_src/dlaxrf_grpenv.f",
+    desc: "Compute element growth envelope for a sub-cluster. Evaluates twisted factorizations and eigenvector residuals at each potential twist.",
+    pseudo: `for each twist K in group:
+  call DLAXRT for twisted factorization
+  call DLAXRG for eigenvector
+  extract element growth info`,
+    calls: ["dlaxrt", "dlaxrg"] },
+
+  { id: "dlaxrg0", x: 900, y: 960, w: 130, h: 36, label: "DLAXRG0", sub: "Zero-eval FP vec", layer: "xmr",
+    file: "xmr_src/dlaxrg.f",
+    desc: "Compute FP vector for zero eigenvalue. Special case of DLAXRG where the eigenvalue is exactly zero.",
+    pseudo: `same as DLAXRG but lambda=0
+back-substitute from twist
+normalize`,
+    calls: [] },
+
+  { id: "dlaxrl_update", x: 1000, y: 1100, w: 150, h: 36, label: "DLAXRL_UPDATE", sub: "Incorporate sample", layer: "xmr",
+    file: "xmr_src/dlaxrl_update.f",
+    desc: "Incorporate a sample point (lambda, xi) into the eigenvalue list by finding which interval contains lambda and refining bounds.",
+    pseudo: `find interval containing lambda
+call DLAXRL_REFINE with inertia xi
+propagate gap info`,
+    calls: ["dlaxrl_refine"] },
+
+  { id: "dlaxrm_stat2", x: 460, y: 1230, w: 140, h: 36, label: "DLAXRM_STAT*", sub: "Vectorized inertia", layer: "xmr",
+    file: "xmr_src/dlaxrm_stat2.f",
+    desc: "Compute inertia for 2 (or 4, 8, 16, 32, 64) shifts simultaneously using blocked stationary factorization. Vectorized for efficiency.",
+    pseudo: `for each shift in batch:
+  compute sign of pivot sequence
+  count negative pivots
+  combine into final inertia`,
+    calls: [] },
+
+  { id: "dlaxre_initewldqds", x: 100, y: 1360, w: 180, h: 36, label: "DLAXRE_INITEWLDQDS", sub: "Init from DQDS", layer: "xmr",
+    file: "xmr_src/dlaxre_initewldqds.f",
+    desc: "Initialize eigenvalue list from pre-computed DQDS eigenvalue approximations with high relative accuracy.",
+    pseudo: `for each DQDS eigenvalue:
+  set tight bounds around approximation
+  initialize gap structure`,
+    calls: [] },
+
+  { id: "bisect_evals", x: 800, y: 1230, w: 140, h: 36, label: "bisect_evals", sub: "DSTEBZ wrapper", layer: "mr3",
+    file: "mr3gk_fortran/mr3gk_utils.f90",
+    desc: "Wrapper around LAPACK DSTEBZ for computing eigenvalues by bisection. Used to get initial eigenvalue approximations for the T_GK eigenproblem.",
+    pseudo: `call DSTEBZ(range='I', il, iu)
+return nfound eigenvalues`,
+    calls: [] },
+
+  // C glue
+  { id: "xmr_wrapper", x: 500, y: 340, w: 150, h: 36, label: "xmr_wrapper.c", sub: "C glue layer", layer: "glue",
+    file: "xmr_wrapper.c",
+    desc: "Thin C interface bridging Fortran XMR routines to external callers. Sets up workspace, translates array indexing, manages the xmrstats common block. Main entry: xmr_eigenvectors() which calls DLAXRE then DLAXRV.",
+    pseudo: `xmr_eigenvectors(n, E, evals, wil, wiu):
+  D = zeros(n)     -- T_GK has zero diagonal
+  GL = evals[0] - 1%
+  GU = evals[n-1] + 1%
+  call DLAXRE(D, E, GL, GU, repr, tau)
+  call DLAXRV(E, repr, wil, wiu, w, Z)
+  w += tau  -- add back root shift
+  return w, Z`,
+    calls: ["dlaxre", "dlaxrv"] },
+];
+
+// Define edges from calls
+const edges = [];
+nodes.forEach(n => {
+  (n.calls || []).forEach(target => {
+    if (nodes.find(t => t.id === target)) {
+      edges.push({ from: n.id, to: target });
+    }
+  });
+});
+
+// Color scheme
+const colors = {
+  mr3:   { fill: "#0d2818", stroke: "#238636" },
+  xmr:   { fill: "#0d1d33", stroke: "#1f6feb" },
+  patch: { fill: "#2d0d18", stroke: "#da3633" },
+  glue:  { fill: "#2d1f0d", stroke: "#9e6a03" },
+};
+
+// Render SVG
+const svg = document.getElementById('graphSvg');
+
+// Draw edges first (behind nodes)
+edges.forEach(e => {
+  const from = nodes.find(n => n.id === e.from);
+  const to = nodes.find(n => n.id === e.to);
+  if (!from || !to) return;
+  const x1 = from.x + from.w/2, y1 = from.y + from.h;
+  const x2 = to.x + to.w/2, y2 = to.y;
+  const dy = y2 - y1;
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("class", "edge");
+  path.setAttribute("id", `edge-${e.from}-${e.to}`);
+  if (Math.abs(x1-x2) < 5) {
+    path.setAttribute("d", `M${x1},${y1} L${x2},${y2}`);
+  } else {
+    const cy1 = y1 + dy*0.4, cy2 = y2 - dy*0.4;
+    path.setAttribute("d", `M${x1},${y1} C${x1},${cy1} ${x2},${cy2} ${x2},${y2}`);
+  }
+  svg.appendChild(path);
+});
+
+// Draw nodes
+nodes.forEach(n => {
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("class", "node");
+  g.setAttribute("id", `node-${n.id}`);
+
+  const c = colors[n.layer];
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("x", n.x); rect.setAttribute("y", n.y);
+  rect.setAttribute("width", n.w); rect.setAttribute("height", n.h);
+  rect.setAttribute("fill", c.fill); rect.setAttribute("stroke", c.stroke);
+  g.appendChild(rect);
+
+  const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  text.setAttribute("x", n.x + n.w/2); text.setAttribute("y", n.y + 15);
+  text.setAttribute("text-anchor", "middle"); text.setAttribute("dominant-baseline", "middle");
+  text.textContent = n.label;
+  g.appendChild(text);
+
+  const sub = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  sub.setAttribute("x", n.x + n.w/2); sub.setAttribute("y", n.y + 28);
+  sub.setAttribute("text-anchor", "middle"); sub.setAttribute("class", "subtitle-text");
+  sub.textContent = n.sub;
+  g.appendChild(sub);
+
+  g.addEventListener("click", () => selectNode(n));
+  svg.appendChild(g);
+});
+
+// Selection logic
+let selectedId = null;
+
+function selectNode(n) {
+  // Clear previous
+  document.querySelectorAll('.node.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.edge.highlighted').forEach(el => {
+    el.classList.remove('highlighted');
+    el.setAttribute('marker-end', 'url(#arrowhead)');
+  });
+
+  selectedId = n.id;
+  document.getElementById(`node-${n.id}`).classList.add('selected');
+
+  // Highlight connected edges
+  edges.forEach(e => {
+    if (e.from === n.id || e.to === n.id) {
+      const path = document.getElementById(`edge-${e.from}-${e.to}`);
+      if (path) {
+        path.classList.add('highlighted');
+        path.setAttribute('marker-end', 'url(#arrowhead-hl)');
+      }
+    }
+  });
+
+  // Update detail panel
+  const panel = document.getElementById('detailPanel');
+  const tagClass = n.layer === 'mr3' ? 'tag-mr3' : n.layer === 'patch' ? 'tag-patch' : n.layer === 'glue' ? 'tag-glue' : 'tag-xmr';
+  const tagLabel = n.layer === 'mr3' ? 'Fortran orchestration' : n.layer === 'patch' ? 'Our patch' : n.layer === 'glue' ? 'C glue' : 'XMR kernel';
+
+  const callTargets = (n.calls || []).filter(c => nodes.find(t => t.id === c));
+  const calledBy = edges.filter(e => e.to === n.id).map(e => e.from);
+
+  panel.innerHTML = `
+    <h2>${n.label}</h2>
+    <div class="file">${n.file}</div>
+    <span class="tag ${tagClass}">${tagLabel}</span>
+    ${n.layer === 'patch' ? '<span class="tag tag-patch">Modified</span>' : ''}
+
+    <h3>Description</h3>
+    <div class="desc">${n.desc}</div>
+
+    <h3>Pseudocode</h3>
+    <pre>${n.pseudo}</pre>
+
+    ${callTargets.length ? `<h3>Calls</h3><ul class="calls-list">${callTargets.map(c => {
+      const t = nodes.find(x => x.id === c);
+      return `<li onclick="selectNode(nodes.find(x=>x.id==='${c}'))">${t.label} <span style="color:#484f58">— ${t.sub}</span></li>`;
+    }).join('')}</ul>` : ''}
+
+    ${calledBy.length ? `<h3>Called by</h3><ul class="calls-list">${calledBy.map(c => {
+      const t = nodes.find(x => x.id === c);
+      return `<li onclick="selectNode(nodes.find(x=>x.id==='${c}'))">${t.label} <span style="color:#484f58">— ${t.sub}</span></li>`;
+    }).join('')}</ul>` : ''}
+  `;
+}
+</script>
+</body>
+</html>
