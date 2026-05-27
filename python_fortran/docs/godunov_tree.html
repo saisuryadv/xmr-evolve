@@ -80,6 +80,53 @@ h1{text-align:center;padding:18px;color:#58a6ff;font-size:1.4em}
 </div>
 
 <div class="explanation">
+  <h3>Real Godunov matrix (T_Godunov_1e-5, n=2500)</h3>
+  <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:.9em">
+    <tr style="border-bottom:1px solid #30363d">
+      <th style="text-align:left;padding:6px;color:#8b949e">Metric</th>
+      <th style="text-align:right;padding:6px;color:#f85149">Without fix</th>
+      <th style="text-align:right;padding:6px;color:#3fb950">With fix</th>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:6px">Orthogonality (ortU, n&epsilon;)</td>
+      <td style="text-align:right;padding:6px;color:#f85149;font-weight:600">30,628</td>
+      <td style="text-align:right;padding:6px;color:#d29922;font-weight:600">339</td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:6px">Residual (n&epsilon;)</td>
+      <td style="text-align:right;padding:6px">6.88</td>
+      <td style="text-align:right;padding:6px">0.40</td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:6px">Tree nodes</td>
+      <td style="text-align:right;padding:6px">1,109</td>
+      <td style="text-align:right;padding:6px">1,109</td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:6px">Max tree depth</td>
+      <td style="text-align:right;padding:6px">5</td>
+      <td style="text-align:right;padding:6px">5</td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:6px">Max RQI iterations</td>
+      <td style="text-align:right;padding:6px">53</td>
+      <td style="text-align:right;padding:6px">1</td>
+    </tr>
+    <tr style="border-bottom:1px solid #21262d">
+      <td style="padding:6px">Total RQI iterations</td>
+      <td style="text-align:right;padding:6px">63,757</td>
+      <td style="text-align:right;padding:6px">344</td>
+    </tr>
+    <tr>
+      <td style="padding:6px">Cluster 1 (near &sigma;&asymp;0.032)</td>
+      <td style="text-align:right;padding:6px">1,249 eigenvalues</td>
+      <td style="text-align:right;padding:6px">1,249 eigenvalues</td>
+    </tr>
+  </table>
+  <div style="font-size:.8em;color:#8b949e;margin-bottom:16px">
+    Threshold: ortU &le; 5 n&epsilon; for PASS. Willems &amp; Lang 2012 (Table 5.1): max ortU = 3,095 on 19,240 test cases.
+  </div>
+
   <h3>Why does Godunov fail without the fix?</h3>
   <p>The bidiagonal has off-diagonals alternating between <code>e_large = 0.999</code> and <code>e_tiny = 2.5e-7</code>.
   After building T_GK (size 40), the off-diagonals repeat with <b>period 4</b>.
