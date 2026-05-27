@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Godunov Problem: MR3 Tree Visualization</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#c9d1d9}
+h1{text-align:center;padding:18px;color:#58a6ff;font-size:1.4em}
+.subtitle{text-align:center;color:#8b949e;margin-bottom:8px;font-size:.85em}
+.summary{display:flex;justify-content:center;gap:40px;padding:8px 0 16px;font-size:.85em}
+.summary-box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px 20px;min-width:200px}
+.summary-box h3{color:#8b949e;font-size:.75em;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.summary-box .val{font-size:1.4em;font-weight:600}
+.pass{color:#3fb950}.fail{color:#f85149}
+.container{display:flex;height:calc(100vh - 200px)}
+.panel{flex:1;padding:16px;overflow:auto}
+.panel h2{color:#58a6ff;font-size:1.1em;margin-bottom:12px;text-align:center}
+.tree-svg{width:100%;background:#0d1117;border:1px solid #21262d;border-radius:8px}
+.node-g{cursor:pointer}
+.node-g rect{rx:5;ry:5;stroke-width:1.5;transition:filter .15s}
+.node-g:hover rect{filter:brightness(1.3)}
+.node-g.selected rect{stroke-width:3;filter:brightness(1.4)}
+.node-g text{font-size:10px;fill:#c9d1d9;pointer-events:none;font-family:'JetBrains Mono',monospace}
+.edge{stroke:#30363d;stroke-width:1.2;fill:none;marker-end:url(#ah)}
+.detail-panel{width:400px;background:#161b22;border-left:1px solid #30363d;padding:16px;overflow-y:auto}
+.detail-panel h2{color:#58a6ff;font-size:1.1em;margin-bottom:8px}
+.detail-panel h3{color:#d2a8ff;font-size:.9em;margin:14px 0 6px}
+.detail-panel .kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;font-size:.85em}
+.detail-panel .kv .k{color:#8b949e}.detail-panel .kv .v{color:#e6edf3;font-family:monospace}
+.detail-panel pre{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:10px;font-size:.78em;line-height:1.5;overflow-x:auto;color:#e6edf3;font-family:'JetBrains Mono',monospace;white-space:pre-wrap}
+.bar-chart{display:flex;align-items:flex-end;gap:2px;height:60px;margin:8px 0}
+.bar{background:#1f6feb;min-width:4px;border-radius:2px 2px 0 0;position:relative}
+.bar.highlight{background:#f85149}
+.bar:hover::after{content:attr(data-label);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#161b22;border:1px solid #30363d;padding:2px 6px;font-size:10px;white-space:nowrap;border-radius:4px;color:#e6edf3}
+.toggle{display:flex;justify-content:center;gap:8px;margin:8px 0}
+.toggle button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:.8em}
+.toggle button.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.empty-state{color:#484f58;text-align:center;margin-top:30vh}
+.explanation{max-width:900px;margin:0 auto;padding:20px;line-height:1.6;font-size:.9em}
+.explanation h3{color:#d2a8ff;margin:16px 0 8px}
+.explanation code{background:#161b22;padding:2px 6px;border-radius:4px;font-size:.85em}
+.e-chart{display:flex;align-items:center;gap:1px;margin:8px 0}
+.e-bar{width:8px;border-radius:2px;min-height:2px}
+</style>
+</head>
+<body>
+<h1>Godunov Problem: MR3 Representation Tree</h1>
+<div class="subtitle">Synthetic Godunov bidiagonal, n=20 | Period-4 pattern: d alternates (1.0, 0.045), e alternates (0.999, 2.5e-7)</div>
+
+<div class="summary">
+  <div class="summary-box">
+    <h3>Without Fix (multiplicative only)</h3>
+    <div class="val fail" id="nofix-ort">ortU = 6.93</div>
+    <div style="color:#8b949e;font-size:.8em">Tree depth: 4 | Cluster [3,18] needs 4 shifts</div>
+  </div>
+  <div class="summary-box">
+    <h3>With Fix (conditional additive)</h3>
+    <div class="val pass" id="fix-ort">ortU = 0.19</div>
+    <div style="color:#8b949e;font-size:.8em">Tree depth: 0 | All 20 eigenvalues are singletons</div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Left: tree comparison -->
+  <div class="panel">
+    <div class="toggle">
+      <button id="btn-nofix" class="active" onclick="showVariant('no_fix')">Without Fix</button>
+      <button id="btn-fix" onclick="showVariant('additive_fix')">With Fix</button>
+    </div>
+    <svg id="treeSvg" class="tree-svg" viewBox="0 0 600 400">
+      <defs><marker id="ah" markerWidth="6" markerHeight="5" refX="6" refY="2.5" orient="auto"><polygon points="0 0,6 2.5,0 5" fill="#30363d"/></marker></defs>
+    </svg>
+  </div>
+
+  <!-- Right: detail panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="empty-state">Click a tree node for details</div>
+  </div>
+</div>
+
+<div class="explanation">
+  <h3>Why does Godunov fail without the fix?</h3>
+  <p>The bidiagonal has off-diagonals alternating between <code>e_large = 0.999</code> and <code>e_tiny = 2.5e-7</code>.
+  After building T_GK (size 40), the off-diagonals repeat with <b>period 4</b>.
+  Standard multiplicative perturbation <code>E(i) *= (1 + r*8*eps)</code> changes the tiny entries by only ~5e-22 in absolute terms.
+  When MR3 shifts into the cluster, the block factorization recurrence passes through E^2 at the tiny entries,
+  which <b>resets</b> all accumulated variation. The shifted representation (GPLUS) becomes an arithmetic progression
+  with constant increment per period &mdash; making FP starting vectors for different eigenvalues structurally identical.</p>
+
+  <h3>T_GK off-diagonal pattern</h3>
+  <div id="e-pattern"></div>
+
+  <h3>How the fix works</h3>
+  <p>Our 9-line patch in <code>dlaxre_gk.f</code> applies additive perturbation <code>E(i) += r*FAC*EMAX</code>
+  to entries where <code>|E(i)| &lt; 0.1*EMAX</code> and <code>FAC*EMAX &lt; |E(i)|</code>.
+  This gives the tiny entries ~1.8e-15 absolute change instead of ~5e-22 &mdash; enough to break the periodicity
+  in the shifted representation. The eigenvalues become distinguishable as singletons at the root, eliminating
+  the need for deep tree recursion.</p>
+
+  <h3>Effect on perturbation magnitude</h3>
+  <div id="pert-comparison"></div>
+</div>
+
+<script>
+// Embedded data
+const DATA = {"matrix":{"n":20,"d":[1,0.0446881,1,0.0446881,1,0.0446881,1,0.0446881,1,0.0446881,1,0.0446881,1,0.0446881,1,0.0446881,1,0.0446881,1,0.0446881],"e":[0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001,2.483885e-7,0.999001]},"true_sigma":[0.0316069848,0.0316070056,0.0316070383,0.0316070804,0.0316071283,0.0316071783,0.0316072263,0.0316072683,0.0316073010,0.0316073218,1.4138603189,1.4138603194,1.4138603201,1.4138603211,1.4138603222,1.4138603233,1.4138603243,1.4138603253,1.4138603260,1.4138603265],"variants":{"no_fix":{"metrics":{"ortU":6.93,"res":0.575},"tree":[{"type":"node","depth":0,"il":1,"iu":20,"taubar":0,"singletons":[19,20],"cluster":[3,18]},{"type":"cluster","depth":0,"i":3,"j":18,"tau":1.1286,"label":"shift to center"},{"type":"node","depth":1,"il":3,"iu":18,"taubar":1.1286,"singletons":[17,18],"cluster":[5,16]},{"type":"cluster","depth":1,"i":5,"j":16,"tau":6.34e-4},{"type":"node","depth":2,"il":5,"iu":16,"taubar":1.1293,"singletons":[15,16],"cluster":[7,14]},{"type":"cluster","depth":2,"i":7,"j":14,"tau":3.98e-7},{"type":"node","depth":3,"il":7,"iu":14,"taubar":1.1293,"singletons":[13,14],"cluster":[9,12]},{"type":"cluster","depth":3,"i":9,"j":12,"tau":2.51e-10},{"type":"node","depth":4,"il":9,"iu":12,"taubar":1.1293,"singletons":[9,10,11,12]}],"rqi":[2,2,2,2,2,2,2,2,3,3]},"additive_fix":{"metrics":{"ortU":0.19,"res":0.238},"tree":[{"type":"node","depth":0,"il":1,"iu":20,"taubar":0,"singletons":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}],"rqi":[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]}}};
+
+let currentVariant = 'no_fix';
+const svg = document.getElementById('treeSvg');
+
+function buildTree(variantKey) {
+  const v = DATA.variants[variantKey];
+  const items = v.tree;
+  // Clear SVG
+  while (svg.children.length > 1) svg.removeChild(svg.lastChild); // keep defs
+
+  const nodeItems = items.filter(x => x.type === 'node');
+  const maxDepth = Math.max(...nodeItems.map(x => x.depth));
+  const yStep = 70;
+  const svgH = (maxDepth + 1) * yStep + 60;
+  svg.setAttribute('viewBox', `0 0 600 ${svgH}`);
+
+  // Layout nodes by depth
+  const nodesByDepth = {};
+  nodeItems.forEach(n => {
+    if (!nodesByDepth[n.depth]) nodesByDepth[n.depth] = [];
+    nodesByDepth[n.depth].push(n);
+  });
+
+  const drawnNodes = [];
+
+  for (let d = 0; d <= maxDepth; d++) {
+    const ns = nodesByDepth[d] || [];
+    const count = ns.length;
+    ns.forEach((n, idx) => {
+      const x = 300 + (idx - (count-1)/2) * 200;
+      const y = 30 + d * yStep;
+      const w = 160;
+      const h = 50;
+      n._x = x; n._y = y; n._w = w; n._h = h;
+
+      // Draw edge from parent
+      if (d > 0 && nodesByDepth[d-1]) {
+        const parent = nodesByDepth[d-1][0]; // simplified
+        const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+        line.setAttribute("x1", parent._x + parent._w/2);
+        line.setAttribute("y1", parent._y + parent._h);
+        line.setAttribute("x2", x + w/2);
+        line.setAttribute("y2", y);
+        line.setAttribute("class","edge");
+        svg.appendChild(line);
+      }
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.setAttribute("class","node-g");
+
+      const hasSingletons = n.singletons && n.singletons.length > 0;
+      const hasCluster = n.cluster != null;
+      const nEvals = n.iu - n.il + 1;
+      const nSing = n.singletons ? n.singletons.length : 0;
+      const color = hasCluster ? (nSing > 0 ? "#9e6a03" : "#da3633") : "#238636";
+      const fillColor = hasCluster ? (nSing > 0 ? "#2d1f0d" : "#2d0d18") : "#0d2818";
+
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x",x); rect.setAttribute("y",y);
+      rect.setAttribute("width",w); rect.setAttribute("height",h);
+      rect.setAttribute("fill",fillColor); rect.setAttribute("stroke",color);
+      g.appendChild(rect);
+
+      // Text
+      const t1 = document.createElementNS("http://www.w3.org/2000/svg","text");
+      t1.setAttribute("x",x+w/2); t1.setAttribute("y",y+16);
+      t1.setAttribute("text-anchor","middle");
+      t1.textContent = `depth=${d}  [${n.il}, ${n.iu}]`;
+      g.appendChild(t1);
+
+      const t2 = document.createElementNS("http://www.w3.org/2000/svg","text");
+      t2.setAttribute("x",x+w/2); t2.setAttribute("y",y+30);
+      t2.setAttribute("text-anchor","middle");
+      t2.setAttribute("fill","#8b949e"); t2.setAttribute("font-size","9px");
+      t2.textContent = hasCluster
+        ? `${nSing} sing + cluster [${n.cluster[0]},${n.cluster[1]}]`
+        : `${nSing} singletons (all resolved)`;
+      g.appendChild(t2);
+
+      if (hasCluster) {
+        const clusterItem = items.find(x => x.type === 'cluster' && x.depth === d);
+        const t3 = document.createElementNS("http://www.w3.org/2000/svg","text");
+        t3.setAttribute("x",x+w/2); t3.setAttribute("y",y+42);
+        t3.setAttribute("text-anchor","middle");
+        t3.setAttribute("fill","#484f58"); t3.setAttribute("font-size","8px");
+        t3.textContent = clusterItem ? `shift \u03C4 = ${clusterItem.tau.toExponential(2)}` : '';
+        g.appendChild(t3);
+      }
+
+      g.addEventListener('click', () => showDetail(n, variantKey, d));
+      svg.appendChild(g);
+      drawnNodes.push(n);
+    });
+  }
+}
+
+function showDetail(node, variantKey, depth) {
+  const v = DATA.variants[variantKey];
+  const panel = document.getElementById('detailPanel');
+  const nEvals = node.iu - node.il + 1;
+  const nSing = node.singletons ? node.singletons.length : 0;
+
+  // Eigenvalue gaps for this node's range
+  const trueS = DATA.true_sigma;
+  const nodeS = trueS.slice(node.il - 1, node.iu);
+  const gaps = [];
+  for (let i = 1; i < nodeS.length; i++) {
+    const gap = Math.abs(nodeS[i] - nodeS[i-1]);
+    const relgap = gap / Math.max(Math.abs(nodeS[i-1]), 1e-300);
+    gaps.push({ gap, relgap, i: node.il + i - 1 });
+  }
+
+  // RQI for singletons at this depth
+  const rqiData = v.rqi || [];
+
+  let html = `
+    <h2>Node at depth ${depth}</h2>
+    <div class="kv"><span class="k">Eigenvalue range</span><span class="v">[${node.il}, ${node.iu}] (${nEvals} evals)</span></div>
+    <div class="kv"><span class="k">Accumulated shift</span><span class="v">${node.taubar.toExponential(6)}</span></div>
+    <div class="kv"><span class="k">Singletons</span><span class="v">${nSing}</span></div>
+    <div class="kv"><span class="k">Cluster</span><span class="v">${node.cluster ? `[${node.cluster[0]}, ${node.cluster[1]}]` : 'none'}</span></div>
+  `;
+
+  if (node.cluster) {
+    const cl = v.tree.find(x => x.type === 'cluster' && x.depth === depth);
+    if (cl) {
+      html += `<div class="kv"><span class="k">Cluster shift \u03C4</span><span class="v">${cl.tau.toExponential(4)}</span></div>`;
+    }
+  }
+
+  // Eigenvalue gap chart
+  if (gaps.length > 0) {
+    html += `<h3>Relative gaps (vs gaptol = 0.001)</h3>`;
+    const maxRG = Math.max(...gaps.map(g => Math.min(g.relgap, 1)));
+    html += `<div class="bar-chart">`;
+    gaps.forEach(g => {
+      const h = Math.max(2, Math.min(60, (Math.log10(g.relgap + 1e-20) + 15) * 4));
+      const isBelow = g.relgap < 0.001;
+      html += `<div class="bar ${isBelow ? 'highlight' : ''}" style="height:${h}px;flex:1" data-label="i=${g.i} relgap=${g.relgap.toExponential(2)}"></div>`;
+    });
+    html += `</div>`;
+    html += `<div style="font-size:.75em;color:#484f58">Red = relgap &lt; gaptol (clustered). Blue = singleton.</div>`;
+  }
+
+  // Singular values in this node
+  html += `<h3>True singular values</h3><pre>`;
+  nodeS.forEach((s, i) => {
+    html += `\u03C3[${node.il + i}] = ${s.toExponential(10)}\n`;
+  });
+  html += `</pre>`;
+
+  // RQI info
+  if (nSing > 0 && rqiData.length > 0) {
+    html += `<h3>RQI iterations</h3>`;
+    html += `<div style="font-size:.85em">All singletons: ${rqiData.slice(0, nSing).join(', ')} iterations</div>`;
+  }
+
+  panel.innerHTML = html;
+}
+
+function showVariant(key) {
+  currentVariant = key;
+  document.getElementById('btn-nofix').classList.toggle('active', key === 'no_fix');
+  document.getElementById('btn-fix').classList.toggle('active', key === 'additive_fix');
+  buildTree(key);
+  document.getElementById('detailPanel').innerHTML = '<div class="empty-state">Click a tree node for details</div>';
+}
+
+// E-pattern visualization
+function renderEPattern() {
+  const e = DATA.matrix.e;
+  const div = document.getElementById('e-pattern');
+  let html = '<div class="e-chart">';
+  e.forEach((val, i) => {
+    const h = Math.max(2, Math.log10(val + 1e-20) * -3 + 10);
+    const color = val > 0.1 ? '#1f6feb' : '#f85149';
+    html += `<div class="e-bar" style="height:${h * 4}px;background:${color}" title="e[${i}]=${val.toExponential(2)}"></div>`;
+  });
+  html += '</div>';
+  html += '<div style="font-size:.75em;color:#484f58"><span style="color:#1f6feb">\u25A0</span> large (0.999) &nbsp; <span style="color:#f85149">\u25A0</span> tiny (2.5e-7) &mdash; the bottleneck entries</div>';
+  div.innerHTML = html;
+}
+
+function renderPertComparison() {
+  const div = document.getElementById('pert-comparison');
+  const eps = 2.22e-16;
+  const FAC = 8 * 2 * eps;
+  const EMAX = 1.0;
+  const e_large = 0.999;
+  const e_tiny = 2.484e-7;
+
+  div.innerHTML = `<pre style="font-size:.8em">
+Entry        |  Multiplicative            |  Additive (our fix)
+             |  E *= (1 + r*FAC)          |  E += r*FAC*EMAX
+-------------|----------------------------|---------------------------
+e_large=0.999|  \u0394E = ${(e_large * FAC).toExponential(2)} |  \u0394E = ${(FAC * EMAX).toExponential(2)}
+             |  (adequate)                |  (same order)
+e_tiny=2.5e-7|  \u0394E = ${(e_tiny * FAC).toExponential(2)} |  \u0394E = ${(FAC * EMAX).toExponential(2)}
+             |  (USELESS - vanishes in E\u00B2)|  (breaks periodicity!)
+</pre>
+<div style="font-size:.8em;color:#8b949e;margin-top:8px">
+  The tiny entries act as firewalls in the shifted factorization recurrence.
+  Additive perturbation gives them a kick 10<sup>7</sup>\u00D7 larger than multiplicative.
+</div>`;
+}
+
+// Init
+buildTree('no_fix');
+renderEPattern();
+renderPertComparison();
+</script>
+</body>
+</html>

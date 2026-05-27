@@ -470,6 +470,12 @@ void dbg_cluster_fail_(int *depth, int *i, int *j, int *xrfsta) {
     fflush(stderr);
 }
 
+void dbg_singleton_rqi_(int *index, int *nrqi, int *nbis, double *resid) {
+    fprintf(stderr, "  [dlaxrx] SINGLETON_RQI idx=%d nrqi=%d nbis=%d resid=%.6e\n",
+            *index, *nrqi, *nbis, *resid);
+    fflush(stderr);
+}
+
 void dbg_selshf_(int *icbeg, int *icend, double *lgap, double *ugap,
                  double *taubar, double *lb, double *ub, int *ncand) {
     fprintf(stderr, "  [dlaxrf] SELSHF icbeg=%d icend=%d lgap=%.6e ugap=%.6e taubar=%.6e lb=%.13e ub=%.13e ncand=%d\n",
