@@ -486,15 +486,7 @@ C      IF( (DMAX-DMIN) .LE. 2*ABSERR )THEN
          FAC   = NULPROOTPERT * PREC
          CALL DLARNV( 2, ISEED, 2*N-1, RWORK )
          DO I = 1, N-1
-            IF( ABS(E(I)) .LT. EMAX*1D-1 .AND.
-     $          FAC*EMAX .LT. ABS(E(I)) )THEN
-C              Tiny entry relative to EMAX, but additive perturbation
-C              won't overwhelm it.  Breaks periodic structure in
-C              shifted representations (GK matrices).
-               E(I) = E(I) + RWORK(I)*FAC*EMAX
-            ELSE
-               E(I) = E(I) * (ONE + RWORK(I)*FAC)
-            ENDIF
+            E(I) = E(I) * (ONE + RWORK(I)*FAC)
          ENDDO
          I = 1
          J = N
