@@ -35,14 +35,24 @@ RES_THRESH = 7.0
 ORTHO_THRESH = 5.0
 
 LINE2_RE = re.compile(
-    r'resid/\(n\.eps\.\|\|B\|\|\)=\s*([-\d.E+]+)\s+'
+    r'(?<!paper\.)resid/\(n\.eps\.\|\|B\|\|\)=\s*([-\d.E+]+)\s+'
     r'orthU/\(n\.eps\)=\s*([-\d.E+]+)\s+'
     r'orthV/\(n\.eps\)=\s*([-\d.E+]+)'
 )
 ABS_RE = re.compile(
-    r'rel\.resid=\s*([-\d.E+]+)\s+'
+    r'(?<!paper\.)rel\.resid=\s*([-\d.E+]+)\s+'
     r'orthU=\s*([-\d.E+]+)\s+'
     r'orthV=\s*([-\d.E+]+)'
+)
+PAPER_NEPS_RE = re.compile(
+    r'paper\.resid/\(n\.eps\.\|\|B\|\|\)=\s*([-\d.E+]+)\s+'
+    r'paper\.orthU/\(n\.eps\)=\s*([-\d.E+]+)\s+'
+    r'paper\.orthV/\(n\.eps\)=\s*([-\d.E+]+)'
+)
+PAPER_ABS_RE = re.compile(
+    r'paper\.rel\.resid=\s*([-\d.E+]+)\s+'
+    r'paper\.orthU=\s*([-\d.E+]+)\s+'
+    r'paper\.orthV=\s*([-\d.E+]+)'
 )
 INFO_RE = re.compile(r'\bINFO=\s*(-?\d+)\b')
 EPS = 2.2204460492503131e-16
@@ -59,7 +69,23 @@ def write_dat(path, d, e):
             fh.write(f'{i+1} {d[i]:.17e} {ei:.17e}\n')
 
 
-def run_one(name, d, e, timeout):
+def _parse_advisor_output(out, n, paper_norms):
+    """Return (res, ortU, ortV) in n.eps units, or None on parse-fail."""
+    neps_re, abs_re = (PAPER_NEPS_RE, PAPER_ABS_RE) if paper_norms \
+                      else (LINE2_RE, ABS_RE)
+    m = neps_re.search(out)
+    if m and '*' not in m.group(0):
+        return float(m.group(1)), float(m.group(2)), float(m.group(3))
+    am = abs_re.search(out)
+    if not am:
+        return None
+    scale = max(n * EPS, 1e-300)
+    return (float(am.group(1)) / scale,
+            float(am.group(2)) / scale,
+            float(am.group(3)) / scale)
+
+
+def run_one_advisor(name, d, e, timeout, paper_norms):
     n = len(d)
     if n < 2:
         return True, 0.0, 0.0, 0.0, 0.0, 'n<2'
@@ -80,19 +106,10 @@ def run_one(name, d, e, timeout):
             return False, float('inf'), float('inf'), float('inf'), dt, f'rc={r.returncode}'
         info_m = INFO_RE.search(out)
         info = int(info_m.group(1)) if info_m else 0
-        m = LINE2_RE.search(out)
-        if m and '*' not in m.group(0):
-            res = float(m.group(1)); ou = float(m.group(2)); ov = float(m.group(3))
-        else:
-            # F11.1 overflow on line 2 (catastrophic orth >~ 1e9 n.eps) — fall
-            # back to the absolute-value line (E10.3 format) and rescale.
-            am = ABS_RE.search(out)
-            if not am:
-                return False, float('inf'), float('inf'), float('inf'), dt, 'parse-fail'
-            scale = max(n * EPS, 1e-300)
-            res = float(am.group(1)) / scale
-            ou  = float(am.group(2)) / scale
-            ov  = float(am.group(3)) / scale
+        parsed = _parse_advisor_output(out, n, paper_norms)
+        if parsed is None:
+            return False, float('inf'), float('inf'), float('inf'), dt, 'parse-fail'
+        res, ou, ov = parsed
         ok = (info == 0 and res <= RES_THRESH
               and ou <= ORTHO_THRESH and ov <= ORTHO_THRESH)
         note = '' if info == 0 else f'INFO={info}'
@@ -102,6 +119,103 @@ def run_one(name, d, e, timeout):
             os.unlink(tmp)
         except OSError:
             pass
+
+
+_SC_bidiag_svd = None
+
+
+def _get_selfcontained_solver():
+    """Lazy import of self-contained-fortran-bidiagsvd.mr3_gk.bidiag_svd."""
+    global _SC_bidiag_svd
+    if _SC_bidiag_svd is None:
+        sys.path.insert(0, SC)
+        from mr3_gk import bidiag_svd  # noqa: E402
+        _SC_bidiag_svd = bidiag_svd
+    return _SC_bidiag_svd
+
+
+def _compute_metrics_py(d, e, sigma, U, V, paper_norms):
+    """Compute (res, ortU, ortV) in n.eps units in NumPy. Matches the
+    Fortran driver: paper-norms uses per-triplet 2-norm residual; the
+    orthogonality metric is the elementwise max in both modes (this is
+    what Willems-Lang 2012 Table 5.1 actually reports)."""
+    n = len(d)
+    if sigma.size == 0:
+        return 0.0, 0.0, 0.0
+    # Normalize: use only the first n-1 super-diagonal entries; pad to length n
+    # so [:-1] slicing always gives length n-1 regardless of input.
+    e_full = np.zeros(n, dtype=np.float64)
+    e_full[:min(len(e), n - 1)] = e[:min(len(e), n - 1)]
+    e = e_full
+    Bnorm = max(float(sigma.max()), 1e-300)
+    scale = max(n * EPS, 1e-300)
+    # orthogonality (elementwise max — paper convention)
+    GU = U.T @ U
+    GV = V.T @ V
+    np.fill_diagonal(GU, GU.diagonal() - 1.0)
+    np.fill_diagonal(GV, GV.diagonal() - 1.0)
+    ortU = float(np.max(np.abs(GU))) / scale
+    ortV = float(np.max(np.abs(GV))) / scale
+    # residual
+    if paper_norms:
+        # Per-triplet: max_i max(||B v_i - u_i s_i||_2, ||B^T u_i - v_i s_i||_2)
+        # B is upper bidiag: (B V)_i = d_i V_i + e_i V_{i+1}
+        BV = d[:, None] * V
+        if n > 1:
+            BV[:-1, :] += e[:-1, None] * V[1:, :]
+        BtU = d[:, None] * U
+        if n > 1:
+            BtU[1:, :] += e[:-1, None] * U[:-1, :]
+        R1 = BV - U * sigma
+        R2 = BtU - V * sigma
+        rn1 = np.linalg.norm(R1, axis=0)
+        rn2 = np.linalg.norm(R2, axis=0)
+        res = max(float(rn1.max()), float(rn2.max())) / Bnorm
+    else:
+        # Reconstruction max-norm
+        recon = (U * sigma) @ V.T
+        B = np.diag(d).astype(np.float64)
+        if n > 1:
+            idx = np.arange(n - 1)
+            B[idx, idx + 1] = e[:-1]
+        res = float(np.max(np.abs(recon - B))) / Bnorm
+    return res / scale, ortU, ortV
+
+
+def run_one_selfcontained(name, d, e, timeout, paper_norms):
+    n = len(d)
+    if n < 2:
+        return True, 0.0, 0.0, 0.0, 0.0, 'n<2'
+    solver = _get_selfcontained_solver()
+    t0 = time.perf_counter()
+    try:
+        sigma, U, V, info = solver(d, e)
+    except subprocess.TimeoutExpired:
+        return False, float('inf'), float('inf'), float('inf'), \
+               time.perf_counter() - t0, 'TIMEOUT'
+    except Exception as ex:
+        return False, float('inf'), float('inf'), float('inf'), \
+               time.perf_counter() - t0, f'err:{type(ex).__name__}'
+    dt = time.perf_counter() - t0
+    if info != 0:
+        return False, float('inf'), float('inf'), float('inf'), dt, f'INFO={info}'
+    # Detect non-finite output before metric loop (paper-norm would NaN otherwise).
+    if not (np.all(np.isfinite(sigma)) and np.all(np.isfinite(U))
+            and np.all(np.isfinite(V))):
+        return False, float('inf'), float('inf'), float('inf'), dt, 'non-finite'
+    res, ou, ov = _compute_metrics_py(np.asarray(d, dtype=np.float64),
+                                       np.asarray(e, dtype=np.float64),
+                                       sigma, U, V, paper_norms)
+    ok = res <= RES_THRESH and ou <= ORTHO_THRESH and ov <= ORTHO_THRESH
+    return ok, res, ou, ov, dt, ''
+
+
+def run_one(name, d, e, timeout, solver='advisor', paper_norms=False):
+    if solver == 'advisor':
+        return run_one_advisor(name, d, e, timeout, paper_norms)
+    if solver == 'selfcontained':
+        return run_one_selfcontained(name, d, e, timeout, paper_norms)
+    raise ValueError(solver)
 
 
 # ----- generator adapters -----
@@ -236,15 +350,25 @@ def get_generator(suite, synth_mode):
     raise ValueError(suite)
 
 
-def run_suite(suite, synth_mode, max_n, timeout, limit, smoke, only=None):
+def run_suite(suite, synth_mode, max_n, timeout, limit, smoke, only=None,
+              solver='advisor', paper_norms=False):
     gen_name, gen_src = SUITE_DISPATCH[suite]
+    if solver == 'advisor':
+        solver_label = 'BidiagonalSVD_TGK / DBDSVDMR3 (advisor)'
+        source = 'python_fortran/BidiagonalSVD_TGK/  (advisor, origin/main 15a946d)'
+    else:
+        solver_label = 'self-contained-fortran-bidiagsvd / mr3gk_run (lab)'
+        source = 'python_fortran/self-contained-fortran-bidiagsvd/'
+    norm_label = ('Willems-Lang 2012 paper-norm (res=per-triplet 2-norm)'
+                  if paper_norms else 'reconstruction max-norm (default)')
     print('=' * 110)
-    print(f"BidiagonalSVD_TGK (DBDSVDMR3) -- suite={suite}"
+    print(f"BidiagonalSVD evaluation -- suite={suite}  solver={solver}  "
+          f"norms={'paper' if paper_norms else 'maxnorm'}"
           + (f"  synth-mode={synth_mode}" if suite == 'synth' else ''))
     print('=' * 110)
-    print(f"Binary:     {BIN}")
-    print(f"Source:     python_fortran/BidiagonalSVD_TGK/  (advisor's code, origin/main 15a946d)")
-    print(f"Driver:     DBDSVDMR3  (dbdsvdmr3.f)")
+    print(f"Solver:     {solver_label}")
+    print(f"Source:     {source}")
+    print(f"Metric:     {norm_label}")
     print(f"Generator:  {gen_name}  ({gen_src})")
     print(f"Thresholds: res<=7 n.eps,  ortU/ortV<=5 n.eps")
     print(f"Timeout:    {timeout}s/matrix")
@@ -281,7 +405,9 @@ def run_suite(suite, synth_mode, max_n, timeout, limit, smoke, only=None):
             print(f"{name:<54} {n:>6}  (skipped: n > {max_n})")
             continue
         n_total += 1
-        ok, res, ou, ov, dt, note = run_one(name, d, e, timeout)
+        ok, res, ou, ov, dt, note = run_one(name, d, e, timeout,
+                                            solver=solver,
+                                            paper_norms=paper_norms)
         status = 'PASS' if ok else 'FAIL'
         if ok:
             n_pass += 1
@@ -322,21 +448,37 @@ def main():
                     help='Run only first 5 matrices (smoke test).')
     ap.add_argument('--only', default='',
                     help='Comma-separated subset of matrix names to run.')
+    ap.add_argument('--solver', default='advisor',
+                    choices=['advisor', 'selfcontained', 'both'],
+                    help='advisor: BidiagonalSVD_TGK; selfcontained: '
+                         'self-contained-fortran-bidiagsvd; both: run both.')
+    ap.add_argument('--paper-norms', action='store_true',
+                    help='Use Willems-Lang 2012 Table 5.1 residual '
+                         '(per-triplet 2-norm) instead of reconstruction max-norm.')
     args = ap.parse_args()
     only = set(s.strip() for s in args.only.split(',') if s.strip()) or None
 
-    if not os.path.exists(BIN):
-        print(f"binary not found: {BIN}")
+    if args.solver in ('advisor', 'both') and not os.path.exists(BIN):
+        print(f"advisor binary not found: {BIN}")
         print(f"build with: bash {os.path.dirname(BIN)}/build.sh")
         sys.exit(1)
+    sc_bin = os.path.join(SC, 'mr3gk_fortran', 'mr3gk_run')
+    if args.solver in ('selfcontained', 'both') and not os.path.exists(sc_bin):
+        print(f"self-contained binary not found: {sc_bin}")
+        print(f"build with: bash {os.path.dirname(sc_bin)}/build.sh")
+        sys.exit(1)
 
-    if args.suite == 'all':
-        for s in ('pract', 'synth', '379', 'dense_to_bidiag'):
-            run_suite(s, args.synth_mode, args.max_n, args.timeout, args.limit, args.smoke, only)
+    solvers = ['advisor', 'selfcontained'] if args.solver == 'both' \
+              else [args.solver]
+    suites = ('pract', 'synth', '379', 'dense_to_bidiag') \
+             if args.suite == 'all' else (args.suite,)
+
+    for solver in solvers:
+        for s in suites:
+            run_suite(s, args.synth_mode, args.max_n, args.timeout,
+                      args.limit, args.smoke, only,
+                      solver=solver, paper_norms=args.paper_norms)
             print()
-    else:
-        run_suite(args.suite, args.synth_mode, args.max_n, args.timeout,
-                  args.limit, args.smoke, only)
 
 
 if __name__ == '__main__':
