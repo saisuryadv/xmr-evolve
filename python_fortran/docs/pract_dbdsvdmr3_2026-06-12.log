@@ -1,0 +1,477 @@
+
+=== Adversarial Matrices (n=10) ===
+  exponential_graded                  n=  10  res=   0.754  ortU=   0.226  ortV=   0.100  t=0.0062s  PASS
+  glued_repeated                      n=  10  res=   0.800  ortU=   0.484  ortV=   0.479  t=0.0070s  PASS
+  saw_tooth                           n=  10  res=   0.784  ortU=   0.206  ortV=   0.195  t=0.0038s  PASS
+  stemr_killer                        n=  10  res=   0.754  ortU=   0.100  ortV=   0.450  t=0.0034s  PASS
+  huge_condition                      n=  10  res=   0.778  ortU=   0.400  ortV=   0.200  t=0.0033s  PASS
+  spike                               n=  10  res=   0.768  ortU=   0.296  ortV=   0.300  t=0.0060s  PASS
+  wilkinson_like                      n=  10  res=   0.600  ortU=   0.337  ortV=   0.364  t=0.0037s  PASS
+  two_clusters                        n=  10  res=   0.750  ortU=   0.154  ortV=   0.101  t=0.0060s  PASS
+  random_uniform                      n=  10  res=   0.743  ortU=   0.200  ortV=   0.250  t=0.0063s  PASS
+  diagonal_only                       n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0033s  PASS
+  constant                            n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0027s  PASS
+  all_equal_nontrivial                n=  10  res=   0.950  ortU=   0.571  ortV=   0.552  t=0.0029s  PASS
+  one_big_cluster                     n=  10  res=   1.100  ortU=   0.728  ortV=   0.801  t=0.0057s  PASS
+  arithmetic_progression              n=  10  res=   0.537  ortU=   0.270  ortV=   0.300  t=0.0063s  PASS
+  many_near_zero                      n=  10  res=   0.607  ortU=   0.150  ortV=   0.150  t=0.0032s  PASS
+  random_dense_clusters               n=  10  res=   0.905  ortU=   0.201  ortV=   0.300  t=0.0027s  PASS
+  constant_d_graded_e                 n=  10  res=   0.750  ortU=   0.150  ortV=   0.100  t=0.0027s  PASS
+  random_clustered_5                  n=  10  res=   0.707  ortU=   0.200  ortV=   0.150  t=0.0028s  PASS
+  alternating_sign                    n=  10  res=   1.150  ortU=   1.135  ortV=   1.139  t=0.0063s  PASS
+  step_function                       n=  10  res=   1.353  ortU=   0.986  ortV=   0.970  t=0.0035s  PASS
+  three_clusters                      n=  10  res=   0.795  ortU=   5.083  ortV=   5.078  t=0.0029s  FAIL
+  random_sparse_e                     n=  10  res=   0.799  ortU=   0.150  ortV=   0.200  t=0.0027s  PASS
+  chkbd                               n=  10  res=   0.754  ortU=   0.100  ortV=   0.450  t=0.0026s  PASS
+  marques_graded                      n=  10  res=   0.754  ortU=   0.100  ortV=   0.200  t=0.0027s  PASS
+  gl_abcon0                           n=  10  res=   0.800  ortU=   0.484  ortV=   0.479  t=0.0027s  PASS
+  gl_abcon1                           n=  10  res=   0.850  ortU=   1.186  ortV=   1.095  t=0.0027s  PASS
+  gl_abcon2                           n=  10  res=   0.640  ortU=   0.188  ortV=   0.154  t=0.0026s  PASS
+  gl_abcon3                           n=  10  res=   0.850  ortU=   1.207  ortV=   1.204  t=0.0027s  PASS
+  gl_random                           n=  10  res=   0.603  ortU=   0.103  ortV=   0.250  t=0.0026s  PASS
+  gl_gradp                            n=  10  res=   0.725  ortU=   0.200  ortV=   0.200  t=0.0026s  PASS
+  gl_gradm                            n=  10  res=   0.753  ortU=   0.200  ortV=   0.150  t=0.0026s  PASS
+  gl_wilkp                            n=  10  res=   0.550  ortU=   0.250  ortV=   0.200  t=0.0062s  PASS
+  gl_wilkm                            n=  10  res=   0.578  ortU=   0.667  ortV=   0.698  t=0.0064s  PASS
+  gl_wilkw                            n=  10  res=   0.960  ortU=   0.664  ortV=   0.696  t=0.0035s  PASS
+  gl_wilk2w                           n=  10  res=   0.674  ortU=   0.143  ortV=   0.150  t=0.0028s  PASS
+  gl_clement                          n=  10  res=   0.040  ortU=   0.000  ortV=   0.000  t=0.0029s  PASS
+  gl_gro0                             n=  10  res=   0.700  ortU=   0.300  ortV=   0.194  t=0.0060s  PASS
+  gl_gro1                             n=  10  res=   0.750  ortU=   0.205  ortV=   0.383  t=0.0033s  PASS
+  gl_gro2                             n=  10  res=   0.600  ortU=   0.150  ortV=   0.102  t=0.0026s  PASS
+  gl_gro3                             n=  10  res=   0.754  ortU=   0.150  ortV=   0.200  t=0.0027s  PASS
+  gl_bwilkp                           n=  10  res=   0.480  ortU=   0.462  ortV=   0.510  t=0.0027s  PASS
+  gl_ones                             n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0025s  PASS
+  gl_uniform_eps                      n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0025s  PASS
+  gl_uniform_sqrteps                  n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0024s  PASS
+  gl_uniform_eps_to_1                 n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0024s  PASS
+  gl_geometric_eps_to_1               n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0025s  PASS
+  gl_random_spectrum                  n=  10  res=   0.746  ortU=   0.250  ortV=   0.300  t=0.0027s  PASS
+  gl_clustered_at_1                   n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0056s  PASS
+  gl_clustered_at_pm1                 n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0032s  PASS
+  gl_clustered_at_eps                 n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0026s  PASS
+  gl_clustered_at_pmeps               n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0025s  PASS
+  demmel_S1pe                         n=  10  res=   0.010  ortU=   0.000  ortV=   0.000  t=0.0024s  PASS
+  demmel_S1ps                         n=  10  res=   0.754  ortU=   1.473  ortV=   1.489  t=0.0027s  PASS
+  demmel_S2pe                         n=  10  res=   0.963  ortU=   1.010  ortV=   0.942  t=0.0025s  PASS
+  demmel_S2ps                         n=  10  res=   0.754  ortU=   0.829  ortV=   0.777  t=0.0026s  PASS
+  demmel_W1                           n=  10  res=   0.702  ortU=   0.000  ortV=   0.000  t=0.0025s  PASS
+  demmel_W2                           n=  10  res=   0.754  ortU=   0.190  ortV=   0.150  t=0.0025s  PASS
+  demmel_W3                           n=  10  res=   0.684  ortU=   0.218  ortV=   0.248  t=0.0027s  PASS
+  demmel_G1                           n=  10  res=   0.754  ortU=   0.200  ortV=   0.250  t=0.0025s  PASS
+  demmel_G1s                          n=  10  res=   0.754  ortU=   0.200  ortV=   0.100  t=0.0026s  PASS
+  demmel_U1                           n=  10  res=   0.597  ortU=   0.200  ortV=   0.350  t=0.0026s  PASS
+  demmel_U1s                          n=  10  res=   0.806  ortU=   0.150  ortV=   0.200  t=0.0026s  PASS
+  wilkinson_exact                     n=  10  res=   0.400  ortU=   0.150  ortV=   0.250  t=0.0024s  PASS
+  glued_wilkinson                     n=  10  res=   0.533  ortU=   0.104  ortV=   0.150  t=0.0026s  PASS
+  glued_wilkinson_tight               n=  10  res=   0.600  ortU=   0.104  ortV=   0.147  t=0.0026s  PASS
+  wl_example48                        n=  10  res=   0.742  ortU=   0.273  ortV=   0.224  t=0.0027s  PASS
+  pd_T0                               n=  10  res=   1.800  ortU=   1.266  ortV=   1.293  t=0.0026s  PASS
+  pd_T1                               n=  10  res=   0.450  ortU=   0.150  ortV=   0.150  t=0.0026s  PASS
+  zero_diagonal                       n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0024s  PASS
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0026s  PASS
+  near_overflow                       n=  10  res=   0.573  ortU=   0.225  ortV=   0.233  t=0.0025s  PASS
+  near_underflow                      n=  10  res=   0.726  ortU=   0.292  ortV=   0.324  t=0.0027s  PASS
+  mixed_signs                         n=  10  res=   0.912  ortU=   0.274  ortV=   0.295  t=0.0063s  PASS
+  checkerboard                        n=  10  res=   0.100  ortU=   0.200  ortV=   0.300  t=0.0033s  PASS
+  exponential_graded_k4               n=  10  res=   0.754  ortU=   0.104  ortV=   0.150  t=0.0028s  PASS
+  exponential_graded_k8               n=  10  res=   0.754  ortU=   0.200  ortV=   0.150  t=0.0028s  PASS
+  exponential_graded_k12              n=  10  res=   0.754  ortU=   0.200  ortV=   0.101  t=0.0027s  PASS
+  stemr_killer_k5                     n=  10  res=   0.754  ortU=   0.200  ortV=   0.100  t=0.0059s  PASS
+  stemr_killer_k10                    n=  10  res=   0.754  ortU=   0.150  ortV=   0.150  t=0.0034s  PASS
+  huge_condition_k5                   n=  10  res=   0.754  ortU=   0.200  ortV=   0.200  t=0.0029s  PASS
+  huge_condition_k10                  n=  10  res=   0.754  ortU=   0.150  ortV=   0.250  t=0.0028s  PASS
+  demmel_G1_k4                        n=  10  res=   0.754  ortU=   0.200  ortV=   0.526  t=0.0058s  PASS
+  demmel_G1_k8                        n=  10  res=   0.754  ortU=   0.100  ortV=   0.100  t=0.0034s  PASS
+  demmel_G1_k12                       n=  10  res=   0.754  ortU=   0.200  ortV=   0.100  t=0.0028s  PASS
+  demmel_S1pe_k4                      n=  10  res=   0.754  ortU=   1.744  ortV=   1.765  t=0.0027s  PASS
+  demmel_S1pe_k8                      n=  10  res=   0.754  ortU=   2.454  ortV=   2.478  t=0.0027s  PASS
+  chkbd_4                             n=   4  res=   1.567  ortU=   0.250  ortV=   0.250  t=0.0025s  PASS
+  chkbd_16                            n=  16  res=   0.471  ortU=   0.062  ortV=   0.281  t=0.0026s  PASS
+  marques_graded_k4                   n=  10  res=   0.754  ortU=   0.200  ortV=   0.200  t=0.0027s  PASS
+  marques_graded_k8                   n=  10  res=   0.754  ortU=   0.200  ortV=   0.250  t=0.0027s  PASS
+
+=== Adversarial Matrices (n=100) ===
+  exponential_graded                  n= 100  res=   1.182  ortU=   0.181  ortV=   0.305  t=0.0118s  PASS
+  glued_repeated                      n= 100  res=   0.150  ortU=   0.117  ortV=   0.116  t=0.0187s  PASS
+  saw_tooth                           n= 100  res=   0.120  ortU=   0.654  ortV=   0.662  t=0.0158s  PASS
+  stemr_killer                        n= 100  res=   1.424  ortU=   0.028  ortV=   0.055  t=0.0108s  PASS
+  huge_condition                      n= 100  res=   1.580  ortU=   0.355  ortV=   0.279  t=0.0141s  PASS
+  spike                               n= 100  res=   0.080  ortU=   0.432  ortV=   0.431  t=0.0212s  PASS
+  wilkinson_like                      n= 100  res=   0.107  ortU=   0.364  ortV=   0.357  t=0.0290s  PASS
+  two_clusters                        n= 100  res=   0.160  ortU=   0.617  ortV=   0.616  t=0.0332s  PASS
+  random_uniform                      n= 100  res=   0.079  ortU=   0.096  ortV=   0.092  t=0.0314s  PASS
+  diagonal_only                       n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0106s  PASS
+  constant                            n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0069s  PASS
+  all_equal_nontrivial                n= 100  res=   0.334  ortU=   0.942  ortV=   0.929  t=0.0576s  PASS
+  one_big_cluster                     n= 100  res=   0.398  ortU=   0.420  ortV=   0.423  t=0.0205s  PASS
+  arithmetic_progression              n= 100  res=   0.098  ortU=   0.257  ortV=   0.256  t=0.0556s  PASS
+  many_near_zero                      n= 100  res=   0.061  ortU=   0.015  ortV=   0.015  t=0.0145s  PASS
+  random_dense_clusters               n= 100  res=   0.854  ortU=   3.302  ortV=   3.312  t=0.0569s  PASS
+  constant_d_graded_e                 n= 100  res=   1.735  ortU=   1.581  ortV=   1.583  t=0.0275s  PASS
+  random_clustered_5                  n= 100  res=   0.113  ortU=   0.256  ortV=   0.259  t=0.0198s  PASS
+  alternating_sign                    n= 100  res=   0.418  ortU=   2.410  ortV=   2.398  t=0.0538s  PASS
+  step_function                       n= 100  res=   0.744  ortU=   2.536  ortV=   2.540  t=0.0325s  PASS
+  three_clusters                      n= 100  res=   0.105  ortU=   0.301  ortV=   0.294  t=0.0331s  PASS
+  random_sparse_e                     n= 100  res=   0.066  ortU=   0.013  ortV=   0.020  t=0.0141s  PASS
+  chkbd                               n= 100  res=   0.077  ortU=   0.025  ortV=   0.020  t=0.0115s  PASS
+  marques_graded                      n= 100  res=   0.108  ortU=   0.182  ortV=   0.214  t=0.0384s  PASS
+  gl_abcon0                           n= 100  res=   0.583  ortU=   3.691  ortV=   3.696  t=0.0632s  PASS
+  gl_abcon1                           n= 100  res=   0.410  ortU=   1.729  ortV=   1.745  t=0.0296s  PASS
+  gl_abcon2                           n= 100  res=   0.279  ortU=   0.439  ortV=   0.445  t=0.0374s  PASS
+  gl_abcon3                           n= 100  res=   0.504  ortU=   1.309  ortV=   1.313  t=0.0603s  PASS
+  gl_random                           n= 100  res=   0.115  ortU=   0.115  ortV=   0.091  t=0.0636s  PASS
+  gl_gradp                            n= 100  res=   0.640  ortU=   0.084  ortV=   0.020  t=0.0219s  PASS
+  gl_gradm                            n= 100  res=   1.280  ortU=   0.030  ortV=   0.091  t=0.0176s  PASS
+  gl_wilkp                            n= 100  res=   0.150  ortU=   0.179  ortV=   0.177  t=0.0319s  PASS
+  gl_wilkm                            n= 100  res=   0.229  ortU=   1.056  ortV=   1.047  t=0.0404s  PASS
+  gl_wilkw                            n= 100  res=   0.525  ortU=   2.716  ortV=   2.705  t=0.0442s  PASS
+  gl_wilk2w                           n= 100  res=   0.264  ortU=   0.546  ortV=   0.545  t=0.0605s  PASS
+  gl_clement                          n= 100  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0109s  PASS
+  gl_gro0                             n= 100  res=   0.578  ortU=   1.171  ortV=   1.165  t=0.0592s  PASS
+  gl_gro1                             n= 100  res=   0.120  ortU=   0.185  ortV=   0.181  t=0.0413s  PASS
+  gl_gro2                             n= 100  res=   0.060  ortU=   0.015  ortV=   0.010  t=0.0137s  PASS
+  gl_gro3                             n= 100  res=   1.412  ortU=   0.297  ortV=   0.201  t=0.0346s  PASS
+  gl_bwilkp                           n= 100  res=   0.571  ortU=   1.436  ortV=   1.440  t=0.0256s  PASS
+  gl_ones                             n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0086s  PASS
+  gl_uniform_eps                      n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0112s  PASS
+  gl_uniform_sqrteps                  n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0113s  PASS
+  gl_uniform_eps_to_1                 n= 100  res=   0.005  ortU=   0.000  ortV=   0.000  t=0.0110s  PASS
+  gl_geometric_eps_to_1               n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0087s  PASS
+  gl_random_spectrum                  n= 100  res=   0.081  ortU=   0.098  ortV=   0.096  t=0.0526s  PASS
+  gl_clustered_at_1                   n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0084s  PASS
+  gl_clustered_at_pm1                 n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0074s  PASS
+  gl_clustered_at_eps                 n= 100  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0088s  PASS
+  gl_clustered_at_pmeps               n= 100  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0058s  PASS
+  demmel_S1pe                         n= 100  res=   0.001  ortU=   0.000  ortV=   0.000  t=0.0071s  PASS
+  demmel_S1ps                         n= 100  res=   0.080  ortU=   5.608  ortV=   5.620  t=0.0213s  FAIL
+  demmel_S2pe                         n= 100  res=   0.754  ortU=   3.961  ortV=   3.969  t=0.0123s  PASS
+  demmel_S2ps                         n= 100  res=   0.500  ortU=   1.461  ortV=   1.477  t=0.0234s  PASS
+  demmel_W1                           n= 100  res=   0.098  ortU=   0.010  ortV=   0.000  t=0.0059s  PASS
+  demmel_W2                           n= 100  res=   0.080  ortU=   0.648  ortV=   0.643  t=0.0192s  PASS
+  demmel_W3                           n= 100  res=   0.107  ortU=   0.402  ortV=   0.401  t=0.0227s  PASS
+  demmel_G1                           n= 100  res=   0.842  ortU=   0.070  ortV=   0.030  t=0.0217s  PASS
+  demmel_G1s                          n= 100  res=   0.110  ortU=   0.185  ortV=   0.159  t=0.0224s  PASS
+  demmel_U1                           n= 100  res=   0.183  ortU=   0.564  ortV=   0.572  t=0.0236s  PASS
+  demmel_U1s                          n= 100  res=   0.145  ortU=   0.398  ortV=   0.419  t=0.0235s  PASS
+  wilkinson_exact                     n= 100  res=   0.173  ortU=   0.185  ortV=   0.193  t=0.0151s  PASS
+  glued_wilkinson                     n= 100  res=   0.176  ortU=   0.154  ortV=   0.156  t=0.0237s  PASS
+  glued_wilkinson_tight               n= 100  res=   0.137  ortU=   0.175  ortV=   0.173  t=0.0139s  PASS
+  wl_example48                        n= 100  res=   0.216  ortU=   0.320  ortV=   0.315  t=0.0273s  PASS
+  pd_T0                               n= 100  res=   0.529  ortU=   1.156  ortV=   1.155  t=0.0236s  PASS
+  pd_T1                               n= 100  res=   0.271  ortU=   0.300  ortV=   0.305  t=0.0555s  PASS
+  zero_diagonal                       n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0123s  PASS
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0052s  PASS
+  near_overflow                       n= 100  res=   0.080  ortU=   0.053  ortV=   0.048  t=0.0321s  PASS
+  near_underflow                      n= 100  res=   0.079  ortU=   0.060  ortV=   0.064  t=0.0297s  PASS
+  mixed_signs                         n= 100  res=   0.313  ortU=   0.588  ortV=   0.580  t=0.0639s  PASS
+  checkerboard                        n= 100  res=   0.279  ortU=   0.050  ortV=   0.095  t=0.0197s  PASS
+  exponential_graded_k4               n= 100  res=   0.080  ortU=   0.059  ortV=   0.064  t=0.0237s  PASS
+  exponential_graded_k8               n= 100  res=   0.080  ortU=   0.034  ortV=   0.036  t=0.0257s  PASS
+  exponential_graded_k12              n= 100  res=   0.080  ortU=   0.080  ortV=   0.051  t=0.0216s  PASS
+  stemr_killer_k5                     n= 100  res=   0.099  ortU=   0.045  ortV=   0.046  t=0.0246s  PASS
+  stemr_killer_k10                    n= 100  res=   0.128  ortU=   1.193  ortV=   0.734  t=0.0206s  PASS
+  huge_condition_k5                   n= 100  res=   0.080  ortU=   0.192  ortV=   0.212  t=0.0220s  PASS
+  huge_condition_k10                  n= 100  res=   0.080  ortU=   0.108  ortV=   0.085  t=0.0196s  PASS
+  demmel_G1_k4                        n= 100  res=   0.080  ortU=   0.069  ortV=   0.067  t=0.0319s  PASS
+  demmel_G1_k8                        n= 100  res=   0.080  ortU=   0.257  ortV=   0.226  t=0.0235s  PASS
+  demmel_G1_k12                       n= 100  res=   0.112  ortU=   0.213  ortV=   0.160  t=0.0440s  PASS
+  demmel_S1pe_k4                      n= 100  res=   0.080  ortU=   2.966  ortV=   2.952  t=0.0422s  PASS
+  demmel_S1pe_k8                      n= 100  res=   0.080  ortU=   3.372  ortV=   3.383  t=0.0248s  PASS
+  chkbd_4                             n=   4  res=   1.567  ortU=   0.250  ortV=   0.250  t=0.0044s  PASS
+  chkbd_16                            n=  16  res=   0.471  ortU=   0.062  ortV=   0.281  t=0.0036s  PASS
+  marques_graded_k4                   n= 100  res=   0.082  ortU=   0.333  ortV=   0.307  t=0.0274s  PASS
+  marques_graded_k8                   n= 100  res=   0.080  ortU=   0.053  ortV=   0.043  t=0.0240s  PASS
+
+=== Adversarial Matrices (n=200) ===
+  exponential_graded                  n= 200  res=   1.484  ortU=   0.301  ortV=   0.362  t=0.0468s  PASS
+  glued_repeated                      n= 200  res=   0.065  ortU=   0.067  ortV=   0.069  t=0.0197s  PASS
+  saw_tooth                           n= 200  res=   0.082  ortU=   0.962  ortV=   0.962  t=0.1079s  PASS
+  stemr_killer                        n= 200  res=   1.594  ortU=   0.210  ortV=   0.259  t=0.0375s  PASS
+  huge_condition                      n= 200  res=   1.694  ortU=   0.370  ortV=   0.307  t=0.0541s  PASS
+  spike                               n= 200  res=   0.040  ortU=   0.369  ortV=   0.370  t=0.0792s  PASS
+  wilkinson_like                      n= 200  res=   0.136  ortU=   0.150  ortV=   0.152  t=0.0850s  PASS
+  two_clusters                        n= 200  res=   0.063  ortU=   0.512  ortV=   0.509  t=0.0424s  PASS
+  random_uniform                      n= 200  res=   0.114  ortU=   0.206  ortV=   0.210  t=0.0987s  PASS
+  diagonal_only                       n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0146s  PASS
+  constant                            n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0254s  PASS
+  all_equal_nontrivial                n= 200  res=   0.258  ortU=   2.426  ortV=   2.431  t=0.1411s  PASS
+  one_big_cluster                     n= 200  res=   0.856  ortU=   0.593  ortV=   0.589  t=0.0248s  PASS
+  arithmetic_progression              n= 200  res=   0.058  ortU=   0.456  ortV=   0.482  t=0.1514s  PASS
+  many_near_zero                      n= 200  res=   0.030  ortU=   0.007  ortV=   0.007  t=0.0165s  PASS
+  random_dense_clusters               n= 200  res=   0.560  ortU=   1.251  ortV=   1.255  t=0.1061s  PASS
+  constant_d_graded_e                 n= 200  res=   1.766  ortU=   0.656  ortV=   0.655  t=0.1040s  PASS
+  random_clustered_5                  n= 200  res=   0.952  ortU=   0.487  ortV=   0.489  t=0.0259s  PASS
+  alternating_sign                    n= 200  res=   0.231  ortU=   1.807  ortV=   1.816  t=0.0948s  PASS
+  step_function                       n= 200  res=   0.449  ortU=   2.998  ortV=   2.994  t=0.1573s  PASS
+  three_clusters                      n= 200  res=   0.080  ortU=   0.491  ortV=   0.491  t=0.1037s  PASS
+  random_sparse_e                     n= 200  res=   0.040  ortU=   0.007  ortV=   0.010  t=0.0249s  PASS
+  chkbd                               n= 200  res=   0.038  ortU=   0.013  ortV=   0.010  t=0.0212s  PASS
+  marques_graded                      n= 200  res=   0.041  ortU=   0.441  ortV=   0.400  t=0.0946s  PASS
+  gl_abcon0                           n= 200  res=   0.215  ortU=   1.457  ortV=   1.463  t=0.0967s  PASS
+  gl_abcon1                           n= 200  res=   0.249  ortU=   3.041  ortV=   3.037  t=0.0936s  PASS
+  gl_abcon2                           n= 200  res=   0.612  ortU=   1.044  ortV=   1.047  t=0.1509s  PASS
+  gl_abcon3                           n= 200  res=   0.313  ortU=   0.905  ortV=   0.902  t=0.1487s  PASS
+  gl_random                           n= 200  res=   0.100  ortU=   0.147  ortV=   0.144  t=0.1544s  PASS
+  gl_gradp                            n= 200  res=   0.640  ortU=   0.064  ortV=   0.118  t=0.0333s  PASS
+  gl_gradm                            n= 200  res=   1.280  ortU=   0.015  ortV=   0.046  t=0.0183s  PASS
+  gl_wilkp                            n= 200  res=   0.281  ortU=   0.367  ortV=   0.367  t=0.0621s  PASS
+  gl_wilkm                            n= 200  res=   0.143  ortU=   1.038  ortV=   1.043  t=0.1125s  PASS
+  gl_wilkw                            n= 200  res=   0.166  ortU=22517998136852.480  ortV=   1.690  t=0.0965s  FAIL
+  gl_wilk2w                           n= 200  res=   0.876  ortU=22517998136852.480  ortV=   1.153  t=0.0925s  FAIL
+  gl_clement                          n= 200  res=   0.002  ortU=   0.000  ortV=   0.000  t=0.0157s  PASS
+  gl_gro0                             n= 200  res=   0.682  ortU=   0.773  ortV=   0.766  t=0.0925s  PASS
+  gl_gro1                             n= 200  res=   0.075  ortU=   0.429  ortV=   0.429  t=0.1603s  PASS
+  gl_gro2                             n= 200  res=   0.030  ortU=   0.007  ortV=   0.005  t=0.0218s  PASS
+  gl_gro3                             n= 200  res=   1.293  ortU=   0.201  ortV=   0.237  t=0.0518s  PASS
+  gl_bwilkp                           n= 200  res=   0.275  ortU=   0.826  ortV=   0.826  t=0.1127s  PASS
+  gl_ones                             n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0142s  PASS
+  gl_uniform_eps                      n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0140s  PASS
+  gl_uniform_sqrteps                  n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0126s  PASS
+  gl_uniform_eps_to_1                 n= 200  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0119s  PASS
+  gl_geometric_eps_to_1               n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0121s  PASS
+  gl_random_spectrum                  n= 200  res=   0.072  ortU=   0.124  ortV=   0.123  t=0.0996s  PASS
+  gl_clustered_at_1                   n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0242s  PASS
+  gl_clustered_at_pm1                 n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0117s  PASS
+  gl_clustered_at_eps                 n= 200  res=   0.002  ortU=   0.000  ortV=   0.000  t=0.0115s  PASS
+  gl_clustered_at_pmeps               n= 200  res=   0.002  ortU=   0.000  ortV=   0.000  t=0.0180s  PASS
+  demmel_S1pe                         n= 200  res=   0.001  ortU=   0.000  ortV=   0.000  t=0.0114s  PASS
+  demmel_S1ps                         n= 200  res=   0.040  ortU=   5.760  ortV=   5.761  t=0.0643s  FAIL
+  demmel_S2pe                         n= 200  res=   0.296  ortU=   2.012  ortV=   2.007  t=0.0339s  PASS
+  demmel_S2ps                         n= 200  res=   0.280  ortU=   3.057  ortV=   3.051  t=0.0743s  PASS
+  demmel_W1                           n= 200  res=   0.099  ortU=   0.000  ortV=   0.000  t=0.0280s  PASS
+  demmel_W2                           n= 200  res=   0.040  ortU=   0.521  ortV=   0.521  t=0.1057s  PASS
+  demmel_W3                           n= 200  res=   0.098  ortU=   0.603  ortV=   0.601  t=0.1367s  PASS
+  demmel_G1                           n= 200  res=   0.919  ortU=   0.158  ortV=   0.139  t=0.0488s  PASS
+  demmel_G1s                          n= 200  res=   0.260  ortU=   0.508  ortV=   0.467  t=0.1158s  PASS
+  demmel_U1                           n= 200  res=   0.134  ortU=   0.444  ortV=   0.477  t=0.1511s  PASS
+  demmel_U1s                          n= 200  res=   0.117  ortU=   0.474  ortV=   0.469  t=0.1398s  PASS
+  wilkinson_exact                     n= 200  res=   0.290  ortU=   0.419  ortV=   0.426  t=0.1051s  PASS
+  glued_wilkinson                     n= 200  res=   0.089  ortU=   0.078  ortV=   0.082  t=0.1369s  PASS
+  glued_wilkinson_tight               n= 200  res=   0.165  ortU=   0.258  ortV=   0.260  t=0.1014s  PASS
+  wl_example48                        n= 200  res=   0.044  ortU=   0.076  ortV=   0.074  t=0.1049s  PASS
+  pd_T0                               n= 200  res=   0.393  ortU=   1.480  ortV=   1.477  t=0.0850s  PASS
+  pd_T1                               n= 200  res=   0.135  ortU=   0.340  ortV=   0.340  t=0.1391s  PASS
+  zero_diagonal                       n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0215s  PASS
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0057s  PASS
+  near_overflow                       n= 200  res=   0.057  ortU=   0.372  ortV=   0.331  t=0.0685s  PASS
+  near_underflow                      n= 200  res=   0.040  ortU=   0.269  ortV=   0.291  t=0.0743s  PASS
+  mixed_signs                         n= 200  res=   0.048  ortU=   0.115  ortV=   0.116  t=0.1319s  PASS
+  checkerboard                        n= 200  res=   0.393  ortU=   0.035  ortV=   0.045  t=0.0625s  PASS
+  exponential_graded_k4               n= 200  res=   0.040  ortU=   0.303  ortV=   0.319  t=0.0907s  PASS
+  exponential_graded_k8               n= 200  res=   0.078  ortU=   0.489  ortV=   0.535  t=0.0761s  PASS
+  exponential_graded_k12              n= 200  res=   0.090  ortU=   0.408  ortV=   0.468  t=0.0671s  PASS
+  stemr_killer_k5                     n= 200  res=   0.048  ortU=   0.414  ortV=   0.391  t=0.1450s  PASS
+  stemr_killer_k10                    n= 200  res=   0.050  ortU=   0.151  ortV=   0.135  t=0.0705s  PASS
+  huge_condition_k5                   n= 200  res=   0.040  ortU=   0.334  ortV=   0.317  t=0.0792s  PASS
+  huge_condition_k10                  n= 200  res=   0.040  ortU=   0.386  ortV=   0.435  t=0.0700s  PASS
+  demmel_G1_k4                        n= 200  res=   0.066  ortU=   0.405  ortV=   0.423  t=0.1089s  PASS
+  demmel_G1_k8                        n= 200  res=   0.042  ortU=   0.639  ortV=   0.597  t=0.0960s  PASS
+  demmel_G1_k12                       n= 200  res=   0.049  ortU=   0.463  ortV=   0.411  t=0.0694s  PASS
+  demmel_S1pe_k4                      n= 200  res=   0.040  ortU=   1.543  ortV=   1.546  t=0.0991s  PASS
+  demmel_S1pe_k8                      n= 200  res=   0.040  ortU=   3.377  ortV=   3.379  t=0.1226s  PASS
+  chkbd_4                             n=   4  res=   1.567  ortU=   0.250  ortV=   0.250  t=0.0081s  PASS
+  chkbd_16                            n=  16  res=   0.471  ortU=   0.062  ortV=   0.281  t=0.0076s  PASS
+  marques_graded_k4                   n= 200  res=   0.040  ortU=   0.399  ortV=   0.417  t=0.1304s  PASS
+  marques_graded_k8                   n= 200  res=   0.072  ortU=   0.387  ortV=   0.351  t=0.1084s  PASS
+
+============================================================
+TOTAL: 265/270 passed (98.1%)
+================================================================================
+BidiagonalSVD_TGK (DBDSVDMR3) -- pract sweep
+================================================================================
+Binary:    /home/saisurya/MRRR/xmr-evolve/python_fortran/BidiagonalSVD_TGK/test_stcoll_alloc
+Source:    python_fortran/BidiagonalSVD_TGK/  (from origin/main 15a946d)
+Driver:    DBDSVDMR3  (TGK-rooted MR3; dbdsvdmr3.f)
+Generator: self-contained-fortran-bidiagsvd/test_synth_pract.generate_pract
+Thresholds: res<=7 n.eps,  ortU/ortV<=5 n.eps
+================================================================================
+
+Matrix                                          n        res       ortU       ortV    dt(s)  status  note
+--------------------------------------------------------------------------------------------------------------
+STColl_B_03                                     3      0.200      0.500      0.200    0.005  PASS  
+STColl_B_05_2                                   5      0.100      0.400      0.400    0.004  PASS  
+STColl_B_05_d3eq0                               5      0.100      0.400      0.400    0.004  PASS  
+STColl_B_05_d5eq0                               5      0.200      0.300      0.200    0.006  PASS  
+STColl_B_05_eye                                 5      0.400      0.400      0.400    0.004  PASS  
+STColl_B_11_splits_a                           11      0.200      0.200      0.300    0.006  PASS  
+STColl_B_11_splits_b                           11      0.100      0.300      0.200    0.004  PASS  
+STColl_B_12_splits_a                           12      0.100      0.200      0.200    0.005  PASS  
+STColl_B_16                                    16      0.100      0.100      0.100    0.005  PASS  
+STColl_B_16_smallsv                            16      0.100      0.200      0.200    0.005  PASS  
+STColl_B_20_graded                             20      0.200      0.300      0.200    0.004  PASS  
+STColl_B_40_graded                             40      0.100      0.500      0.500    0.006  PASS  
+STColl_B_Kimura_429                           429    252.000   1017.000   1017.000    0.434  FAIL  
+STColl_B_bug316_gesdd                          26      0.100      0.100      0.100    0.007  PASS  
+STColl_B_bug414                                 4      0.200      0.200      0.200    0.006  PASS  
+STColl_B_gg_30_1D-5                           330      0.400      1.600      1.600    0.201  PASS  
+STColl_B_glued_09b                              9      0.100      2.100      0.400    0.007  PASS  
+STColl_B_glued_09c                              9      0.100      0.200      0.200    0.006  PASS  
+STColl_B_glued_09d                              9      0.100      1.700      0.500    0.005  PASS  
+Barlow_4                                        4      0.000      0.500      0.200    0.005  PASS  
+Fann04                                        300      0.800      3.500      3.500    0.162  PASS  
+Fann06                                        180      0.600      0.800      0.800    0.092  PASS  
+Fann07                                        120      1.400      2.300      2.300    0.032  PASS  
+Fann08                                        180      1.000      1.700      1.700    0.092  PASS  
+Fann09                                        120      0.600      0.600      0.700    0.038  PASS  
+Fann11                                        120      0.600      1.300      1.300    0.039  PASS  
+Fournier_100                                  100      1.100      7.800      7.800    0.019  FAIL  
+Julien_30                                      30      0.700      1.000      1.000    0.006  PASS  
+Lipshitz_3                                   1087      0.700      7.800      7.800   13.321  FAIL  
+Lipshitz_4                                   1088     12.800    206.000    206.000   12.107  FAIL  
+Moler_200                                     200      0.800      2.300      2.300    0.052  PASS  
+Moler_200_flipped                             200      1.300      1.700      1.700    0.129  PASS  
+Orti                                           10      0.200      0.300      0.300    0.007  PASS  
+Parlett_560b                                  560      0.000      0.000      0.000    1.148  PASS  
+T_0003c                                         3      0.000      0.300      0.700    0.007  PASS  
+T_0007a                                         7     84.500    287.800    287.800    0.007  FAIL  
+T_0010                                         10      1.700      3.600      3.600    0.006  PASS  
+T_0010_stexrfailure_TGK                        20      9.600     28.200     28.200    0.007  FAIL  
+T_0016_smalleig                                16     52.400     51.700     51.500    0.007  FAIL  
+T_0125b                                       125      1.500      8.500      8.500    0.039  FAIL  
+T_1000                                       1000      0.500      4.900      4.900    8.734  PASS  
+T_339                                         339      2.600      5.200      5.200    0.286  FAIL  
+T_494_bus                                     494      0.300      4.000      4.000    0.809  PASS  
+T_685_bus                                     685      0.200      4.000      4.000    1.888  PASS  
+T_Alemdar_1                                  6245        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_Godunov_073                                  73      2.200      3.100      3.100    0.015  PASS  
+T_Godunov_113                                 113      1.400      2.000      2.000    0.022  PASS  
+T_Godunov_147                                 147      1.100      1.500      1.500    0.042  PASS  
+T_Godunov_169                                 169      0.900      1.300      1.300    0.059  PASS  
+T_Godunov_1e-2                               2500      0.000      3.600      3.600  222.508  PASS  
+T_Godunov_1e-4                               2500      0.100      5.800      5.800  227.748  FAIL  
+T_Godunov_1e-5                               2500      0.100      3.700      3.700  223.775  PASS  
+T_Godunov_1e-6                               2500      0.100      4.100      4.100  223.536  PASS  
+T_Godunov_1e-7                               2500      0.100      6.300      6.300  227.882  FAIL  
+T_Laguerre_064b                                64      0.400      1.200      1.300    0.014  PASS  
+T_Laguerre_128a                               128      0.500      2.500      2.500    0.033  PASS  
+T_Laguerre_128b                               128      0.300      1.900      2.000    0.028  PASS  
+T_MathWorks_202                               202      0.100      1.300      1.300    0.118  PASS  
+T_SkewW21gve+3                               2100    250.800    161.400    161.300  130.636  FAIL  
+T_SkewW21gve+6                               2100      0.600      8.500      8.500  131.195  FAIL  
+T_TSC_OPF_300                                9774        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_W21_g_1e+00                                2100      0.300      3.000      3.000  127.346  PASS  
+T_W21_g_1e+02                                2100    884.900  67631.300  67631.300  130.187  FAIL  
+T_W21_g_1e+04                                2100     10.600    519.400    519.400  128.805  FAIL  
+T_W21_g_1e+06                                2100   2085.500   8767.700   8767.700  131.677  FAIL  
+T_W21_g_1e+12                                2100 1976111.700 8300852.600 8300852.600  144.623  FAIL  
+T_W21_g_1e+14                                2100   3547.400   4017.600   4017.600  159.274  FAIL  
+T_W21_g_1e-04                                2100      2.600      7.600      7.600  127.149  FAIL  
+T_W21_g_1e-07                                2100      0.100      3.900      3.900  127.908  PASS  
+T_W21_g_1e-08                                2100      0.100      5.500      5.500  127.469  FAIL  
+T_W21_g_1e-09                                2100      0.100      3.900      3.900  131.964  PASS  
+T_W21_g_1e-13                                2100      0.100      6.400      6.400  133.481  FAIL  
+T_W21_g_1e-14                                2100      2.400     53.300     53.300  131.698  FAIL  
+T_bcsstkm01_3                                 144      2.700     12.800     12.800    0.055  FAIL  
+T_bcsstkm02_1                                  66      0.300      0.500      0.500    0.009  PASS  
+T_bcsstkm03_1                                 112      0.700      0.800      0.800    0.021  PASS  
+T_bcsstkm03_2                                 224      0.700      2.800      2.800    0.119  PASS  
+T_bcsstkm03_3                                 336      0.500      0.700      0.700    0.219  PASS  
+T_bcsstkm04_2                                 264      1.400      1.900      1.900    0.107  PASS  
+T_bcsstkm04_3                                 396      0.500      1.700      1.700    0.419  PASS  
+T_bcsstkm05_2                                 306      0.500      1.200      1.200    0.242  PASS  
+T_bcsstkm07_1                                 420      0.900      2.000      2.000    0.470  PASS  
+T_bcsstkm07_3                                1260      0.700      4.400      4.400   19.151  PASS  
+T_bcsstkm09_1                                1083      0.300      0.500      0.500   12.723  PASS  
+T_bcsstkm10_2                                2172     21.100     95.100     95.100  147.382  FAIL  
+T_bcsstkm10_3                                3258      5.800     30.000     30.000  552.946  FAIL  
+T_bcsstkm10_4                                4344        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_bcsstkm11_3                                4419        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_bcsstkm11_4                                5892        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_bcsstkm12_1                                1473      2.100     14.100     14.100   38.169  FAIL  
+T_bcsstkm12_3                                4419        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_bcsstkm13_3                                6009        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_bug032_4                                     60      2.700      5.500      5.500    0.011  FAIL  
+T_bug056                                       75      1.500      5.900      5.900    0.012  FAIL  
+T_bug113_38-47                                 10      1.000      1.200      1.700    0.007  PASS  
+T_bug113_49-74                                 26      0.700      0.700      0.700    0.006  PASS  
+T_bug126_U                                      9      0.200      0.600      0.300    0.006  PASS  
+T_bug414                                        8      0.500      0.800      0.800    0.006  PASS  
+T_bug999_stemr                                600      0.400      0.700      0.700    1.289  PASS  
+T_c-40                                       9941        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_intel_57                                     57      0.900      4.000      4.000    0.014  PASS  
+T_matlab_nd_0500                              500      0.600      5.100      5.000    0.681  FAIL  
+T_matlab_nd_0750                              750      0.600     11.100     11.100    2.132  FAIL  
+T_matlab_nd_1250                             1250      0.800     13.900     13.900   21.769  FAIL  
+T_matlab_nd_1500                             1500      0.400      8.600      8.600   40.837  FAIL  
+T_matlab_nd_1750                             1750      0.700      9.800      9.800   74.514  FAIL  
+T_matlab_ud_0250                              250      1.900      8.400      8.500    0.150  FAIL  
+T_matlab_ud_0500                              500      0.200      3.100      3.100    0.678  PASS  
+T_matlab_ud_1000                             1000      0.800      9.400      9.400    8.029  FAIL  
+T_matlab_ud_1250                             1250      1.600     16.300     16.300   21.099  FAIL  
+T_matlab_ud_1750                             1750      0.700     18.200     18.200   75.855  FAIL  
+T_matlab_ud_2000                             2000      2.300     28.200     28.200  114.379  FAIL  
+T_matlab_ud_2250                             2250      1.100     21.900     21.900  174.783  FAIL  
+T_nasa1824                                   1824      0.800     11.100     11.100   92.523  FAIL  
+T_nasa1824_1                                 1824      8.700     82.400     82.400   82.419  FAIL  
+T_nasa1824_3                                 5472        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_nasa2146                                   2146      0.400     10.200     10.200  149.156  FAIL  
+T_nasa2910                                   2910      4.900     46.300     46.300  397.909  FAIL  
+T_nasa4704_1                                 4704        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_nos6                                        675      0.700      3.100      3.100    1.477  PASS  
+T_nos7                                        729      0.500      2.300      2.300    2.013  PASS  
+T_plat1919                                   1919      0.100      2.100      2.100  104.727  PASS  
+T_sts4098_1                                  4098        inf        inf        inf  600.000  FAIL  TIMEOUT
+T_zenios                                     2873      0.200      0.400      0.400  363.799  PASS  
+Z_297                                         297      0.400      0.400      0.400    0.236  PASS  
+Z_297_flipped                                 297      1.000      1.200      1.200    0.229  PASS  
+  SKIP plot_eig (tridiag): invalid literal for int() with base 10: 'T_bug414.eig'
+sinc41                                         41      1.100      1.000      1.000    0.006  PASS  
+--------------------------------------------------------------------------------------------------------------
+PASS: 73/127
+
+Failing (54):
+  T_Alemdar_1                                n=  6245  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_TSC_OPF_300                              n=  9774  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_bcsstkm10_4                              n=  4344  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_bcsstkm11_3                              n=  4419  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_bcsstkm11_4                              n=  5892  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_bcsstkm12_3                              n=  4419  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_bcsstkm13_3                              n=  6009  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_c-40                                     n=  9941  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_nasa1824_3                               n=  5472  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_nasa4704_1                               n=  4704  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_sts4098_1                                n=  4098  res=       inf  ortU=       inf  ortV=       inf  TIMEOUT
+  T_W21_g_1e+12                              n=  2100  res=1976111.700  ortU=8300852.600  ortV=8300852.600  
+  T_W21_g_1e+02                              n=  2100  res=   884.900  ortU= 67631.300  ortV= 67631.300  
+  T_W21_g_1e+06                              n=  2100  res=  2085.500  ortU=  8767.700  ortV=  8767.700  
+  T_W21_g_1e+14                              n=  2100  res=  3547.400  ortU=  4017.600  ortV=  4017.600  
+  STColl_B_Kimura_429                        n=   429  res=   252.000  ortU=  1017.000  ortV=  1017.000  
+  T_W21_g_1e+04                              n=  2100  res=    10.600  ortU=   519.400  ortV=   519.400  
+  T_0007a                                    n=     7  res=    84.500  ortU=   287.800  ortV=   287.800  
+  Lipshitz_4                                 n=  1088  res=    12.800  ortU=   206.000  ortV=   206.000  
+  T_SkewW21gve+3                             n=  2100  res=   250.800  ortU=   161.400  ortV=   161.300  
+  T_bcsstkm10_2                              n=  2172  res=    21.100  ortU=    95.100  ortV=    95.100  
+  T_nasa1824_1                               n=  1824  res=     8.700  ortU=    82.400  ortV=    82.400  
+  T_W21_g_1e-14                              n=  2100  res=     2.400  ortU=    53.300  ortV=    53.300  
+  T_0016_smalleig                            n=    16  res=    52.400  ortU=    51.700  ortV=    51.500  
+  T_nasa2910                                 n=  2910  res=     4.900  ortU=    46.300  ortV=    46.300  
+  T_bcsstkm10_3                              n=  3258  res=     5.800  ortU=    30.000  ortV=    30.000  
+  T_0010_stexrfailure_TGK                    n=    20  res=     9.600  ortU=    28.200  ortV=    28.200  
+  T_matlab_ud_2000                           n=  2000  res=     2.300  ortU=    28.200  ortV=    28.200  
+  T_matlab_ud_2250                           n=  2250  res=     1.100  ortU=    21.900  ortV=    21.900  
+  T_matlab_ud_1750                           n=  1750  res=     0.700  ortU=    18.200  ortV=    18.200  
+  T_matlab_ud_1250                           n=  1250  res=     1.600  ortU=    16.300  ortV=    16.300  
+  T_bcsstkm12_1                              n=  1473  res=     2.100  ortU=    14.100  ortV=    14.100  
+  T_matlab_nd_1250                           n=  1250  res=     0.800  ortU=    13.900  ortV=    13.900  
+  T_bcsstkm01_3                              n=   144  res=     2.700  ortU=    12.800  ortV=    12.800  
+  T_matlab_nd_0750                           n=   750  res=     0.600  ortU=    11.100  ortV=    11.100  
+  T_nasa1824                                 n=  1824  res=     0.800  ortU=    11.100  ortV=    11.100  
+  T_nasa2146                                 n=  2146  res=     0.400  ortU=    10.200  ortV=    10.200  
+  T_matlab_nd_1750                           n=  1750  res=     0.700  ortU=     9.800  ortV=     9.800  
+  T_matlab_ud_1000                           n=  1000  res=     0.800  ortU=     9.400  ortV=     9.400  
+  T_matlab_nd_1500                           n=  1500  res=     0.400  ortU=     8.600  ortV=     8.600  
+  T_0125b                                    n=   125  res=     1.500  ortU=     8.500  ortV=     8.500  
+  T_SkewW21gve+6                             n=  2100  res=     0.600  ortU=     8.500  ortV=     8.500  
+  T_matlab_ud_0250                           n=   250  res=     1.900  ortU=     8.400  ortV=     8.500  
+  Fournier_100                               n=   100  res=     1.100  ortU=     7.800  ortV=     7.800  
+  Lipshitz_3                                 n=  1087  res=     0.700  ortU=     7.800  ortV=     7.800  
+  T_W21_g_1e-04                              n=  2100  res=     2.600  ortU=     7.600  ortV=     7.600  
+  T_W21_g_1e-13                              n=  2100  res=     0.100  ortU=     6.400  ortV=     6.400  
+  T_Godunov_1e-7                             n=  2500  res=     0.100  ortU=     6.300  ortV=     6.300  
+  T_bug056                                   n=    75  res=     1.500  ortU=     5.900  ortV=     5.900  
+  T_Godunov_1e-4                             n=  2500  res=     0.100  ortU=     5.800  ortV=     5.800  
+  T_W21_g_1e-08                              n=  2100  res=     0.100  ortU=     5.500  ortV=     5.500  
+  T_bug032_4                                 n=    60  res=     2.700  ortU=     5.500  ortV=     5.500  
+  T_339                                      n=   339  res=     2.600  ortU=     5.200  ortV=     5.200  
+  T_matlab_nd_0500                           n=   500  res=     0.600  ortU=     5.100  ortV=     5.000  
