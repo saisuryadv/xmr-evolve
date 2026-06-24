@@ -152,6 +152,13 @@ def write_csv(rows, path):
                         r['reps_e'], r['reps_r'], r['status'], r['note']])
 
 
+def _cell(s):
+    if s is None:
+        return ('-', '-', '-')
+    mn, mean, mx, _, _ = s
+    return (f"{mn:.2e}", f"{mean:.2e}", f"{mx:.2e}")
+
+
 def main():
     md = []
     md.append("# BidiagonalSVD sweep statistics (2026-06-24)\n")
@@ -173,6 +180,45 @@ def main():
               "stats below are a ~1 % sample but synth FAIL stats are exact. "
               "The other three suites are 100 % complete.\n")
 
+    # --- per-suite cross-method comparison (one table per metric set) ---
+    md.append("\n# Cross-method comparison per suite\n")
+    md.append("\nOne table per (suite, set). Rows = metric. Columns = "
+              "advisor / selfcontained / dbdsqr, each broken into "
+              "min / mean / max. Reuses the same finite-mask stats as below.\n")
+
+    suite_method_stats = {}  # (suite, method) -> {col: stats_tuple}
+    suite_method_rows = {}   # (suite, method) -> list[row]
+    for suite in SUITES:
+        for method in METHODS:
+            log = os.path.join(SWEEP_DIR, f'{suite}_{method}_paper_norms.log')
+            if not os.path.exists(log):
+                continue
+            rows = parse(log)
+            suite_method_rows[(suite, method)] = rows
+            all_stats = {c: stats([r[c] for r in rows]) for c in COLS}
+            pass_stats = {c: stats([r[c] for r in rows
+                                    if r['status'] == 'PASS']) for c in COLS}
+            suite_method_stats[(suite, method, 'ALL')] = all_stats
+            suite_method_stats[(suite, method, 'PASS')] = pass_stats
+
+    for suite in SUITES:
+        md.append(f"\n## {suite}\n")
+        for label in ('ALL', 'PASS'):
+            md.append(f"\n### {label} rows\n")
+            md.append("\n| metric | advisor min | mean | max | "
+                      "selfcontained min | mean | max | "
+                      "dbdsqr min | mean | max |")
+            md.append("\n|---|" + "---:|" * 9)
+            for col in COLS:
+                cells = []
+                for m in METHODS:
+                    s = suite_method_stats.get((suite, m, label), {}).get(col)
+                    cells.extend(_cell(s))
+                md.append(f"\n| {col} | " + " | ".join(cells) + " |")
+            md.append("\n")
+
+    # --- per-suite, per-method detail tables (existing format kept) ---
+    md.append("\n# Per (suite, method) detail tables\n")
     for suite in SUITES:
         md.append(f"\n## {suite}\n")
         for method in METHODS:
@@ -180,7 +226,7 @@ def main():
             if not os.path.exists(log):
                 md.append(f"\n### {method}\n_no log_\n")
                 continue
-            rows = parse(log)
+            rows = suite_method_rows.get((suite, method)) or parse(log)
             write_csv(rows, os.path.join(OUT_DIR, f'{suite}_{method}.csv'))
             passes = [r for r in rows if r['status'] == 'PASS']
             md.append(f"\n### {method}  — rows={len(rows)}  PASS={len(passes)}\n")
