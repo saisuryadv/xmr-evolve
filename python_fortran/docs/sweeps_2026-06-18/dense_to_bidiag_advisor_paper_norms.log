@@ -1,0 +1,587 @@
+==================================================================================================================================
+BidiagonalSVD evaluation -- suite=dense_to_bidiag  solver=advisor  norms=paper
+==================================================================================================================================
+Solver:     BidiagonalSVD_TGK / DBDSVDMR3 (advisor)
+Source:     python_fortran/BidiagonalSVD_TGK/  (advisor, origin/main 15a946d)
+Metric:     Willems-Lang 2012 paper-norm (res=per-triplet 2-norm)
+Generator:  DENSE_TESTS+PAPER_TESTS  (self-contained-fortran-bidiagsvd/test_dense_to_bidiag.py:800)
+Thresholds: res<=7 n.eps,  ortU/ortV<=5 n.eps
+Timeout:    600.0s/matrix
+Reference:  DBDSQR (singular values only)  -- min-of-N adaptive bench, cache-flushed (32 MiB scratch)
+==================================================================================================================================
+
+Matrix                                                n       res      ortU      ortV   sv_drift     t_eval   t_dbdsqr reps  status  note
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+=== Adversarial Matrices (n=10) ===
+  exponential_graded                  n=  10  res=   0.754  ortU=   0.226  ortV=   0.100  t=0.0046s  PASS
+  glued_repeated                      n=  10  res=   0.800  ortU=   0.484  ortV=   0.479  t=0.0047s  PASS
+  saw_tooth                           n=  10  res=   0.784  ortU=   0.206  ortV=   0.195  t=0.0048s  PASS
+  stemr_killer                        n=  10  res=   0.754  ortU=   0.100  ortV=   0.450  t=0.0054s  PASS
+  huge_condition                      n=  10  res=   0.778  ortU=   0.400  ortV=   0.200  t=0.0046s  PASS
+  spike                               n=  10  res=   0.768  ortU=   0.296  ortV=   0.300  t=0.0046s  PASS
+  wilkinson_like                      n=  10  res=   0.600  ortU=   0.337  ortV=   0.364  t=0.0049s  PASS
+  two_clusters                        n=  10  res=   0.750  ortU=   0.154  ortV=   0.101  t=0.0057s  PASS
+  random_uniform                      n=  10  res=450359938938447.062  ortU=   0.226  ortV=   0.100  t=0.0046s  FAIL
+  diagonal_only                       n=  10  res=450359958233449.250  ortU=   0.484  ortV=   0.479  t=0.0055s  FAIL
+  constant                            n=  10  res=450359962737049.188  ortU=   0.226  ortV=   0.100  t=0.0046s  FAIL
+  all_equal_nontrivial                n=  10  res=450359962737049.625  ortU=   0.100  ortV=   0.450  t=0.0044s  FAIL
+  one_big_cluster                     n=  10  res=450359962736934.688  ortU=   0.400  ortV=   0.200  t=0.0048s  FAIL
+  arithmetic_progression              n=  10  res=   0.537  ortU=   0.270  ortV=   0.300  t=0.0048s  PASS
+  many_near_zero                      n=  10  res=35333285006483.906  ortU=   0.400  ortV=   0.200  t=0.0055s  FAIL
+  random_dense_clusters               n=  10  res=5703889268407491.000  ortU=   0.296  ortV=   0.300  t=0.0045s  FAIL
+  constant_d_graded_e                 n=  10  res=2251799813685249.000  ortU=   0.337  ortV=   0.364  t=0.0044s  FAIL
+  random_clustered_5                  n=  10  res=11384777301220254.000  ortU=   0.296  ortV=   0.300  t=0.0050s  FAIL
+  alternating_sign                    n=  10  res=2702159776422295.000  ortU=   0.337  ortV=   0.364  t=0.0045s  FAIL
+  step_function                       n=  10  res=405323966463344.750  ortU=   0.154  ortV=   0.101  t=0.0044s  FAIL
+  three_clusters                      n=  10  res=3392831794827786.000  ortU=   0.200  ortV=   0.250  t=0.0048s  FAIL
+  random_sparse_e                     n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  chkbd                               n=  10  res=33478408345503560.000  ortU=   0.201  ortV=   0.300  t=0.0044s  FAIL
+  marques_graded                      n=  10  res=450359956026162.688  ortU=   0.150  ortV=   0.100  t=0.0046s  FAIL
+  gl_abcon0                           n=  10  res=225179981368523.250  ortU=   0.728  ortV=   0.801  t=0.0055s  FAIL
+  gl_abcon1                           n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  gl_abcon2                           n=  10  res=   0.640  ortU=   0.188  ortV=   0.154  t=0.0046s  PASS
+  gl_abcon3                           n=  10  res=675539944105573.250  ortU=   1.135  ortV=   1.139  t=0.0058s  FAIL
+  gl_random                           n=  10  res=491326440090360.938  ortU=   0.150  ortV=   0.100  t=0.0045s  FAIL
+  gl_gradp                            n=  10  res=1746046205953200.000  ortU=   0.200  ortV=   0.150  t=0.0048s  FAIL
+  gl_gradm                            n=  10  res=710758824640528.125  ortU=   0.150  ortV=   0.200  t=0.0045s  FAIL
+  gl_wilkp                            n=  10  res=393171939884640.125  ortU=   0.150  ortV=   0.200  t=0.0047s  FAIL
+  gl_wilkm                            n=  10  res=450359962732045.688  ortU=   5.083  ortV=   5.078  t=0.0056s  FAIL
+  gl_wilkw                            n=  10  res=405323966463344.625  ortU=   0.150  ortV=   0.200  t=0.0044s  FAIL
+  gl_wilk2w                           n=  10  res=402953650869991.812  ortU=   0.484  ortV=   0.479  t=0.0048s  FAIL
+  gl_clement                          n=  10  res=450356664202166.312  ortU=   0.100  ortV=   0.200  t=0.0053s  FAIL
+  gl_gro0                             n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  gl_gro1                             n=  10  res=   0.750  ortU=   0.205  ortV=   0.383  t=0.0051s  PASS
+  gl_gro2                             n=  10  res=4503599627370489.500  ortU=   0.188  ortV=   0.154  t=0.0046s  FAIL
+  gl_gro3                             n=  10  res=1801439850948198.750  ortU=   0.250  ortV=   0.200  t=0.0046s  FAIL
+  gl_bwilkp                           n=  10  res=720575940379279.625  ortU=   0.667  ortV=   0.698  t=0.0047s  FAIL
+  gl_ones                             n=  10  res=2251799813685248.000  ortU=   0.000  ortV=   0.000  t=0.0044s  FAIL
+  gl_uniform_eps                      n=  10  res=1158413123580741374339333488640.000  ortU=   0.205  ortV=   0.383  t=0.0046s  FAIL
+  gl_uniform_sqrteps                  n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  gl_uniform_eps_to_1                 n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  gl_geometric_eps_to_1               n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  gl_random_spectrum                  n=  10  res=437368168827186.000  ortU=   0.150  ortV=   0.102  t=0.0042s  FAIL
+  gl_clustered_at_1                   n=  10  res=   0.800  ortU=   0.000  ortV=   0.000  t=0.0047s  PASS
+  gl_clustered_at_pm1                 n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  gl_clustered_at_eps                 n=  10  res=238370141574892622162687950848.000  ortU=   0.000  ortV=   0.000  t=0.0042s  FAIL
+  gl_clustered_at_pmeps               n=  10  res=178987081879026967737867960320.000  ortU=   0.000  ortV=   0.000  t=0.0043s  FAIL
+  demmel_S1pe                         n=  10  res=450359962737049.500  ortU=   0.000  ortV=   0.000  t=0.0049s  FAIL
+  demmel_S1ps                         n=  10  res=450359962065961.062  ortU=   0.150  ortV=   0.102  t=0.0044s  FAIL
+  demmel_S2pe                         n=  10  res=3284104784598459.000  ortU=   0.250  ortV=   0.300  t=0.0046s  FAIL
+  demmel_S2ps                         n=  10  res=3284104777887572.500  ortU=   0.250  ortV=   0.300  t=0.0052s  FAIL
+  demmel_W1                           n=  10  res=450359962737050.188  ortU=   0.000  ortV=   0.000  t=0.0043s  FAIL
+  demmel_W2                           n=  10  res=450359962737049.500  ortU=   0.000  ortV=   0.000  t=0.0042s  FAIL
+  demmel_W3                           n=  10  res=450359962737050.188  ortU=   0.000  ortV=   0.000  t=0.0044s  FAIL
+  demmel_G1                           n=  10  res=8208711645289.010  ortU=   1.473  ortV=   1.489  t=0.0058s  FAIL
+  demmel_G1s                          n=  10  res=450359962737049.500  ortU=   0.000  ortV=   0.000  t=0.0048s  FAIL
+  demmel_U1                           n=  10  res=400319960166491.688  ortU=   1.473  ortV=   1.489  t=0.0047s  FAIL
+  demmel_U1s                          n=  10  res=450359962737049.500  ortU=   0.000  ortV=   0.000  t=0.0056s  FAIL
+  wilkinson_exact                     n=  10  res=360287970189639.812  ortU=   0.190  ortV=   0.150  t=0.0047s  FAIL
+  glued_wilkinson                     n=  10  res=375299968947541.438  ortU=   0.000  ortV=   0.000  t=0.0045s  FAIL
+  glued_wilkinson_tight               n=  10  res=375299968947541.438  ortU=   0.190  ortV=   0.150  t=0.0051s  FAIL
+  wl_example48                        n=  10  res=364620167948563.812  ortU=   0.218  ortV=   0.248  t=0.0048s  FAIL
+  pd_T0                               n=  10  res=450359956026163.750  ortU=   0.150  ortV=   0.200  t=0.0045s  FAIL
+  pd_T1                               n=  10  res=318447086068150.438  ortU=   1.473  ortV=   1.489  t=0.0051s  FAIL
+  zero_diagonal                       n=  10  res=2702159776422294.500  ortU=   0.104  ortV=   0.150  t=0.0053s  FAIL
+  single_element                      n=   1  res=7696182665198728.000  ortU=15974279024206248.000  ortV=38991116185547888.000  t=0.0048s  FAIL
+  near_overflow                       n=  10  res=450359962737049.562  ortU=   1.266  ortV=   1.293  t=0.0048s  FAIL
+  near_underflow                      n=  10  res=1145979525642622858606904225291593633803918726181304038859952322795073135190848217691651999512647713416202788262724648961205631995336677984584915166859825550985265152.000  ortU=   0.104  ortV=   0.147  t=0.0050s  FAIL
+  mixed_signs                         n=  10  res=450359962737049.625  ortU=   0.000  ortV=   0.000  t=0.0044s  FAIL
+  checkerboard                        n=  10  ERROR: cannot reshape array of size 0 into shape (10,10)
+  exponential_graded_k4               n=  10  res=208632242089160.594  ortU=   0.200  ortV=   0.100  t=0.0046s  FAIL
+  exponential_graded_k8               n=  10  res=338967440220762.062  ortU=   0.200  ortV=   0.350  t=0.0063s  FAIL
+  exponential_graded_k12              n=  10  res=450359962737049.625  ortU=   0.292  ortV=   0.324  t=0.0052s  FAIL
+  stemr_killer_k5                     n=  10  res=450314926740775.875  ortU=   0.200  ortV=   0.300  t=0.0047s  FAIL
+  stemr_killer_k10                    n=  10  res=134255534222120.047  ortU=   0.104  ortV=   0.150  t=0.0058s  FAIL
+  huge_condition_k5                   n=  10  res=450343777639172.438  ortU=   0.200  ortV=   0.300  t=0.0047s  FAIL
+  huge_condition_k10                  n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  demmel_G1_k4                        n=  10  res=198181610905015.781  ortU=   0.200  ortV=   0.101  t=0.0052s  FAIL
+  demmel_G1_k8                        n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  demmel_G1_k12                       n=  10  res=450359962737049.625  ortU=   0.000  ortV=   0.000  t=0.0046s  FAIL
+  demmel_S1pe_k4                      n=  10  res=112333441419509.281  ortU=   0.150  ortV=   0.250  t=0.0054s  FAIL
+  demmel_S1pe_k8                      n=  10  res=161850974267895.344  ortU=   0.200  ortV=   0.526  t=0.0054s  FAIL
+  chkbd_4                             n=  10  ERROR: mr3gk_run failed (rc=2): At line 34 of file mr3gk_run.f90 (unit = 10, file = '/tmp/_mr3gk_in.bin')
+Fortran runtime error: End of file
+
+  chkbd_16                            n=  10  ERROR: cannot reshape array of size 194 into shape (16,16)
+  marques_graded_k4                   n=  10  res=161805942775222.094  ortU=   1.744  ortV=   1.765  t=0.0054s  FAIL
+  marques_graded_k8                   n=  10  ERROR: cannot reshape array of size 26 into shape (10,10)
+
+=== Adversarial Matrices (n=100) ===
+  exponential_graded                  n= 100  ERROR: cannot reshape array of size 0 into shape (100,100)
+  glued_repeated                      n= 100  ERROR: cannot reshape array of size 428 into shape (100,100)
+  saw_tooth                           n= 100  ERROR: unpack requires a buffer of 4 bytes
+  stemr_killer                        n= 100  ERROR: unpack requires a buffer of 4 bytes
+  huge_condition                      n= 100  ERROR: cannot reshape array of size 110 into shape (100,100)
+  spike                               n= 100  res=45035996273704.961  ortU=   0.000  ortV=   0.000  t=0.0301s  FAIL
+  wilkinson_like                      n= 100  res=45035996273704.961  ortU=   0.060  ortV=   0.064  t=0.0250s  FAIL
+  two_clusters                        n= 100  ERROR: cannot reshape array of size 0 into shape (100,100)
+  random_uniform                      n= 100  SKIPPED
+  diagonal_only                       n= 100  SKIPPED
+  constant                            n= 100  SKIPPED
+  all_equal_nontrivial                n= 100  SKIPPED
+  one_big_cluster                     n= 100  SKIPPED
+  arithmetic_progression              n= 100  res=   0.098  ortU=   0.257  ortV=   0.256  t=0.0268s  PASS
+  many_near_zero                      n= 100  SKIPPED
+  random_dense_clusters               n= 100  SKIPPED
+  constant_d_graded_e                 n= 100  SKIPPED
+  random_clustered_5                  n= 100  SKIPPED
+  alternating_sign                    n= 100  SKIPPED
+  step_function                       n= 100  SKIPPED
+  three_clusters                      n= 100  SKIPPED
+  random_sparse_e                     n= 100  SKIPPED
+  chkbd                               n= 100  SKIPPED
+  marques_graded                      n= 100  SKIPPED
+  gl_abcon0                           n= 100  SKIPPED
+  gl_abcon1                           n= 100  SKIPPED
+  gl_abcon2                           n= 100  res=   0.279  ortU=   0.439  ortV=   0.445  t=0.0254s  PASS
+  gl_abcon3                           n= 100  SKIPPED
+  gl_random                           n= 100  SKIPPED
+  gl_gradp                            n= 100  SKIPPED
+  gl_gradm                            n= 100  SKIPPED
+  gl_wilkp                            n= 100  SKIPPED
+  gl_wilkm                            n= 100  SKIPPED
+  gl_wilkw                            n= 100  SKIPPED
+  gl_wilk2w                           n= 100  SKIPPED
+  gl_clement                          n= 100  SKIPPED
+  gl_gro0                             n= 100  SKIPPED
+  gl_gro1                             n= 100  res=   0.120  ortU=   0.185  ortV=   0.181  t=0.0275s  PASS
+  gl_gro2                             n= 100  SKIPPED
+  gl_gro3                             n= 100  SKIPPED
+  gl_bwilkp                           n= 100  SKIPPED
+  gl_ones                             n= 100  SKIPPED
+  gl_uniform_eps                      n= 100  SKIPPED
+  gl_uniform_sqrteps                  n= 100  SKIPPED
+  gl_uniform_eps_to_1                 n= 100  SKIPPED
+  gl_geometric_eps_to_1               n= 100  SKIPPED
+  gl_random_spectrum                  n= 100  SKIPPED
+  gl_clustered_at_1                   n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0069s  PASS
+  gl_clustered_at_pm1                 n= 100  SKIPPED
+  gl_clustered_at_eps                 n= 100  SKIPPED
+  gl_clustered_at_pmeps               n= 100  SKIPPED
+  demmel_S1pe                         n= 100  SKIPPED
+  demmel_S1ps                         n= 100  SKIPPED
+  demmel_S2pe                         n= 100  SKIPPED
+  demmel_S2ps                         n= 100  SKIPPED
+  demmel_W1                           n= 100  SKIPPED
+  demmel_W2                           n= 100  SKIPPED
+  demmel_W3                           n= 100  SKIPPED
+  demmel_G1                           n= 100  SKIPPED
+  demmel_G1s                          n= 100  SKIPPED
+  demmel_U1                           n= 100  SKIPPED
+  demmel_U1s                          n= 100  SKIPPED
+  wilkinson_exact                     n= 100  SKIPPED
+  glued_wilkinson                     n= 100  SKIPPED
+  glued_wilkinson_tight               n= 100  SKIPPED
+  wl_example48                        n= 100  SKIPPED
+  pd_T0                               n= 100  SKIPPED
+  pd_T1                               n= 100  SKIPPED
+  zero_diagonal                       n= 100  SKIPPED
+  single_element                      n= 100  SKIPPED
+  near_overflow                       n= 100  SKIPPED
+  near_underflow                      n= 100  SKIPPED
+  mixed_signs                         n= 100  SKIPPED
+  checkerboard                        n= 100  SKIPPED
+  exponential_graded_k4               n= 100  SKIPPED
+  exponential_graded_k8               n= 100  SKIPPED
+  exponential_graded_k12              n= 100  SKIPPED
+  stemr_killer_k5                     n= 100  SKIPPED
+  stemr_killer_k10                    n= 100  SKIPPED
+  huge_condition_k5                   n= 100  SKIPPED
+  huge_condition_k10                  n= 100  SKIPPED
+  demmel_G1_k4                        n= 100  SKIPPED
+  demmel_G1_k8                        n= 100  SKIPPED
+  demmel_G1_k12                       n= 100  SKIPPED
+  demmel_S1pe_k4                      n= 100  SKIPPED
+  demmel_S1pe_k8                      n= 100  SKIPPED
+  chkbd_4                             n= 100  SKIPPED
+  chkbd_16                            n= 100  SKIPPED
+  marques_graded_k4                   n= 100  SKIPPED
+  marques_graded_k8                   n= 100  SKIPPED
+
+=== Adversarial Matrices (n=200) ===
+  exponential_graded                  n= 200  SKIPPED
+  glued_repeated                      n= 200  SKIPPED
+  saw_tooth                           n= 200  SKIPPED
+  stemr_killer                        n= 200  SKIPPED
+  huge_condition                      n= 200  SKIPPED
+  spike                               n= 200  SKIPPED
+  wilkinson_like                      n= 200  SKIPPED
+  two_clusters                        n= 200  SKIPPED
+  random_uniform                      n= 200  SKIPPED
+  diagonal_only                       n= 200  SKIPPED
+  constant                            n= 200  SKIPPED
+  all_equal_nontrivial                n= 200  SKIPPED
+  one_big_cluster                     n= 200  SKIPPED
+  arithmetic_progression              n= 200  ERROR: cannot reshape array of size 0 into shape (200,200)
+  many_near_zero                      n= 200  SKIPPED
+  random_dense_clusters               n= 200  SKIPPED
+  constant_d_graded_e                 n= 200  SKIPPED
+  random_clustered_5                  n= 200  SKIPPED
+  alternating_sign                    n= 200  SKIPPED
+  step_function                       n= 200  SKIPPED
+  three_clusters                      n= 200  SKIPPED
+  random_sparse_e                     n= 200  SKIPPED
+  chkbd                               n= 200  SKIPPED
+  marques_graded                      n= 200  SKIPPED
+  gl_abcon0                           n= 200  SKIPPED
+  gl_abcon1                           n= 200  SKIPPED
+  gl_abcon2                           n= 200  ERROR: unpack requires a buffer of 4 bytes
+  gl_abcon3                           n= 200  SKIPPED
+  gl_random                           n= 200  SKIPPED
+  gl_gradp                            n= 200  SKIPPED
+  gl_gradm                            n= 200  SKIPPED
+  gl_wilkp                            n= 200  SKIPPED
+  gl_wilkm                            n= 200  SKIPPED
+  gl_wilkw                            n= 200  SKIPPED
+  gl_wilk2w                           n= 200  SKIPPED
+  gl_clement                          n= 200  SKIPPED
+  gl_gro0                             n= 200  SKIPPED
+  gl_gro1                             n= 200  ERROR: cannot reshape array of size 10 into shape (200,200)
+  gl_gro2                             n= 200  SKIPPED
+  gl_gro3                             n= 200  SKIPPED
+  gl_bwilkp                           n= 200  SKIPPED
+  gl_ones                             n= 200  SKIPPED
+  gl_uniform_eps                      n= 200  SKIPPED
+  gl_uniform_sqrteps                  n= 200  SKIPPED
+  gl_uniform_eps_to_1                 n= 200  SKIPPED
+  gl_geometric_eps_to_1               n= 200  SKIPPED
+  gl_random_spectrum                  n= 200  SKIPPED
+  gl_clustered_at_1                   n= 200  ERROR: cannot reshape array of size 11063 into shape (200,200)
+  gl_clustered_at_pm1                 n= 200  SKIPPED
+  gl_clustered_at_eps                 n= 200  SKIPPED
+  gl_clustered_at_pmeps               n= 200  SKIPPED
+  demmel_S1pe                         n= 200  SKIPPED
+  demmel_S1ps                         n= 200  SKIPPED
+  demmel_S2pe                         n= 200  SKIPPED
+  demmel_S2ps                         n= 200  SKIPPED
+  demmel_W1                           n= 200  SKIPPED
+  demmel_W2                           n= 200  SKIPPED
+  demmel_W3                           n= 200  SKIPPED
+  demmel_G1                           n= 200  SKIPPED
+  demmel_G1s                          n= 200  SKIPPED
+  demmel_U1                           n= 200  SKIPPED
+  demmel_U1s                          n= 200  SKIPPED
+  wilkinson_exact                     n= 200  SKIPPED
+  glued_wilkinson                     n= 200  SKIPPED
+  glued_wilkinson_tight               n= 200  SKIPPED
+  wl_example48                        n= 200  SKIPPED
+  pd_T0                               n= 200  SKIPPED
+  pd_T1                               n= 200  SKIPPED
+  zero_diagonal                       n= 200  SKIPPED
+  single_element                      n= 200  SKIPPED
+  near_overflow                       n= 200  SKIPPED
+  near_underflow                      n= 200  SKIPPED
+  mixed_signs                         n= 200  SKIPPED
+  checkerboard                        n= 200  SKIPPED
+  exponential_graded_k4               n= 200  SKIPPED
+  exponential_graded_k8               n= 200  SKIPPED
+  exponential_graded_k12              n= 200  SKIPPED
+  stemr_killer_k5                     n= 200  SKIPPED
+  stemr_killer_k10                    n= 200  SKIPPED
+  huge_condition_k5                   n= 200  SKIPPED
+  huge_condition_k10                  n= 200  SKIPPED
+  demmel_G1_k4                        n= 200  SKIPPED
+  demmel_G1_k8                        n= 200  SKIPPED
+  demmel_G1_k12                       n= 200  SKIPPED
+  demmel_S1pe_k4                      n= 200  SKIPPED
+  demmel_S1pe_k8                      n= 200  SKIPPED
+  chkbd_4                             n= 200  SKIPPED
+  chkbd_16                            n= 200  SKIPPED
+  marques_graded_k4                   n= 200  SKIPPED
+  marques_graded_k8                   n= 200  SKIPPED
+
+============================================================
+TOTAL: 16/293 passed (5.5%)
+dense:dlatms_mode1_eps@10                            10     0.200     0.200     0.200   1.00e+00  7.907e-06  1.152e-05 30/30  PASS  
+dense:dlatms_mode1_eps@100                          100     0.000     0.000     0.000   1.00e+00  1.085e-04  5.073e-04 30/30  PASS  
+dense:dlatms_mode1_eps@200                          200     0.000     0.000     0.000   1.00e+00  5.423e-04  1.638e-03 30/30  PASS  
+dense:dlatms_mode1_eps@400                          400     0.000     0.000     0.000   1.00e+00  2.851e-03  3.396e-03 30/30  PASS  
+dense:dlatms_mode2_eps@10                            10     0.300     0.700     0.700   0.00e+00  2.666e-05  3.314e-06 30/30  PASS  
+dense:dlatms_mode2_eps@100                          100     0.100     1.000     1.100   2.55e-16  1.260e-03  1.216e-05 30/30  PASS  
+dense:dlatms_mode2_eps@200                          200     0.000     0.600     0.600   2.60e-16  2.497e-03  1.761e-05 30/30  PASS  
+dense:dlatms_mode2_eps@400                          400     0.000     1.100     1.100   2.22e-16  1.079e-02  3.201e-05 18/30  PASS  
+dense:dlatms_mode3_eps@10                            10     0.100     0.200     0.300   0.00e+00  1.096e-05  4.072e-06 30/30  PASS  
+dense:dlatms_mode3_eps@100                          100     0.000     0.100     0.200   2.91e-02  4.896e-04  9.144e-05 30/30  PASS  
+dense:dlatms_mode3_eps@200                          200     0.000     0.200     0.200   1.22e-01  2.136e-03  3.251e-04 30/30  PASS  
+dense:dlatms_mode3_eps@400                          400     0.000     0.300     0.300   8.20e-02  1.046e-02  1.416e-03 19/30  PASS  
+dense:dlatms_mode4_eps@10                            10     0.300     0.900     1.000   0.00e+00  1.334e-05  7.698e-06 30/30  PASS  
+dense:dlatms_mode4_eps@100                          100     0.200     1.900     1.900   0.00e+00  7.013e-04  2.553e-04 30/30  PASS  
+dense:dlatms_mode4_eps@200                          200     0.200     4.500     4.500   0.00e+00  2.846e-03  9.158e-04 30/30  PASS  
+dense:dlatms_mode4_eps@400                          400     0.100     5.300     5.300   0.00e+00  1.297e-02  4.017e-03 16/30  FAIL  
+dense:dlatms_mode5_random@10                         10     0.100     0.600     0.600   0.00e+00  1.480e-05  4.227e-06 30/30  PASS  
+dense:dlatms_mode5_random@100                       100     0.000     4.400     4.400   0.00e+00  5.191e-04  7.012e-05 30/30  PASS  
+dense:dlatms_mode5_random@200                       200     0.000     1.500     1.500   0.00e+00  2.036e-03  2.241e-04 30/30  PASS  
+dense:dlatms_mode5_random@400                       400     0.000     2.200     2.200   6.47e-02  1.024e-02  8.306e-04 19/30  PASS  
+dense:dense_three_clusters@10                        10 450359962737049.625     0.716 450359962737049.625   1.00e+00  2.259e-05  4.792e-06 30/30  FAIL  
+dense:dense_three_clusters@100                      100     0.000     1.100     1.100   1.00e+00  1.498e-03  8.534e-05 30/30  PASS  
+dense:dense_three_clusters@200                      200     0.000     1.000     1.000   1.00e+00  6.335e-03  3.884e-04 30/30  PASS  
+dense:dense_three_clusters@400                      400     0.000     4.400     4.300   1.00e+00  3.270e-02  1.639e-03  7/30  PASS  
+dense:dense_one_tight_cluster@10                     10     0.500     1.000     0.700   0.00e+00  1.883e-05  3.420e-06 30/30  PASS  
+dense:dense_one_tight_cluster@100                   100     0.500     0.900     0.800   0.00e+00  9.388e-04  8.830e-06 30/30  PASS  
+dense:dense_one_tight_cluster@200                   200     0.400     0.600     0.600   0.00e+00  5.861e-03  2.258e-05 30/30  PASS  
+dense:dense_one_tight_cluster@400                   400     0.100     1.800     1.800   2.22e-16  2.010e-02  1.848e-03 10/30  PASS  
+dense:dense_half_rank@10                             10     0.200     0.200     0.200   1.00e+00  7.843e-06  5.032e-06 30/30  PASS  
+dense:dense_half_rank@100                           100     0.000     0.100     0.100   1.00e+00  2.172e-04  1.015e-04 30/30  PASS  
+dense:dense_half_rank@200                           200     0.000     0.200     0.200   1.00e+00  9.223e-04  3.786e-04 30/30  PASS  
+dense:dense_half_rank@400                           400     0.000     0.400     0.400   1.00e+00  4.658e-03  1.613e-03 30/30  PASS  
+dense:dense_repeated_sv@10                           10     0.300     0.700     0.500   1.00e+00  2.504e-05  5.902e-06 30/30  PASS  
+dense:dense_repeated_sv@100                         100 16978.571     2.540 40577432642608.172   1.00e+00  1.268e-03  9.624e-05 30/30  FAIL  
+dense:dense_repeated_sv@200                         200     0.000    10.700    10.700   1.00e+00  5.776e-03  3.520e-04 30/30  FAIL  
+dense:dense_repeated_sv@400                         400     0.000     5.300     5.300   1.00e+00  2.980e-02  1.422e-03  7/30  FAIL  
+dense:dense_hilbert@10                               10     0.100     0.200     0.300   0.00e+00  1.541e-05  6.058e-06 30/30  PASS  
+dense:dense_hilbert@100                             100     0.000     0.000     0.000   1.00e+00  1.232e-04  1.620e-04 30/30  PASS  
+dense:dense_hilbert@200                             200     0.000     0.000     0.000   1.00e+00  4.688e-04  6.716e-04 30/30  PASS  
+dense:dense_hilbert@400                             400     0.000     0.000     0.000   1.00e+00  2.349e-03  3.183e-03 30/30  PASS  
+dense:dense_kahan@10                                 10     0.400     1.700     1.500   0.00e+00  1.848e-05  8.550e-06 30/30  PASS  
+dense:dense_kahan@100                               100     0.000     1.700     1.800   0.00e+00  5.927e-04  1.759e-04 30/30  PASS  
+dense:dense_kahan@200                               200     0.000     0.900     0.900   0.00e+00  2.499e-03  6.178e-04 30/30  PASS  
+dense:dense_kahan@400                               400     0.000     0.800     0.800   0.00e+00  1.030e-02  2.156e-03 19/30  PASS  
+dense:dense_condition_1e20@10                        10     0.100     0.200     0.300   1.00e+00  9.762e-06  4.359e-06 30/30  PASS  
+dense:dense_condition_1e20@100                      100     0.000     0.100     0.100   1.00e+00  3.557e-04  7.453e-05 30/30  PASS  
+dense:dense_condition_1e20@200                      200     0.000     0.200     0.200   1.00e+00  1.506e-03  2.723e-04 30/30  PASS  
+dense:dense_condition_1e20@400                      400     0.000     0.300     0.300   1.00e+00  7.334e-03  1.163e-03 27/30  PASS  
+dense:dense_wilkinson_sv@10                           9     0.200     0.800     0.900   0.00e+00  1.848e-05  7.265e-06 30/30  PASS  
+dense:dense_wilkinson_sv@100                         99     0.200     4.900     4.900   0.00e+00  2.940e-03  3.153e-04 30/30  PASS  
+dense:dense_wilkinson_sv@200                        199     0.100     7.400     7.300   0.00e+00  1.252e-02  1.107e-03 16/30  FAIL  
+dense:dense_wilkinson_sv@400                        399     0.100     7.100     7.200   0.00e+00  5.799e-02  4.653e-03  4/30  FAIL  
+dense:dense_wl_example41@10                          10     0.100     0.100     0.200   0.00e+00  1.024e-05  4.841e-06 30/30  PASS  
+dense:dense_wl_example41@100                        100     0.000     0.100     0.100   1.00e+00  1.837e-04  1.457e-04 30/30  PASS  
+dense:dense_wl_example41@200                        200     0.000     0.000     0.000   1.00e+00  5.098e-04  6.812e-04 30/30  PASS  
+dense:dense_wl_example41@400                        400     0.000     0.800     0.800   1.00e+00  2.361e-03  3.245e-03 30/30  PASS  
+dense:dense_near_overflow@10                         10     0.000     0.200     0.300   0.00e+00  1.085e-05  5.885e-06 30/30  PASS  
+dense:dense_near_overflow@100                       100     0.000     0.200     0.200   0.00e+00  5.252e-04  1.136e-04 30/30  PASS  
+dense:dense_near_overflow@200                       200     0.000     0.500     0.400   0.00e+00  2.178e-03  4.373e-04 30/30  PASS  
+dense:dense_near_overflow@400                       400     0.000     0.800     0.800   0.00e+00  9.889e-03  1.922e-03 20/30  PASS  
+dense:dense_near_underflow@10                        10     0.100     0.200     0.300   0.00e+00  1.367e-05  4.844e-06 30/30  PASS  
+dense:dense_near_underflow@100                      100     0.100     0.200     0.200   0.00e+00  5.204e-04  1.155e-04 30/30  PASS  
+dense:dense_near_underflow@200                      200     0.000     0.400     0.400   0.00e+00  2.193e-03  4.439e-04 30/30  PASS  
+dense:dense_near_underflow@400                      400     0.000     0.700     0.700   0.00e+00  9.907e-03  1.929e-03 20/30  PASS  
+dense:dense_random@10                                10     0.200     0.700     0.700   0.00e+00  1.275e-05  6.774e-06 30/30  PASS  
+dense:dense_random@100                              100     0.200     9.200     9.200   0.00e+00  6.932e-04  2.608e-04 30/30  FAIL  
+dense:dense_random@200                              200     0.100     6.300     6.300   0.00e+00  2.806e-03  9.445e-04 30/30  FAIL  
+dense:dense_random@400                              400     0.100    11.500    11.400   0.00e+00  1.492e-02  4.070e-03 14/30  FAIL  
+dense:dense_vandermonde@10                           10     0.300     0.200     0.300   0.00e+00  1.410e-05  8.260e-06 30/30  PASS  
+dense:dense_vandermonde@100                         100     0.000     0.100     0.000   1.00e+00  2.250e-04  6.693e-05 30/30  PASS  
+dense:dense_vandermonde@200                         200     0.000     0.000     0.000   1.00e+00  5.966e-04  3.471e-04 30/30  PASS  
+dense:dense_vandermonde@400                         400     0.000     0.000     0.000   1.00e+00  2.602e-03  1.930e-03 30/30  PASS  
+dense:dense_toeplitz@10                              10     0.200     0.500     0.500   0.00e+00  1.239e-05  5.984e-06 30/30  PASS  
+dense:dense_toeplitz@100                            100     0.000     9.000     9.000   0.00e+00  5.999e-04  1.494e-04 30/30  FAIL  
+dense:dense_toeplitz@200                            200     0.000     4.100     4.100   0.00e+00  2.498e-03  5.448e-04 30/30  PASS  
+dense:dense_toeplitz@400                            400     0.000     3.800     3.800   0.00e+00  1.204e-02  2.354e-03 17/30  PASS  
+dense:dense_frank@10                                 10     0.200     0.600     0.600   0.00e+00  1.199e-05  6.844e-06 30/30  PASS  
+dense:dense_frank@100                               100     0.000     9.200     9.200   0.00e+00  6.055e-04  1.520e-04 30/30  FAIL  
+dense:dense_frank@200                               200     0.000     5.800     5.800   0.00e+00  2.524e-03  5.512e-04 30/30  FAIL  
+dense:dense_frank@400                               400     0.000     4.500     4.500   0.00e+00  1.204e-02  2.354e-03 17/30  PASS  
+dense:dense_companion_exp@10                         10     0.300     0.600     0.500   1.11e-16  1.595e-05  4.582e-06 30/30  PASS  
+dense:dense_companion_exp@100                       100     0.000     0.800     0.700   4.44e-16  2.417e-04  1.136e-05 30/30  PASS  
+dense:dense_companion_exp@200                       200     0.000     0.000     0.000   0.00e+00  3.460e-04  2.308e-06 30/30  PASS  
+dense:dense_companion_exp@400                       400     0.000     0.000     0.000   0.00e+00  1.412e-03  4.126e-06 30/30  PASS  
+dense:dense_moler_like@10                            10     0.200     1.800     1.800   0.00e+00  2.002e-05  1.007e-05 30/30  PASS  
+dense:dense_moler_like@100                          100     0.200     5.400     5.500   0.00e+00  1.324e-03  5.430e-04 30/30  FAIL  
+dense:dense_moler_like@200                          200     0.100    14.700    14.600   0.00e+00  6.449e-03  2.372e-03 30/30  FAIL  
+dense:dense_moler_like@400                          400     0.100    13.200    13.200   0.00e+00  2.751e-02  9.288e-03  8/22  FAIL  
+paper:glued_wilk_3x21_sqrteps                        63     0.200    48.100    48.100   0.00e+00  1.312e-03  1.274e-04 30/30  FAIL  
+paper:glued_wilk_5x21_sqrteps                       105     0.100   552.400   552.400   0.00e+00  3.291e-03  2.993e-04 30/30  FAIL  
+paper:glued_wilk_3x21_1e14                           63     0.200    19.500    19.400   0.00e+00  1.636e-03  6.099e-05 30/30  FAIL  
+paper:glued_wilk_10x11_sqrteps                      110     0.000     0.500     0.500   0.00e+00  2.214e-03  2.687e-04 30/30  PASS  
+paper:exponential_graded_glued_small@10               9     0.400     0.300     0.700   0.00e+00  3.506e-05  4.909e-06 30/30  PASS  
+paper:exponential_graded_glued_small@100             99     0.100     9.900     9.800   0.00e+00  4.890e-03  8.840e-05 30/30  FAIL  
+paper:exponential_graded_glued_small@200            198     0.000     0.000     0.000   1.00e+00  1.061e-03  2.900e-04 30/30  PASS  
+paper:exponential_graded_glued_small@400            399     0.000     0.100     0.100   1.00e+00  5.266e-03  9.167e-04 30/30  PASS  
+paper:exponential_graded_glued_medium@10             10     0.300     0.100     0.500   0.00e+00  2.530e-05  5.165e-06 30/30  PASS  
+paper:exponential_graded_glued_medium@100           100     0.000     0.000     0.100   1.00e+00  2.991e-04  9.091e-05 30/30  PASS  
+paper:exponential_graded_glued_medium@200           200     0.000     0.100     0.100   1.00e+00  1.275e-03  2.959e-04 30/30  PASS  
+paper:exponential_graded_glued_medium@400           400     0.000     0.100     0.100   1.00e+00  5.983e-03  1.069e-03 30/30  PASS  
+paper:stemr_killer_glued_small@10                     9     0.400     0.400     0.500   0.00e+00  4.527e-05  7.463e-06 30/30  PASS  
+paper:stemr_killer_glued_small@100                   99     0.000     0.000     0.000   1.00e+00  1.983e-04  7.018e-05 30/30  PASS  
+paper:stemr_killer_glued_small@200                  198     0.000     0.000     0.000   1.00e+00  9.414e-04  2.316e-04 30/30  PASS  
+paper:stemr_killer_glued_small@400                  399     0.000     0.000     0.000   1.00e+00  4.554e-03  9.031e-04 30/30  PASS  
+paper:constant_glued_small@10                         9     0.400     0.500     1.000   4.24e-16  7.246e-06  2.741e-06 30/30  PASS  
+paper:constant_glued_small@100                       99     0.000     0.000     0.000   3.54e-15  1.021e-04  8.458e-06 30/30  PASS  
+paper:constant_glued_small@200                      198     0.000     0.200     0.200   7.35e-15  5.123e-04  1.454e-05 30/30  PASS  
+paper:constant_glued_small@400                      399     0.000     0.000     0.000   0.00e+00  2.688e-03  2.736e-05 30/30  PASS  
+paper:all_equal_nontrivial_glued_small@10             9     0.300     1.100     1.100   0.00e+00  2.736e-05  4.100e-06 30/30  PASS  
+paper:all_equal_nontrivial_glued_small@100           99     0.000    35.300    35.300   0.00e+00  3.027e-03  2.564e-04 30/30  FAIL  
+paper:all_equal_nontrivial_glued_small@200          198     0.100     6.800     6.800   0.00e+00  1.240e-02  9.186e-04 17/30  FAIL  
+paper:all_equal_nontrivial_glued_small@400          399     0.000     7.200     7.200   0.00e+00  5.308e-02  3.567e-03  4/30  FAIL  
+paper:demmel_S1pe_glued_small@10                      9     0.100     0.200     0.200   1.00e+00  8.084e-06  7.398e-06 30/30  PASS  
+paper:demmel_S1pe_glued_small@100                    99     0.000     0.000     0.000   1.00e+00  1.063e-04  3.262e-04 30/30  PASS  
+paper:demmel_S1pe_glued_small@200                   198     0.000     0.000     0.000   1.00e+00  5.281e-04  1.128e-03 30/30  PASS  
+paper:demmel_S1pe_glued_small@400                   399     0.000     0.000     0.000   1.00e+00  3.268e-03  4.141e-03 30/30  PASS  
+paper:pd_T0_glued_medium@10                          10     0.100     0.400     0.400   0.00e+00  3.548e-05  8.188e-06 30/30  PASS  
+paper:pd_T0_glued_medium@100                        100     0.200     1.400     1.400   0.00e+00  3.015e-03  3.850e-04 30/30  PASS  
+paper:pd_T0_glued_medium@200                        200     0.000     0.600     0.600   0.00e+00  1.312e-02  1.493e-03 16/30  PASS  
+paper:pd_T0_glued_medium@400                        400     0.000     0.300     0.300   0.00e+00  5.483e-02  5.950e-03  4/30  PASS  
+paper:chkbd_glued_small@10                            9     0.500     2.500     2.500   0.00e+00  3.621e-05  5.054e-06 30/30  PASS  
+paper:chkbd_glued_small@100                          99     0.000     0.000     0.000   1.00e+00  1.176e-04  3.063e-05 30/30  PASS  
+paper:chkbd_glued_small@200                         198     0.000     0.000     0.000   1.00e+00  5.516e-04  5.057e-05 30/30  PASS  
+paper:chkbd_glued_small@400                         399     0.000     0.000     0.000   1.00e+00  2.788e-03  5.109e-05 30/30  PASS  
+paper:chkbd_lapack_general@10                        10     0.100     0.200     0.200   1.00e+00  7.119e-06  2.700e-06 30/30  PASS  
+paper:chkbd_lapack_general@100                      100     0.000     0.000     0.000   1.00e+00  1.001e-04  1.974e-05 30/30  PASS  
+paper:chkbd_lapack_general@200                      200     0.000     0.000     0.000   1.00e+00  4.560e-04  3.352e-05 30/30  PASS  
+paper:chkbd_lapack_general@400                      400     0.000     0.000     0.000   1.00e+00  2.575e-03  8.577e-05 30/30  PASS  
+paper:gl_gro0_proper@10                              10     0.100     0.200     0.200   1.00e+00  4.043e-06  7.104e-06 30/30  PASS  
+paper:gl_gro0_proper@100                            100     0.000     0.000     0.000   1.00e+00  1.002e-04  1.969e-04 30/30  PASS  
+paper:gl_gro0_proper@200                            200     0.000     0.000     0.000   1.00e+00  3.977e-04  7.222e-04 30/30  PASS  
+paper:gl_gro0_proper@400                            400     0.000     0.000     0.000   1.00e+00  2.058e-03  2.769e-03 30/30  PASS  
+paper:gl_gro1_proper@10                              10     0.100     0.200     0.200   1.00e+00  5.810e-06  6.486e-06 30/30  PASS  
+paper:gl_gro1_proper@100                            100     0.000     0.000     0.000   1.00e+00  1.080e-04  1.942e-04 30/30  PASS  
+paper:gl_gro1_proper@200                            200     0.000     0.000     0.000   1.00e+00  4.133e-04  7.238e-04 30/30  PASS  
+paper:gl_gro1_proper@400                            400     0.000     0.000     0.000   1.00e+00  2.066e-03  2.759e-03 30/30  PASS  
+paper:gl_gro2_proper@10                              10     0.100     0.200     0.200   1.00e+00  5.788e-06  5.888e-06 30/30  PASS  
+paper:gl_gro2_proper@100                            100     0.000     0.000     0.000   1.00e+00  9.603e-05  1.875e-04 30/30  PASS  
+paper:gl_gro2_proper@200                            200     0.000     0.000     0.000   1.00e+00  4.082e-04  7.043e-04 30/30  PASS  
+paper:gl_gro2_proper@400                            400     0.000     0.000     0.000   1.00e+00  2.174e-03  2.738e-03 30/30  PASS  
+paper:gl_gro3_proper@10                              10     0.200     0.200     0.200   1.00e+00  8.520e-06  5.841e-06 30/30  PASS  
+paper:gl_gro3_proper@100                            100     0.000     0.000     0.000   1.00e+00  1.080e-04  1.773e-04 30/30  PASS  
+paper:gl_gro3_proper@200                            200     0.000     0.000     0.000   1.00e+00  4.163e-04  7.030e-04 30/30  PASS  
+paper:gl_gro3_proper@400                            400     0.000     0.000     0.000   1.00e+00  2.074e-03  2.742e-03 30/30  PASS  
+paper:gl_abcon1_proper@10                            10     0.200     0.700     0.700   0.00e+00  1.446e-05  9.477e-06 30/30  PASS  
+paper:gl_abcon1_proper@100                          100     0.200     7.800     7.800   0.00e+00  6.997e-04  2.062e-04 30/30  FAIL  
+paper:gl_abcon1_proper@200                          200     0.100     5.400     5.400   0.00e+00  2.927e-03  7.006e-04 30/30  FAIL  
+paper:gl_abcon1_proper@400                          400     0.100    10.200    10.200   0.00e+00  1.288e-02  2.640e-03 16/30  FAIL  
+paper:gl_abcon2_proper@10                            10     0.200     1.200     1.100   0.00e+00  1.614e-05  8.281e-06 30/30  PASS  
+paper:gl_abcon2_proper@100                          100     0.100     7.400     7.400   0.00e+00  7.119e-04  2.044e-04 30/30  FAIL  
+paper:gl_abcon2_proper@200                          200     0.100     7.400     7.400   0.00e+00  3.204e-03  6.955e-04 30/30  FAIL  
+paper:gl_abcon2_proper@400                          400     0.200    13.400    13.300   0.00e+00  1.402e-02  2.630e-03 15/30  FAIL  
+paper:gl_abcon3_proper@10                            10     0.300     1.700     1.600   0.00e+00  1.653e-05  8.439e-06 30/30  PASS  
+paper:gl_abcon3_proper@100                          100     0.100     7.200     7.100   0.00e+00  7.715e-04  1.972e-04 30/30  FAIL  
+paper:gl_abcon3_proper@200                          200     0.100     6.800     6.800   0.00e+00  3.109e-03  7.537e-04 30/30  FAIL  
+paper:gl_abcon3_proper@400                          400     0.200    10.900    10.900   0.00e+00  1.355e-02  2.836e-03 15/30  FAIL  
+paper:marques_stexr_10                               10     0.100     9.900     9.800   0.00e+00  2.057e-05  7.333e-06 30/30  FAIL  
+paper:marques_stexr_20                               20     0.100     2.100     2.100   0.00e+00  5.722e-05  1.462e-05 30/30  PASS  
+paper:marques_stexr_50                               50     0.100     9.200     9.300   0.00e+00  2.920e-04  8.761e-05 30/30  FAIL  
+paper:wilkinson_cholesky_m10                         21     0.300     2.900     2.800   0.00e+00  1.173e-04  2.369e-05 30/30  PASS  
+paper:wilkinson_cholesky_m50                        101     0.000     0.700     0.700   0.00e+00  2.999e-03  3.176e-04 30/30  PASS  
+paper:legendre_bidiag@10                             10     0.300     3.600     3.700   0.00e+00  1.484e-05  7.794e-06 30/30  PASS  
+paper:legendre_bidiag@100                           100     0.100     6.300     6.300   0.00e+00  7.088e-04  2.072e-04 30/30  FAIL  
+paper:legendre_bidiag@200                           200     0.100    11.400    11.400   0.00e+00  2.858e-03  7.004e-04 30/30  FAIL  
+paper:legendre_bidiag@400                           400     0.200    11.900    11.900   0.00e+00  1.257e-02  2.817e-03 16/30  FAIL  
+paper:laguerre_bidiag@10                             10     0.200     0.400     0.500   0.00e+00  1.327e-05  6.087e-06 30/30  PASS  
+paper:laguerre_bidiag@100                           100     0.200     2.300     2.300   0.00e+00  6.038e-04  1.925e-04 30/30  PASS  
+paper:laguerre_bidiag@200                           200     0.100     3.300     3.300   0.00e+00  2.457e-03  7.008e-04 30/30  PASS  
+paper:laguerre_bidiag@400                           400     0.100     3.600     3.600   0.00e+00  1.026e-02  2.650e-03 20/30  PASS  
+paper:hermite_bidiag@10                              10     0.300     1.700     1.800   0.00e+00  1.380e-05  7.914e-06 30/30  PASS  
+paper:hermite_bidiag@100                            100     0.100     3.600     3.600   0.00e+00  6.382e-04  1.991e-04 30/30  PASS  
+paper:hermite_bidiag@200                            200     0.100     3.100     3.100   0.00e+00  2.614e-03  7.430e-04 30/30  PASS  
+paper:hermite_bidiag@400                            400     0.000     3.300     3.300   0.00e+00  1.051e-02  2.648e-03 19/30  PASS  
+paper:demmel_S1pe_k16@10                             10     0.000     0.200     0.200   1.00e+00  4.425e-06  7.752e-06 30/30  PASS  
+paper:demmel_S1pe_k16@100                           100     0.000     0.000     0.000   1.00e+00  9.831e-05  2.061e-04 30/30  PASS  
+paper:demmel_S1pe_k16@200                           200     0.000     0.000     0.000   1.00e+00  3.875e-04  6.977e-04 30/30  PASS  
+paper:demmel_S1pe_k16@400                           400     0.000     0.000     0.000   1.00e+00  1.829e-03  2.634e-03 30/30  PASS  
+paper:wl_element_growth@10                           10     0.100     0.200     0.100   1.00e+00  4.197e-06  2.992e-06 30/30  PASS  
+paper:wl_element_growth@100                         100     0.000     0.000     0.000   1.00e+00  1.003e-04  8.208e-06 30/30  PASS  
+paper:wl_element_growth@200                         200     0.000     0.000     0.000   1.00e+00  4.121e-04  1.549e-05 30/30  PASS  
+paper:wl_element_growth@400                         400     0.000     0.000     0.000   1.00e+00  2.062e-03  2.809e-05 30/30  PASS  
+paper:random_zero_e_10pct@10                         10     0.300    12.100    12.200   0.00e+00  1.213e-05  7.220e-06 30/30  FAIL  
+paper:random_zero_e_10pct@100                       100     0.000     2.300     2.300   8.46e-16  1.968e-04  6.677e-05 30/30  PASS  
+paper:random_zero_e_10pct@200                       200     0.000     0.100     0.100   6.63e-16  7.168e-04  1.507e-04 30/30  PASS  
+paper:random_zero_e_10pct@400                       400     0.000     0.200     0.300   1.04e-15  2.705e-03  3.018e-04 30/30  PASS  
+paper:random_zero_e_50pct@10                         10     0.100     0.200     0.200   1.73e-16  5.790e-06  2.480e-06 30/30  PASS  
+paper:random_zero_e_50pct@100                       100     0.000     0.000     0.000   4.56e-16  9.962e-05  9.045e-06 30/30  PASS  
+paper:random_zero_e_50pct@200                       200     0.000     0.000     0.000   5.82e-16  5.030e-04  1.533e-05 30/30  PASS  
+paper:random_zero_e_50pct@400                       400     0.000     0.000     0.000   4.16e-16  2.556e-03  2.934e-05 30/30  PASS  
+paper:bidiag_coupling_failure@10                     10     0.000     1.900     1.700   0.00e+00  1.265e-05  6.415e-06 30/30  PASS  
+paper:bidiag_coupling_failure@100                   100     0.000    10.300    10.300   0.00e+00  7.060e-04  1.967e-04 30/30  FAIL  
+paper:bidiag_coupling_failure@200                   200     0.000     5.400     5.400   0.00e+00  2.911e-03  7.197e-04 30/30  FAIL  
+paper:bidiag_coupling_failure@400                   400     0.000     6.500     6.500   0.00e+00  1.250e-02  2.768e-03 16/30  FAIL  
+paper:dhillon_uniform_sqrteps_apart@10               10     0.200     0.500     0.600   0.00e+00  2.704e-05  1.061e-05 30/30  PASS  
+paper:dhillon_uniform_sqrteps_apart@100             100     0.000     0.700     0.700   0.00e+00  1.328e-03  2.940e-04 30/30  PASS  
+paper:dhillon_uniform_sqrteps_apart@200             200     0.000     0.700     0.700   0.00e+00  5.141e-03  9.947e-04 30/30  PASS  
+paper:dhillon_uniform_sqrteps_apart@400             400     0.000     0.600     0.600   0.00e+00  2.292e-02  3.918e-03  9/30  PASS  
+paper:dhillon_121_toeplitz@10                        10     0.200     1.500     1.400   0.00e+00  1.475e-05  8.478e-06 30/30  PASS  
+paper:dhillon_121_toeplitz@100                      100     0.300    14.000    14.100   0.00e+00  6.819e-04  1.945e-04 30/30  FAIL  
+paper:dhillon_121_toeplitz@200                      200     0.100     6.700     6.700   0.00e+00  2.801e-03  6.889e-04 30/30  FAIL  
+paper:dhillon_121_toeplitz@400                      400     0.100     3.600     3.600   0.00e+00  1.248e-02  2.797e-03 16/30  PASS  
+paper:glued_wilk201_5x_sqrteps                     1005     0.000    11.100    11.100   0.00e+00  4.559e-01  2.447e-02  3/9   FAIL  
+paper:stcoll_evdist_type7@10                         10     0.100     1.700     1.200   0.00e+00  1.418e-05  7.373e-06 30/30  PASS  
+paper:stcoll_evdist_type7@100                       100     0.000     3.300     3.300   0.00e+00  7.084e-04  2.701e-04 30/30  PASS  
+paper:stcoll_evdist_type7@200                       200     0.000     5.200     5.200   0.00e+00  2.740e-03  9.221e-04 30/30  FAIL  
+paper:stcoll_evdist_type7@400                       400     0.000     5.000     5.000   0.00e+00  1.263e-02  4.042e-03 16/30  PASS  
+paper:stcoll_evdist_type8@10                         10     0.100     0.300     0.300   0.00e+00  3.403e-05  1.520e-05 30/30  PASS  
+paper:stcoll_evdist_type8@100                       100     0.000     0.400     0.400   0.00e+00  1.320e-03  2.892e-04 30/30  PASS  
+paper:stcoll_evdist_type8@200                       200     0.000     0.700     0.700   0.00e+00  5.124e-03  9.681e-04 30/30  PASS  
+paper:stcoll_evdist_type8@400                       400     0.000     0.600     0.600   0.00e+00  2.304e-02  4.022e-03  9/30  PASS  
+paper:stcoll_evdist_type9@10                         10     0.400     0.600     0.700   0.00e+00  3.621e-05  9.078e-06 30/30  PASS  
+paper:stcoll_evdist_type9@100                       100     0.100     2.700     2.700   0.00e+00  2.205e-03  3.224e-04 30/30  PASS  
+paper:stcoll_evdist_type9@200                       200     0.100     3.000     3.000   0.00e+00  8.841e-03  1.163e-03 23/30  PASS  
+paper:stcoll_evdist_type9@400                       400     0.100     2.800     2.800   0.00e+00  3.961e-02  4.928e-03  6/30  PASS  
+paper:skew_wilk21_g1                                 21     0.300     2.900     2.800   0.00e+00  1.180e-04  2.281e-05 30/30  PASS  
+paper:skew_wilk21_g1e3                               21     0.400     2.300     2.300   0.00e+00  9.005e-05  3.869e-05 30/30  PASS  
+paper:skew_wilk21_g1e6                               21     0.400     2.800     2.700   0.00e+00  9.920e-05  3.954e-05 30/30  PASS  
+paper:wilk21_gamma_1e4                               21     0.200     0.200     0.300   0.00e+00  1.545e-04  2.117e-05 30/30  PASS  
+paper:wilk21_gamma_1e8                               21     0.200     0.400     0.500   0.00e+00  1.416e-04  1.357e-05 30/30  PASS  
+paper:wilk21_gamma_1e14                              21     0.200     0.200     0.300   0.00e+00  3.689e-04  3.295e-06 30/30  PASS  
+paper:willems_block_ldl_edge@10                       8     0.200     0.200     0.200   1.00e+00  5.899e-06  2.997e-06 30/30  PASS  
+paper:willems_block_ldl_edge@100                    100     0.000     0.000     0.000   1.00e+00  9.529e-05  1.623e-05 30/30  PASS  
+paper:willems_block_ldl_edge@200                    200     0.000     0.000     0.000   1.00e+00  4.690e-04  2.654e-05 30/30  PASS  
+paper:willems_block_ldl_edge@400                    400     0.000     0.000     0.000   1.00e+00  2.280e-03  4.488e-05 30/30  PASS  
+-----------------------------------------------------------------------------------------------------------------------------------------
+PASS: 179/224    (190.6s wall)
+
+Failing (45), sorted by max(ortU,ortV) desc:
+  dense:dense_three_clusters@10                    n=    10  res=450359962737049.625  ortU=     0.716  ortV=450359962737049.625    drift=1.00e+00  t_eval=2.26e-05  t_dbdsqr=4.79e-06
+  dense:dense_repeated_sv@100                      n=   100  res= 16978.571  ortU=     2.540  ortV=40577432642608.172    drift=1.00e+00  t_eval=1.27e-03  t_dbdsqr=9.62e-05
+  paper:glued_wilk_5x21_sqrteps                    n=   105  res=     0.100  ortU=   552.400  ortV=   552.400    drift=0.00e+00  t_eval=3.29e-03  t_dbdsqr=2.99e-04
+  paper:glued_wilk_3x21_sqrteps                    n=    63  res=     0.200  ortU=    48.100  ortV=    48.100    drift=0.00e+00  t_eval=1.31e-03  t_dbdsqr=1.27e-04
+  paper:all_equal_nontrivial_glued_small@100       n=    99  res=     0.000  ortU=    35.300  ortV=    35.300    drift=0.00e+00  t_eval=3.03e-03  t_dbdsqr=2.56e-04
+  paper:glued_wilk_3x21_1e14                       n=    63  res=     0.200  ortU=    19.500  ortV=    19.400    drift=0.00e+00  t_eval=1.64e-03  t_dbdsqr=6.10e-05
+  dense:dense_moler_like@200                       n=   200  res=     0.100  ortU=    14.700  ortV=    14.600    drift=0.00e+00  t_eval=6.45e-03  t_dbdsqr=2.37e-03
+  paper:dhillon_121_toeplitz@100                   n=   100  res=     0.300  ortU=    14.000  ortV=    14.100    drift=0.00e+00  t_eval=6.82e-04  t_dbdsqr=1.95e-04
+  paper:gl_abcon2_proper@400                       n=   400  res=     0.200  ortU=    13.400  ortV=    13.300    drift=0.00e+00  t_eval=1.40e-02  t_dbdsqr=2.63e-03
+  dense:dense_moler_like@400                       n=   400  res=     0.100  ortU=    13.200  ortV=    13.200    drift=0.00e+00  t_eval=2.75e-02  t_dbdsqr=9.29e-03
+  paper:random_zero_e_10pct@10                     n=    10  res=     0.300  ortU=    12.100  ortV=    12.200    drift=0.00e+00  t_eval=1.21e-05  t_dbdsqr=7.22e-06
+  paper:legendre_bidiag@400                        n=   400  res=     0.200  ortU=    11.900  ortV=    11.900    drift=0.00e+00  t_eval=1.26e-02  t_dbdsqr=2.82e-03
+  dense:dense_random@400                           n=   400  res=     0.100  ortU=    11.500  ortV=    11.400    drift=0.00e+00  t_eval=1.49e-02  t_dbdsqr=4.07e-03
+  paper:legendre_bidiag@200                        n=   200  res=     0.100  ortU=    11.400  ortV=    11.400    drift=0.00e+00  t_eval=2.86e-03  t_dbdsqr=7.00e-04
+  paper:glued_wilk201_5x_sqrteps                   n=  1005  res=     0.000  ortU=    11.100  ortV=    11.100    drift=0.00e+00  t_eval=4.56e-01  t_dbdsqr=2.45e-02
+  paper:gl_abcon3_proper@400                       n=   400  res=     0.200  ortU=    10.900  ortV=    10.900    drift=0.00e+00  t_eval=1.36e-02  t_dbdsqr=2.84e-03
+  dense:dense_repeated_sv@200                      n=   200  res=     0.000  ortU=    10.700  ortV=    10.700    drift=1.00e+00  t_eval=5.78e-03  t_dbdsqr=3.52e-04
+  paper:bidiag_coupling_failure@100                n=   100  res=     0.000  ortU=    10.300  ortV=    10.300    drift=0.00e+00  t_eval=7.06e-04  t_dbdsqr=1.97e-04
+  paper:gl_abcon1_proper@400                       n=   400  res=     0.100  ortU=    10.200  ortV=    10.200    drift=0.00e+00  t_eval=1.29e-02  t_dbdsqr=2.64e-03
+  paper:exponential_graded_glued_small@100         n=    99  res=     0.100  ortU=     9.900  ortV=     9.800    drift=0.00e+00  t_eval=4.89e-03  t_dbdsqr=8.84e-05
+  paper:marques_stexr_10                           n=    10  res=     0.100  ortU=     9.900  ortV=     9.800    drift=0.00e+00  t_eval=2.06e-05  t_dbdsqr=7.33e-06
+  paper:marques_stexr_50                           n=    50  res=     0.100  ortU=     9.200  ortV=     9.300    drift=0.00e+00  t_eval=2.92e-04  t_dbdsqr=8.76e-05
+  dense:dense_random@100                           n=   100  res=     0.200  ortU=     9.200  ortV=     9.200    drift=0.00e+00  t_eval=6.93e-04  t_dbdsqr=2.61e-04
+  dense:dense_frank@100                            n=   100  res=     0.000  ortU=     9.200  ortV=     9.200    drift=0.00e+00  t_eval=6.05e-04  t_dbdsqr=1.52e-04
+  dense:dense_toeplitz@100                         n=   100  res=     0.000  ortU=     9.000  ortV=     9.000    drift=0.00e+00  t_eval=6.00e-04  t_dbdsqr=1.49e-04
+  paper:gl_abcon1_proper@100                       n=   100  res=     0.200  ortU=     7.800  ortV=     7.800    drift=0.00e+00  t_eval=7.00e-04  t_dbdsqr=2.06e-04
+  dense:dense_wilkinson_sv@200                     n=   199  res=     0.100  ortU=     7.400  ortV=     7.300    drift=0.00e+00  t_eval=1.25e-02  t_dbdsqr=1.11e-03
+  paper:gl_abcon2_proper@100                       n=   100  res=     0.100  ortU=     7.400  ortV=     7.400    drift=0.00e+00  t_eval=7.12e-04  t_dbdsqr=2.04e-04
+  paper:gl_abcon2_proper@200                       n=   200  res=     0.100  ortU=     7.400  ortV=     7.400    drift=0.00e+00  t_eval=3.20e-03  t_dbdsqr=6.96e-04
+  dense:dense_wilkinson_sv@400                     n=   399  res=     0.100  ortU=     7.100  ortV=     7.200    drift=0.00e+00  t_eval=5.80e-02  t_dbdsqr=4.65e-03
+  paper:all_equal_nontrivial_glued_small@400       n=   399  res=     0.000  ortU=     7.200  ortV=     7.200    drift=0.00e+00  t_eval=5.31e-02  t_dbdsqr=3.57e-03
+  paper:gl_abcon3_proper@100                       n=   100  res=     0.100  ortU=     7.200  ortV=     7.100    drift=0.00e+00  t_eval=7.72e-04  t_dbdsqr=1.97e-04
+  paper:all_equal_nontrivial_glued_small@200       n=   198  res=     0.100  ortU=     6.800  ortV=     6.800    drift=0.00e+00  t_eval=1.24e-02  t_dbdsqr=9.19e-04
+  paper:gl_abcon3_proper@200                       n=   200  res=     0.100  ortU=     6.800  ortV=     6.800    drift=0.00e+00  t_eval=3.11e-03  t_dbdsqr=7.54e-04
+  paper:dhillon_121_toeplitz@200                   n=   200  res=     0.100  ortU=     6.700  ortV=     6.700    drift=0.00e+00  t_eval=2.80e-03  t_dbdsqr=6.89e-04
+  paper:bidiag_coupling_failure@400                n=   400  res=     0.000  ortU=     6.500  ortV=     6.500    drift=0.00e+00  t_eval=1.25e-02  t_dbdsqr=2.77e-03
+  dense:dense_random@200                           n=   200  res=     0.100  ortU=     6.300  ortV=     6.300    drift=0.00e+00  t_eval=2.81e-03  t_dbdsqr=9.45e-04
+  paper:legendre_bidiag@100                        n=   100  res=     0.100  ortU=     6.300  ortV=     6.300    drift=0.00e+00  t_eval=7.09e-04  t_dbdsqr=2.07e-04
+  dense:dense_frank@200                            n=   200  res=     0.000  ortU=     5.800  ortV=     5.800    drift=0.00e+00  t_eval=2.52e-03  t_dbdsqr=5.51e-04
+  dense:dense_moler_like@100                       n=   100  res=     0.200  ortU=     5.400  ortV=     5.500    drift=0.00e+00  t_eval=1.32e-03  t_dbdsqr=5.43e-04
+  paper:gl_abcon1_proper@200                       n=   200  res=     0.100  ortU=     5.400  ortV=     5.400    drift=0.00e+00  t_eval=2.93e-03  t_dbdsqr=7.01e-04
+  paper:bidiag_coupling_failure@200                n=   200  res=     0.000  ortU=     5.400  ortV=     5.400    drift=0.00e+00  t_eval=2.91e-03  t_dbdsqr=7.20e-04
+  dense:dlatms_mode4_eps@400                       n=   400  res=     0.100  ortU=     5.300  ortV=     5.300    drift=0.00e+00  t_eval=1.30e-02  t_dbdsqr=4.02e-03
+  dense:dense_repeated_sv@400                      n=   400  res=     0.000  ortU=     5.300  ortV=     5.300    drift=1.00e+00  t_eval=2.98e-02  t_dbdsqr=1.42e-03
+  paper:stcoll_evdist_type7@200                    n=   200  res=     0.000  ortU=     5.200  ortV=     5.200    drift=0.00e+00  t_eval=2.74e-03  t_dbdsqr=9.22e-04
+

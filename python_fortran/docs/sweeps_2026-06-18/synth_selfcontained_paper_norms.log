@@ -1,0 +1,1173 @@
+==================================================================================================================================
+BidiagonalSVD evaluation -- suite=synth  solver=selfcontained  norms=paper  synth-mode=paper
+==================================================================================================================================
+Solver:     self-contained-fortran-bidiagsvd / mr3gk_run (lab)
+Source:     python_fortran/self-contained-fortran-bidiagsvd/
+Metric:     Willems-Lang 2012 paper-norm (res=per-triplet 2-norm)
+Generator:  generate_synth  (self-contained-fortran-bidiagsvd/test_synth_pract.py:268)
+Thresholds: res<=7 n.eps,  ortU/ortV<=5 n.eps
+Timeout:    600.0s/matrix
+Reference:  DBDSQR (singular values only)  -- min-of-N adaptive bench, cache-flushed (32 MiB scratch)
+==================================================================================================================================
+
+Matrix                                                n       res      ortU      ortV   sv_drift     t_eval   t_dbdsqr reps  status  note
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+=== Adversarial Matrices (n=10) ===
+  exponential_graded                  n=  10  res=   0.754  ortU=   0.226  ortV=   0.100  t=0.0049s  PASS
+  glued_repeated                      n=  10  res=   0.800  ortU=   0.484  ortV=   0.479  t=0.0037s  PASS
+  saw_tooth                           n=  10  res=   0.784  ortU=   0.206  ortV=   0.195  t=0.0034s  PASS
+  stemr_killer                        n=  10  res=   0.754  ortU=   0.100  ortV=   0.450  t=0.0033s  PASS
+  huge_condition                      n=  10  res=   0.778  ortU=   0.400  ortV=   0.200  t=0.0033s  PASS
+  spike                               n=  10  res=   0.768  ortU=   0.296  ortV=   0.300  t=0.0033s  PASS
+  wilkinson_like                      n=  10  res=   0.600  ortU=   0.337  ortV=   0.364  t=0.0033s  PASS
+  two_clusters                        n=  10  res=   0.750  ortU=   0.154  ortV=   0.101  t=0.0034s  PASS
+  random_uniform                      n=  10  res=   0.743  ortU=   0.200  ortV=   0.250  t=0.0034s  PASS
+  diagonal_only                       n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0031s  PASS
+  constant                            n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0031s  PASS
+  all_equal_nontrivial                n=  10  res=   0.950  ortU=   0.571  ortV=   0.552  t=0.0034s  PASS
+  one_big_cluster                     n=  10  res=   1.100  ortU=   0.728  ortV=   0.801  t=0.0033s  PASS
+  arithmetic_progression              n=  10  res=   0.537  ortU=   0.270  ortV=   0.300  t=0.0034s  PASS
+  many_near_zero                      n=  10  res=   0.607  ortU=   0.150  ortV=   0.150  t=0.0033s  PASS
+  random_dense_clusters               n=  10  res=   0.905  ortU=   0.201  ortV=   0.300  t=0.0038s  PASS
+  constant_d_graded_e                 n=  10  res=   0.750  ortU=   0.150  ortV=   0.100  t=0.0036s  PASS
+  random_clustered_5                  n=  10  res=   0.707  ortU=   0.200  ortV=   0.150  t=0.0035s  PASS
+  alternating_sign                    n=  10  res=   1.150  ortU=   1.135  ortV=   1.139  t=0.0036s  PASS
+  step_function                       n=  10  res=   1.353  ortU=   0.986  ortV=   0.970  t=0.0038s  PASS
+  three_clusters                      n=  10  res=   0.795  ortU=   5.083  ortV=   5.078  t=0.0035s  FAIL
+  random_sparse_e                     n=  10  res=   0.799  ortU=   0.150  ortV=   0.200  t=0.0034s  PASS
+  chkbd                               n=  10  res=   0.754  ortU=   0.100  ortV=   0.450  t=0.0037s  PASS
+  marques_graded                      n=  10  res=   0.754  ortU=   0.100  ortV=   0.200  t=0.0036s  PASS
+  gl_abcon0                           n=  10  res=   0.800  ortU=   0.484  ortV=   0.479  t=0.0036s  PASS
+  gl_abcon1                           n=  10  res=   0.850  ortU=   1.186  ortV=   1.095  t=0.0037s  PASS
+  gl_abcon2                           n=  10  res=   0.640  ortU=   0.188  ortV=   0.154  t=0.0037s  PASS
+  gl_abcon3                           n=  10  res=   0.850  ortU=   1.207  ortV=   1.204  t=0.0038s  PASS
+  gl_random                           n=  10  res=   0.603  ortU=   0.103  ortV=   0.250  t=0.0037s  PASS
+  gl_gradp                            n=  10  res=   0.725  ortU=   0.200  ortV=   0.200  t=0.0037s  PASS
+  gl_gradm                            n=  10  res=   0.753  ortU=   0.200  ortV=   0.150  t=0.0037s  PASS
+  gl_wilkp                            n=  10  res=   0.550  ortU=   0.250  ortV=   0.200  t=0.0036s  PASS
+  gl_wilkm                            n=  10  res=   0.578  ortU=   0.667  ortV=   0.698  t=0.0037s  PASS
+  gl_wilkw                            n=  10  res=   0.960  ortU=   0.664  ortV=   0.696  t=0.0037s  PASS
+  gl_wilk2w                           n=  10  res=   0.674  ortU=   0.143  ortV=   0.150  t=0.0037s  PASS
+  gl_clement                          n=  10  res=   0.040  ortU=   0.000  ortV=   0.000  t=0.0034s  PASS
+  gl_gro0                             n=  10  res=   0.700  ortU=   0.300  ortV=   0.194  t=0.0037s  PASS
+  gl_gro1                             n=  10  res=   0.750  ortU=   0.205  ortV=   0.383  t=0.0037s  PASS
+  gl_gro2                             n=  10  res=   0.600  ortU=   0.150  ortV=   0.102  t=0.0035s  PASS
+  gl_gro3                             n=  10  res=   0.754  ortU=   0.150  ortV=   0.200  t=0.0035s  PASS
+  gl_bwilkp                           n=  10  res=   0.480  ortU=   0.462  ortV=   0.510  t=0.0034s  PASS
+  gl_ones                             n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0033s  PASS
+  gl_uniform_eps                      n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0032s  PASS
+  gl_uniform_sqrteps                  n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0033s  PASS
+  gl_uniform_eps_to_1                 n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0034s  PASS
+  gl_geometric_eps_to_1               n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0034s  PASS
+  gl_random_spectrum                  n=  10  res=   0.746  ortU=   0.250  ortV=   0.300  t=0.0037s  PASS
+  gl_clustered_at_1                   n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0033s  PASS
+  gl_clustered_at_pm1                 n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0033s  PASS
+  gl_clustered_at_eps                 n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0032s  PASS
+  gl_clustered_at_pmeps               n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0032s  PASS
+  demmel_S1pe                         n=  10  res=   0.010  ortU=   0.000  ortV=   0.000  t=0.0033s  PASS
+  demmel_S1ps                         n=  10  res=   0.754  ortU=   1.473  ortV=   1.489  t=0.0035s  PASS
+  demmel_S2pe                         n=  10  res=   0.963  ortU=   1.010  ortV=   0.942  t=0.0034s  PASS
+  demmel_S2ps                         n=  10  res=   0.754  ortU=   0.829  ortV=   0.777  t=0.0036s  PASS
+  demmel_W1                           n=  10  res=   0.702  ortU=   0.000  ortV=   0.000  t=0.0036s  PASS
+  demmel_W2                           n=  10  res=   0.754  ortU=   0.190  ortV=   0.150  t=0.0035s  PASS
+  demmel_W3                           n=  10  res=   0.684  ortU=   0.218  ortV=   0.248  t=0.0036s  PASS
+  demmel_G1                           n=  10  res=   0.754  ortU=   0.200  ortV=   0.250  t=0.0035s  PASS
+  demmel_G1s                          n=  10  res=   0.754  ortU=   0.200  ortV=   0.100  t=0.0035s  PASS
+  demmel_U1                           n=  10  res=   0.597  ortU=   0.200  ortV=   0.350  t=0.0035s  PASS
+  demmel_U1s                          n=  10  res=   0.806  ortU=   0.150  ortV=   0.200  t=0.0035s  PASS
+  wilkinson_exact                     n=  10  res=   0.400  ortU=   0.150  ortV=   0.250  t=0.0034s  PASS
+  glued_wilkinson                     n=  10  res=   0.533  ortU=   0.104  ortV=   0.150  t=0.0035s  PASS
+  glued_wilkinson_tight               n=  10  res=   0.600  ortU=   0.104  ortV=   0.147  t=0.0033s  PASS
+  wl_example48                        n=  10  res=   0.742  ortU=   0.273  ortV=   0.224  t=0.0036s  PASS
+  pd_T0                               n=  10  res=   1.800  ortU=   1.266  ortV=   1.293  t=0.0035s  PASS
+  pd_T1                               n=  10  res=   0.450  ortU=   0.150  ortV=   0.150  t=0.0035s  PASS
+  zero_diagonal                       n=  10  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0033s  PASS
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0032s  PASS
+  near_overflow                       n=  10  res=   0.573  ortU=   0.225  ortV=   0.233  t=0.0034s  PASS
+  near_underflow                      n=  10  res=   0.726  ortU=   0.292  ortV=   0.324  t=0.0034s  PASS
+  mixed_signs                         n=  10  res=   0.912  ortU=   0.274  ortV=   0.295  t=0.0035s  PASS
+  checkerboard                        n=  10  res=   0.100  ortU=   0.200  ortV=   0.300  t=0.0034s  PASS
+  exponential_graded_k4               n=  10  res=   0.754  ortU=   0.104  ortV=   0.150  t=0.0034s  PASS
+  exponential_graded_k8               n=  10  res=   0.754  ortU=   0.200  ortV=   0.150  t=0.0034s  PASS
+  exponential_graded_k12              n=  10  res=   0.754  ortU=   0.200  ortV=   0.101  t=0.0035s  PASS
+  stemr_killer_k5                     n=  10  res=   0.754  ortU=   0.200  ortV=   0.100  t=0.0034s  PASS
+  stemr_killer_k10                    n=  10  res=   0.754  ortU=   0.150  ortV=   0.150  t=0.0035s  PASS
+  huge_condition_k5                   n=  10  res=   0.754  ortU=   0.200  ortV=   0.200  t=0.0036s  PASS
+  huge_condition_k10                  n=  10  res=   0.754  ortU=   0.150  ortV=   0.250  t=0.0035s  PASS
+  demmel_G1_k4                        n=  10  res=   0.754  ortU=   0.200  ortV=   0.526  t=0.0035s  PASS
+  demmel_G1_k8                        n=  10  res=   0.754  ortU=   0.100  ortV=   0.100  t=0.0035s  PASS
+  demmel_G1_k12                       n=  10  res=   0.754  ortU=   0.200  ortV=   0.100  t=0.0035s  PASS
+  demmel_S1pe_k4                      n=  10  res=   0.754  ortU=   1.744  ortV=   1.765  t=0.0034s  PASS
+  demmel_S1pe_k8                      n=  10  res=   0.754  ortU=   2.454  ortV=   2.478  t=0.0034s  PASS
+  chkbd_4                             n=   4  res=   1.567  ortU=   0.250  ortV=   0.250  t=0.0032s  PASS
+  chkbd_16                            n=  16  res=   0.471  ortU=   0.062  ortV=   0.281  t=0.0038s  PASS
+  marques_graded_k4                   n=  10  res=   0.754  ortU=   0.200  ortV=   0.200  t=0.0036s  PASS
+  marques_graded_k8                   n=  10  res=   0.754  ortU=   0.200  ortV=   0.250  t=0.0036s  PASS
+
+=== Adversarial Matrices (n=100) ===
+  exponential_graded                  n= 100  res=   1.182  ortU=   0.181  ortV=   0.305  t=0.0148s  PASS
+  glued_repeated                      n= 100  res=   0.150  ortU=   0.117  ortV=   0.116  t=0.0078s  PASS
+  saw_tooth                           n= 100  res=   0.120  ortU=   0.654  ortV=   0.662  t=0.0169s  PASS
+  stemr_killer                        n= 100  res=   1.424  ortU=   0.028  ortV=   0.055  t=0.0112s  PASS
+  huge_condition                      n= 100  res=   1.580  ortU=   0.355  ortV=   0.279  t=0.0153s  PASS
+  spike                               n= 100  res=   0.080  ortU=   0.432  ortV=   0.431  t=0.0215s  PASS
+  wilkinson_like                      n= 100  res=   0.107  ortU=   0.364  ortV=   0.357  t=0.0228s  PASS
+  two_clusters                        n= 100  res=   0.160  ortU=   0.617  ortV=   0.616  t=0.0120s  PASS
+  random_uniform                      n= 100  res=   0.079  ortU=   0.096  ortV=   0.092  t=0.0244s  PASS
+  diagonal_only                       n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0047s  PASS
+  constant                            n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0047s  PASS
+  all_equal_nontrivial                n= 100  res=   0.334  ortU=   0.942  ortV=   0.929  t=0.0228s  PASS
+  one_big_cluster                     n= 100  res=   0.398  ortU=   0.420  ortV=   0.423  t=0.0105s  PASS
+  arithmetic_progression              n= 100  res=   0.098  ortU=   0.257  ortV=   0.256  t=0.0218s  PASS
+  many_near_zero                      n= 100  res=   0.061  ortU=   0.015  ortV=   0.015  t=0.0047s  PASS
+  random_dense_clusters               n= 100  res=   0.854  ortU=   3.302  ortV=   3.312  t=0.0217s  PASS
+  constant_d_graded_e                 n= 100  res=   1.735  ortU=   1.581  ortV=   1.583  t=0.0131s  PASS
+  random_clustered_5                  n= 100  res=   0.113  ortU=   0.256  ortV=   0.259  t=0.0112s  PASS
+  alternating_sign                    n= 100  res=   0.418  ortU=   2.410  ortV=   2.398  t=0.0213s  PASS
+  step_function                       n= 100  res=   0.744  ortU=   2.536  ortV=   2.540  t=0.0202s  PASS
+  three_clusters                      n= 100  res=   0.105  ortU=   0.301  ortV=   0.294  t=0.0132s  PASS
+  random_sparse_e                     n= 100  res=   0.066  ortU=   0.013  ortV=   0.020  t=0.0046s  PASS
+  chkbd                               n= 100  res=   0.077  ortU=   0.025  ortV=   0.020  t=0.0046s  PASS
+  marques_graded                      n= 100  res=   0.108  ortU=   0.182  ortV=   0.214  t=0.0173s  PASS
+  gl_abcon0                           n= 100  res=   0.583  ortU=   3.691  ortV=   3.696  t=0.0223s  PASS
+  gl_abcon1                           n= 100  res=   0.410  ortU=   1.729  ortV=   1.745  t=0.0213s  PASS
+  gl_abcon2                           n= 100  res=   0.279  ortU=   0.439  ortV=   0.445  t=0.0193s  PASS
+  gl_abcon3                           n= 100  res=   0.504  ortU=   1.309  ortV=   1.313  t=0.0207s  PASS
+  gl_random                           n= 100  res=   0.115  ortU=   0.115  ortV=   0.091  t=0.0225s  PASS
+  gl_gradp                            n= 100  res=   0.640  ortU=   0.084  ortV=   0.020  t=0.0069s  PASS
+  gl_gradm                            n= 100  res=   1.280  ortU=   0.030  ortV=   0.091  t=0.0070s  PASS
+  gl_wilkp                            n= 100  res=   0.150  ortU=   0.179  ortV=   0.177  t=0.0122s  PASS
+  gl_wilkm                            n= 100  res=   0.229  ortU=   1.056  ortV=   1.047  t=0.0132s  PASS
+  gl_wilkw                            n= 100  res=   0.525  ortU=   2.716  ortV=   2.705  t=0.0218s  PASS
+  gl_wilk2w                           n= 100  res=   0.264  ortU=   0.546  ortV=   0.545  t=0.0204s  PASS
+  gl_clement                          n= 100  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0048s  PASS
+  gl_gro0                             n= 100  res=   0.578  ortU=   1.171  ortV=   1.165  t=0.0205s  PASS
+  gl_gro1                             n= 100  res=   0.120  ortU=   0.185  ortV=   0.181  t=0.0206s  PASS
+  gl_gro2                             n= 100  res=   0.060  ortU=   0.015  ortV=   0.010  t=0.0047s  PASS
+  gl_gro3                             n= 100  res=   1.412  ortU=   0.297  ortV=   0.201  t=0.0122s  PASS
+  gl_bwilkp                           n= 100  res=   0.571  ortU=   1.436  ortV=   1.440  t=0.0134s  PASS
+  gl_ones                             n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0044s  PASS
+  gl_uniform_eps                      n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0043s  PASS
+  gl_uniform_sqrteps                  n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0043s  PASS
+  gl_uniform_eps_to_1                 n= 100  res=   0.005  ortU=   0.000  ortV=   0.000  t=0.0044s  PASS
+  gl_geometric_eps_to_1               n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0044s  PASS
+  gl_random_spectrum                  n= 100  res=   0.081  ortU=   0.098  ortV=   0.096  t=0.0220s  PASS
+  gl_clustered_at_1                   n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0044s  PASS
+  gl_clustered_at_pm1                 n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0043s  PASS
+  gl_clustered_at_eps                 n= 100  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0043s  PASS
+  gl_clustered_at_pmeps               n= 100  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0043s  PASS
+  demmel_S1pe                         n= 100  res=   0.001  ortU=   0.000  ortV=   0.000  t=0.0044s  PASS
+  demmel_S1ps                         n= 100  res=   0.080  ortU=   5.608  ortV=   5.620  t=0.0144s  FAIL
+  demmel_S2pe                         n= 100  res=   0.754  ortU=   3.961  ortV=   3.969  t=0.0089s  PASS
+  demmel_S2ps                         n= 100  res=   0.500  ortU=   1.461  ortV=   1.477  t=0.0173s  PASS
+  demmel_W1                           n= 100  res=   0.098  ortU=   0.010  ortV=   0.000  t=0.0047s  PASS
+  demmel_W2                           n= 100  res=   0.080  ortU=   0.648  ortV=   0.643  t=0.0152s  PASS
+  demmel_W3                           n= 100  res=   0.107  ortU=   0.402  ortV=   0.401  t=0.0186s  PASS
+  demmel_G1                           n= 100  res=   0.842  ortU=   0.070  ortV=   0.030  t=0.0115s  PASS
+  demmel_G1s                          n= 100  res=   0.110  ortU=   0.185  ortV=   0.159  t=0.0169s  PASS
+  demmel_U1                           n= 100  res=   0.183  ortU=   0.564  ortV=   0.572  t=0.0191s  PASS
+  demmel_U1s                          n= 100  res=   0.145  ortU=   0.398  ortV=   0.419  t=0.0190s  PASS
+  wilkinson_exact                     n= 100  res=   0.173  ortU=   0.185  ortV=   0.193  t=0.0126s  PASS
+  glued_wilkinson                     n= 100  res=   0.176  ortU=   0.154  ortV=   0.156  t=0.0198s  PASS
+  glued_wilkinson_tight               n= 100  res=   0.137  ortU=   0.175  ortV=   0.173  t=0.0116s  PASS
+  wl_example48                        n= 100  res=   0.216  ortU=   0.320  ortV=   0.315  t=0.0222s  PASS
+  pd_T0                               n= 100  res=   0.529  ortU=   1.156  ortV=   1.155  t=0.0200s  PASS
+  pd_T1                               n= 100  res=   0.271  ortU=   0.300  ortV=   0.305  t=0.0197s  PASS
+  zero_diagonal                       n= 100  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0047s  PASS
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0031s  PASS
+  near_overflow                       n= 100  res=   0.080  ortU=   0.053  ortV=   0.048  t=0.0193s  PASS
+  near_underflow                      n= 100  res=   0.079  ortU=   0.060  ortV=   0.064  t=0.0200s  PASS
+  mixed_signs                         n= 100  res=   0.313  ortU=   0.588  ortV=   0.580  t=0.0239s  PASS
+  checkerboard                        n= 100  res=   0.279  ortU=   0.050  ortV=   0.095  t=0.0095s  PASS
+  exponential_graded_k4               n= 100  res=   0.080  ortU=   0.059  ortV=   0.064  t=0.0203s  PASS
+  exponential_graded_k8               n= 100  res=   0.080  ortU=   0.034  ortV=   0.036  t=0.0184s  PASS
+  exponential_graded_k12              n= 100  res=   0.080  ortU=   0.080  ortV=   0.051  t=0.0171s  PASS
+  stemr_killer_k5                     n= 100  res=   0.099  ortU=   0.045  ortV=   0.046  t=0.0198s  PASS
+  stemr_killer_k10                    n= 100  res=   0.128  ortU=   1.193  ortV=   0.734  t=0.0178s  PASS
+  huge_condition_k5                   n= 100  res=   0.080  ortU=   0.192  ortV=   0.212  t=0.0194s  PASS
+  huge_condition_k10                  n= 100  res=   0.080  ortU=   0.108  ortV=   0.085  t=0.0173s  PASS
+  demmel_G1_k4                        n= 100  res=   0.080  ortU=   0.069  ortV=   0.067  t=0.0192s  PASS
+  demmel_G1_k8                        n= 100  res=   0.080  ortU=   0.257  ortV=   0.226  t=0.0177s  PASS
+  demmel_G1_k12                       n= 100  res=   0.112  ortU=   0.213  ortV=   0.160  t=0.0160s  PASS
+  demmel_S1pe_k4                      n= 100  res=   0.080  ortU=   2.966  ortV=   2.952  t=0.0180s  PASS
+  demmel_S1pe_k8                      n= 100  res=   0.080  ortU=   3.372  ortV=   3.383  t=0.0143s  PASS
+  chkbd_4                             n=   4  res=   1.567  ortU=   0.250  ortV=   0.250  t=0.0031s  PASS
+  chkbd_16                            n=  16  res=   0.471  ortU=   0.062  ortV=   0.281  t=0.0034s  PASS
+  marques_graded_k4                   n= 100  res=   0.082  ortU=   0.333  ortV=   0.307  t=0.0191s  PASS
+  marques_graded_k8                   n= 100  res=   0.080  ortU=   0.053  ortV=   0.043  t=0.0177s  PASS
+
+=== Adversarial Matrices (n=200) ===
+  exponential_graded                  n= 200  res=   1.484  ortU=   0.301  ortV=   0.362  t=0.0378s  PASS
+  glued_repeated                      n= 200  res=   0.065  ortU=   0.067  ortV=   0.069  t=0.0147s  PASS
+  saw_tooth                           n= 200  res=   0.082  ortU=   0.962  ortV=   0.962  t=0.0462s  PASS
+  stemr_killer                        n= 200  res=   1.594  ortU=   0.210  ortV=   0.259  t=0.0286s  PASS
+  huge_condition                      n= 200  res=   1.694  ortU=   0.370  ortV=   0.307  t=0.0421s  PASS
+  spike                               n= 200  res=   0.040  ortU=   0.369  ortV=   0.370  t=0.0618s  PASS
+  wilkinson_like                      n= 200  res=   0.136  ortU=   0.150  ortV=   0.152  t=0.0675s  PASS
+  two_clusters                        n= 200  res=   0.063  ortU=   0.512  ortV=   0.509  t=0.0321s  PASS
+  random_uniform                      n= 200  res=   0.114  ortU=   0.206  ortV=   0.210  t=0.0773s  PASS
+  diagonal_only                       n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0090s  PASS
+  constant                            n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0087s  PASS
+  all_equal_nontrivial                n= 200  res=   0.258  ortU=   2.426  ortV=   2.431  t=0.0704s  PASS
+  one_big_cluster                     n= 200  res=   0.856  ortU=   0.593  ortV=   0.589  t=0.0178s  PASS
+  arithmetic_progression              n= 200  res=   0.058  ortU=   0.456  ortV=   0.482  t=0.0703s  PASS
+  many_near_zero                      n= 200  res=   0.030  ortU=   0.007  ortV=   0.007  t=0.0093s  PASS
+  random_dense_clusters               n= 200  res=   0.560  ortU=   1.251  ortV=   1.255  t=0.0772s  PASS
+  constant_d_graded_e                 n= 200  res=   1.766  ortU=   0.656  ortV=   0.655  t=0.0436s  PASS
+  random_clustered_5                  n= 200  res=   0.952  ortU=   0.487  ortV=   0.489  t=0.0171s  PASS
+  alternating_sign                    n= 200  res=   0.231  ortU=   1.807  ortV=   1.816  t=0.0790s  PASS
+  step_function                       n= 200  res=   0.449  ortU=   2.998  ortV=   2.994  t=0.0747s  PASS
+  three_clusters                      n= 200  res=   0.080  ortU=   0.491  ortV=   0.491  t=0.0416s  PASS
+  random_sparse_e                     n= 200  res=   0.040  ortU=   0.007  ortV=   0.010  t=0.0103s  PASS
+  chkbd                               n= 200  res=   0.038  ortU=   0.013  ortV=   0.010  t=0.0098s  PASS
+  marques_graded                      n= 200  res=   0.041  ortU=   0.441  ortV=   0.400  t=0.0637s  PASS
+  gl_abcon0                           n= 200  res=   0.215  ortU=   1.457  ortV=   1.463  t=0.0742s  PASS
+  gl_abcon1                           n= 200  res=   0.249  ortU=   3.041  ortV=   3.037  t=0.0755s  PASS
+  gl_abcon2                           n= 200  res=   0.612  ortU=   1.044  ortV=   1.047  t=0.0688s  PASS
+  gl_abcon3                           n= 200  res=   0.313  ortU=   0.905  ortV=   0.902  t=0.0709s  PASS
+  gl_random                           n= 200  res=   0.100  ortU=   0.147  ortV=   0.144  t=0.0825s  PASS
+  gl_gradp                            n= 200  res=   0.640  ortU=   0.064  ortV=   0.118  t=0.0128s  PASS
+  gl_gradm                            n= 200  res=   1.280  ortU=   0.015  ortV=   0.046  t=0.0121s  PASS
+  gl_wilkp                            n= 200  res=   0.281  ortU=   0.367  ortV=   0.367  t=0.0422s  PASS
+  gl_wilkm                            n= 200  res=   0.143  ortU=   1.038  ortV=   1.043  t=0.0442s  PASS
+  gl_wilkw                            n= 200  res=   0.166  ortU=22517998136852.480  ortV=   1.690  t=0.0748s  FAIL
+  gl_wilk2w                           n= 200  res=   0.876  ortU=22517998136852.480  ortV=   1.153  t=0.0778s  FAIL
+  gl_clement                          n= 200  res=   0.002  ortU=   0.000  ortV=   0.000  t=0.0111s  PASS
+  gl_gro0                             n= 200  res=   0.682  ortU=   0.773  ortV=   0.766  t=0.0759s  PASS
+  gl_gro1                             n= 200  res=   0.075  ortU=   0.429  ortV=   0.429  t=0.0721s  PASS
+  gl_gro2                             n= 200  res=   0.030  ortU=   0.007  ortV=   0.005  t=0.0090s  PASS
+  gl_gro3                             n= 200  res=   1.293  ortU=   0.201  ortV=   0.237  t=0.0384s  PASS
+  gl_bwilkp                           n= 200  res=   0.275  ortU=   0.826  ortV=   0.826  t=0.0441s  PASS
+  gl_ones                             n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0090s  PASS
+  gl_uniform_eps                      n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0089s  PASS
+  gl_uniform_sqrteps                  n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0089s  PASS
+  gl_uniform_eps_to_1                 n= 200  res=   0.003  ortU=   0.000  ortV=   0.000  t=0.0091s  PASS
+  gl_geometric_eps_to_1               n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0090s  PASS
+  gl_random_spectrum                  n= 200  res=   0.072  ortU=   0.124  ortV=   0.123  t=0.0793s  PASS
+  gl_clustered_at_1                   n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0090s  PASS
+  gl_clustered_at_pm1                 n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0090s  PASS
+  gl_clustered_at_eps                 n= 200  res=   0.002  ortU=   0.000  ortV=   0.000  t=0.0087s  PASS
+  gl_clustered_at_pmeps               n= 200  res=   0.002  ortU=   0.000  ortV=   0.000  t=0.0089s  PASS
+  demmel_S1pe                         n= 200  res=   0.001  ortU=   0.000  ortV=   0.000  t=0.0091s  PASS
+  demmel_S1ps                         n= 200  res=   0.040  ortU=   5.760  ortV=   5.761  t=0.0519s  FAIL
+  demmel_S2pe                         n= 200  res=   0.296  ortU=   2.012  ortV=   2.007  t=0.0261s  PASS
+  demmel_S2ps                         n= 200  res=   0.280  ortU=   3.057  ortV=   3.051  t=0.0581s  PASS
+  demmel_W1                           n= 200  res=   0.099  ortU=   0.000  ortV=   0.000  t=0.0090s  PASS
+  demmel_W2                           n= 200  res=   0.040  ortU=   0.521  ortV=   0.521  t=0.0495s  PASS
+  demmel_W3                           n= 200  res=   0.098  ortU=   0.603  ortV=   0.601  t=0.0621s  PASS
+  demmel_G1                           n= 200  res=   0.919  ortU=   0.158  ortV=   0.139  t=0.0359s  PASS
+  demmel_G1s                          n= 200  res=   0.260  ortU=   0.508  ortV=   0.467  t=0.0579s  PASS
+  demmel_U1                           n= 200  res=   0.134  ortU=   0.444  ortV=   0.477  t=0.0687s  PASS
+  demmel_U1s                          n= 200  res=   0.117  ortU=   0.474  ortV=   0.469  t=0.0729s  PASS
+  wilkinson_exact                     n= 200  res=   0.290  ortU=   0.419  ortV=   0.426  t=0.0431s  PASS
+  glued_wilkinson                     n= 200  res=   0.089  ortU=   0.078  ortV=   0.082  t=0.0702s  PASS
+  glued_wilkinson_tight               n= 200  res=   0.165  ortU=   0.258  ortV=   0.260  t=0.0401s  PASS
+  wl_example48                        n= 200  res=   0.044  ortU=   0.076  ortV=   0.074  t=0.0841s  PASS
+  pd_T0                               n= 200  res=   0.393  ortU=   1.480  ortV=   1.477  t=0.0664s  PASS
+  pd_T1                               n= 200  res=   0.135  ortU=   0.340  ortV=   0.340  t=0.0682s  PASS
+  zero_diagonal                       n= 200  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0106s  PASS
+  single_element                      n=   1  res=   0.000  ortU=   0.000  ortV=   0.000  t=0.0035s  PASS
+  near_overflow                       n= 200  res=   0.057  ortU=   0.372  ortV=   0.331  t=0.0560s  PASS
+  near_underflow                      n= 200  res=   0.040  ortU=   0.269  ortV=   0.291  t=0.0577s  PASS
+  mixed_signs                         n= 200  res=   0.048  ortU=   0.115  ortV=   0.116  t=0.0835s  PASS
+  checkerboard                        n= 200  res=   0.393  ortU=   0.035  ortV=   0.045  t=0.0372s  PASS
+  exponential_graded_k4               n= 200  res=   0.040  ortU=   0.303  ortV=   0.319  t=0.0666s  PASS
+  exponential_graded_k8               n= 200  res=   0.078  ortU=   0.489  ortV=   0.535  t=0.0596s  PASS
+  exponential_graded_k12              n= 200  res=   0.090  ortU=   0.408  ortV=   0.468  t=0.0533s  PASS
+  stemr_killer_k5                     n= 200  res=   0.048  ortU=   0.414  ortV=   0.391  t=0.0641s  PASS
+  stemr_killer_k10                    n= 200  res=   0.050  ortU=   0.151  ortV=   0.135  t=0.0591s  PASS
+  huge_condition_k5                   n= 200  res=   0.040  ortU=   0.334  ortV=   0.317  t=0.0678s  PASS
+  huge_condition_k10                  n= 200  res=   0.040  ortU=   0.386  ortV=   0.435  t=0.0587s  PASS
+  demmel_G1_k4                        n= 200  res=   0.066  ortU=   0.405  ortV=   0.423  t=0.0660s  PASS
+  demmel_G1_k8                        n= 200  res=   0.042  ortU=   0.639  ortV=   0.597  t=0.0601s  PASS
+  demmel_G1_k12                       n= 200  res=   0.049  ortU=   0.463  ortV=   0.411  t=0.0535s  PASS
+  demmel_S1pe_k4                      n= 200  res=   0.040  ortU=   1.543  ortV=   1.546  t=0.0647s  PASS
+  demmel_S1pe_k8                      n= 200  res=   0.040  ortU=   3.377  ortV=   3.379  t=0.0500s  PASS
+  chkbd_4                             n=   4  res=   1.567  ortU=   0.250  ortV=   0.250  t=0.0036s  PASS
+  chkbd_16                            n=  16  res=   0.471  ortU=   0.062  ortV=   0.281  t=0.0033s  PASS
+  marques_graded_k4                   n= 200  res=   0.040  ortU=   0.399  ortV=   0.417  t=0.0632s  PASS
+  marques_graded_k8                   n= 200  res=   0.072  ortU=   0.387  ortV=   0.351  t=0.0577s  PASS
+
+============================================================
+TOTAL: 265/270 passed (98.1%)
+ev1_ec1_n10_s1                                       10     0.742     0.104     0.100   1.01e-15  2.962e-03  1.820e-06 30/30  PASS  
+ev1_ec1_n18_s2_gs                                    36     0.211     0.056     0.069   3.57e-15  3.177e-03  4.745e-06 30/30  PASS  
+ev1_ec1_n26_s3_gm                                    78     0.096     0.013     0.019   5.04e-15  3.907e-03  8.092e-06 30/30  PASS  
+ev1_ec1_n35_s1                                       35     0.215     0.029     0.014   1.45e-15  3.172e-03  3.806e-06 30/30  PASS  
+ev1_ec1_n43_s2_gs                                    86     0.080     0.013     0.023   3.98e-15  4.117e-03  6.862e-06 30/30  PASS  
+ev1_ec1_n51_s3_gm                                   153     0.046     0.007     0.007   5.87e-15  6.481e-03  1.275e-05 30/30  PASS  
+ev1_ec1_n60_s1                                       60     0.131     0.017     0.008   1.27e-15  3.436e-03  5.472e-06 30/30  PASS  
+ev1_ec1_n68_s2_gs                                   136     0.058     0.007     0.007   4.91e-15  5.719e-03  1.075e-05 30/30  PASS  
+ev1_ec1_n76_s3_gm                                   228     0.035     0.004     0.007   6.44e-15  1.051e-02  1.642e-05 19/30  PASS  
+ev1_ec1_n85_s1                                       85     0.091     0.012     0.006   1.48e-15  4.006e-03  6.131e-06 30/30  PASS  
+ev1_ec1_n93_s2_gs                                   186     0.031     0.011     0.011   4.72e-15  8.122e-03  1.304e-05 25/30  PASS  
+ev1_ec4_n2_s3_gm                                      6     0.781     0.211     0.167   7.36e-16  3.033e-03  3.823e-06 30/30  PASS  
+ev1_ec4_n11_s1                                       11     0.624     0.045     0.091   1.21e-15  3.056e-03  2.070e-06 30/30  PASS  
+ev1_ec4_n19_s2_gs                                    38     0.184     0.053     0.026   3.92e-15  3.311e-03  4.503e-06 30/30  PASS  
+ev1_ec4_n27_s3_gm                                    81     0.086     0.012     0.025   2.76e-15  4.050e-03  8.092e-06 30/30  PASS  
+ev1_ec4_n36_s1                                       36     0.208     0.028     0.028   1.65e-15  3.219e-03  3.898e-06 30/30  PASS  
+ev1_ec4_n44_s2_gs                                    88     0.086     0.011     0.017   4.72e-15  4.199e-03  7.483e-06 30/30  PASS  
+ev1_ec4_n52_s3_gm                                   156     0.050     0.010     0.006   3.36e-15  6.438e-03  1.132e-05 30/30  PASS  
+ev1_ec4_n61_s1                                       61     0.111     0.016     0.025   1.47e-15  3.662e-03  5.194e-06 30/30  PASS  
+ev1_ec4_n69_s2_gs                                   138     0.044     0.011     0.007   4.93e-15  5.932e-03  1.054e-05 30/30  PASS  
+ev1_ec4_n77_s3_gm                                   231     0.030     0.009     0.004   3.68e-15  1.069e-02  1.551e-05 19/30  PASS  
+ev1_ec4_n86_s1                                       86     0.064     0.017     0.012   1.05e-15  4.154e-03  6.593e-06 30/30  PASS  
+ev1_ec4_n94_s2_gs                                   188     0.037     0.010     0.012   5.32e-15  8.161e-03  1.322e-05 24/30  PASS  
+ev2_ec1_n3_s3_gm                                      9     1.072     0.222     0.111   1.02e-15  3.119e-03  2.790e-06 30/30  PASS  
+ev2_ec1_n12_s1                                       12     0.290     0.182     0.194   1.27e-15  3.031e-03  2.124e-06 30/30  PASS  
+ev2_ec1_n20_s2_gs                                    40     0.210     0.025     0.050   1.21e-15  3.381e-03  3.863e-06 30/30  PASS  
+ev2_ec1_n28_s3_gm                                    84     0.105     0.028     0.024   1.51e-15  4.270e-03  6.790e-06 30/30  PASS  
+ev2_ec1_n37_s1                                       37     0.195     0.027     0.041   1.50e-15  3.382e-03  4.553e-06 30/30  PASS  
+ev2_ec1_n45_s2_gs                                    90     0.111     0.017     0.014   4.01e-15  4.436e-03  7.261e-06 30/30  PASS  
+ev2_ec1_n53_s3_gm                                   159     0.059     0.009     0.013   2.02e-15  7.207e-03  1.185e-05 28/30  PASS  
+ev2_ec1_n62_s1                                       62     0.125     0.056     0.059   1.57e-15  3.619e-03  5.594e-06 30/30  PASS  
+ev2_ec1_n70_s2_gs                                   140     0.068     0.007     0.014   6.54e-15  5.925e-03  9.167e-06 30/30  PASS  
+ev2_ec1_n78_s3_gm                                   234     0.041     0.006     0.006   3.01e-15  1.224e-02  1.627e-05 17/30  PASS  
+ev2_ec1_n87_s1                                       87     0.082     0.032     0.029   1.52e-15  4.715e-03  7.436e-06 30/30  PASS  
+ev2_ec1_n95_s2_gs                                   190     0.052     0.023     0.022   9.88e-15  8.651e-03  1.400e-05 23/30  PASS  
+ev2_ec4_n4_s3_gm                                     12     0.809     0.167     0.083   1.22e-15  3.080e-03  3.352e-06 30/30  PASS  
+ev2_ec4_n13_s1                                       13     0.602     0.077     0.038   2.72e-15  2.992e-03  2.680e-06 30/30  PASS  
+ev2_ec4_n21_s2_gs                                    42     0.243     0.058     0.053   1.89e-15  3.289e-03  4.071e-06 30/30  PASS  
+ev2_ec4_n29_s3_gm                                    87     0.101     0.030     0.029   1.12e-15  4.246e-03  7.376e-06 30/30  PASS  
+ev2_ec4_n38_s1                                       38     0.190     0.050     0.051   1.41e-15  3.145e-03  5.212e-06 30/30  PASS  
+ev2_ec4_n46_s2_gs                                    92     0.105     0.011     0.011   4.26e-15  4.234e-03  7.594e-06 30/30  PASS  
+ev2_ec4_n54_s3_gm                                   162     0.063     0.012     0.009   1.49e-15  7.033e-03  1.212e-05 27/30  PASS  
+ev2_ec4_n63_s1                                       63     0.126     0.016     0.032   1.50e-15  3.626e-03  6.634e-06 30/30  PASS  
+ev2_ec4_n71_s2_gs                                   142     0.071     0.014     0.014   7.26e-15  6.209e-03  1.113e-05 30/30  PASS  
+ev2_ec4_n79_s3_gm                                   237     0.038     0.006     0.004   1.55e-15  1.186e-02  1.644e-05 17/30  PASS  
+ev2_ec4_n88_s1                                       88     0.081     0.023     0.017   1.42e-15  4.275e-03  7.404e-06 30/30  PASS  
+ev2_ec4_n96_s2_gs                                   192     0.048     0.005     0.008   9.75e-15  8.561e-03  1.424e-05 23/30  PASS  
+ev3_ec1_n5_s3_gm                                     15     0.506     3.878     3.901   3.12e-15  3.281e-03  8.937e-06 30/30  PASS  
+ev3_ec1_n14_s1                                       14     0.435     0.863     0.879   3.60e-15  3.435e-03  6.849e-06 30/30  PASS  
+ev3_ec1_n22_s2_gs                                    44     0.847     3.870     3.878   9.16e-15  4.778e-03  4.790e-05 30/30  PASS  
+ev3_ec1_n30_s3_gm                                    90     0.072     1.051     1.057   2.33e-15  1.480e-02  2.052e-04 13/30  PASS  
+ev3_ec1_n39_s1                                       39     0.167     1.729     1.721   3.30e-15  5.535e-03  2.898e-05 30/30  PASS  
+ev3_ec1_n47_s2_gs                                    94     0.887     0.984     0.984   4.56e-15  1.053e-02  2.330e-04 19/30  PASS  
+ev3_ec1_n55_s3_gm                                   165     0.042     0.601     0.604   2.06e-15  4.195e-02  5.265e-04  5/30  PASS  
+ev3_ec1_n64_s1                                       64     0.110     1.567     1.563   2.68e-15  9.158e-03  6.777e-05 22/30  PASS  
+ev3_ec1_n72_s2_gs                                   144     0.730     0.583     0.583   2.50e-15  2.054e-02  3.917e-04 10/30  PASS  
+ev3_ec1_n80_s3_gm                                   240     0.027     1.028     1.032   2.19e-15  8.401e-02  1.009e-03  3/30  PASS  
+ev3_ec1_n89_s1                                       89     0.071     3.122     3.120   2.12e-15  1.487e-02  1.238e-04 13/30  PASS  
+ev3_ec1_n97_s2_gs                                   194     0.717     1.509     1.512   2.22e-15  3.476e-02  6.325e-04  6/30  PASS  
+ev3_ec4_n6_s3_gm                                     18     0.299     2.444     2.491   1.89e-15  3.544e-03  1.987e-05 30/30  PASS  
+ev3_ec4_n15_s1                                       15     0.482     0.158     0.133   4.66e-15  3.265e-03  6.556e-06 30/30  PASS  
+ev3_ec4_n23_s2_gs                                    46     0.261     1.768     1.770   3.43e-15  4.574e-03  3.130e-05 30/30  PASS  
+ev3_ec4_n31_s3_gm                                    93     0.537     3.293     3.295   9.48e-15  8.053e-03  8.336e-05 24/30  PASS  
+ev3_ec4_n40_s1                                       40     0.513     5.627     5.631   2.64e-15  5.039e-03  2.162e-05 30/30  FAIL  
+ev3_ec4_n48_s2_gs                                    96     0.359     0.970     0.972   3.93e-15  9.282e-03  7.841e-05 22/30  PASS  
+ev3_ec4_n56_s3_gm                                   168     0.765     0.653     0.653   2.24e-14  1.659e-02  1.710e-04 12/30  PASS  
+ev3_ec4_n65_s1                                       65     0.901     1.075     1.074   1.14e-14  7.894e-03  4.800e-05 25/30  PASS  
+ev3_ec4_n73_s2_gs                                   146     1.017     1.134     1.131   3.13e-14  1.645e-02  2.323e-04 12/30  PASS  
+ev3_ec4_n81_s3_gm                                   243     0.747     1.076     1.076   5.11e-14  3.109e-02  3.108e-04  7/30  PASS  
+ev3_ec4_n90_s1                                       90     0.554     0.873     0.876   1.34e-14  1.190e-02  1.719e-04 17/30  PASS  
+ev3_ec4_n98_s2_gs                                   196     1.014     0.545     0.545   4.73e-14  2.675e-02  3.636e-04  8/30  PASS  
+ev4_ec1_n7_s3_gm                                     21     0.404     0.198     0.154   6.68e-16  3.813e-03  1.740e-05 30/30  PASS  
+ev4_ec1_n16_s1                                       16     0.314     0.410     0.400   1.39e-15  3.440e-03  1.299e-05 30/30  PASS  
+ev4_ec1_n24_s2_gs                                    48     0.378     0.388     0.394   7.09e-16  5.454e-03  3.833e-05 30/30  PASS  
+ev4_ec1_n32_s3_gm                                    96     0.059     1.712     1.717   1.50e-15  1.707e-02  2.705e-04 12/30  PASS  
+ev4_ec1_n41_s1                                       41     0.172     0.761     0.747   8.26e-16  6.178e-03  4.686e-05 30/30  PASS  
+ev4_ec1_n49_s2_gs                                    98     0.310     0.531     0.526   1.52e-15  1.239e-02  1.347e-04 16/30  PASS  
+ev4_ec1_n57_s3_gm                                   171     0.036     3.137     3.136   1.29e-15  4.750e-02  8.061e-04  5/30  PASS  
+ev4_ec1_n66_s1                                       66     0.082     0.625     0.618   1.18e-15  1.105e-02  1.270e-04 18/30  PASS  
+ev4_ec1_n74_s2_gs                                   148     0.252     0.525     0.523   1.16e-15  2.446e-02  2.939e-04  9/30  PASS  
+ev4_ec1_n82_s3_gm                                   246     0.027     3.564     3.570   1.46e-15  9.434e-02  1.556e-03  3/30  PASS  
+ev4_ec1_n91_s1                                       91     0.061     0.882     0.884   8.91e-16  1.734e-02  2.111e-04 12/30  PASS  
+ev4_ec1_n99_s2_gs                                   198     0.336     0.449     0.451   2.45e-15  4.112e-02  1.032e-03  5/30  PASS  
+ev4_ec4_n8_s3_gm                                     24     0.226     0.360     0.353   8.96e-16  3.961e-03  2.209e-05 30/30  PASS  
+ev4_ec4_n17_s1                                       17     0.277     0.431     0.481   6.39e-16  3.546e-03  1.277e-05 30/30  PASS  
+ev4_ec4_n25_s2_gs                                    50     0.295     0.292     0.311   9.42e-16  5.520e-03  4.239e-05 30/30  PASS  
+ev4_ec4_n33_s3_gm                                    99     0.055     2.876     2.873   9.73e-16  1.804e-02  2.998e-04 11/30  PASS  
+ev4_ec4_n42_s1                                       42     0.143     0.711     0.718   1.09e-15  6.091e-03  5.004e-05 30/30  PASS  
+ev4_ec4_n50_s2_gs                                   100     0.344     0.638     0.649   8.40e-16  1.282e-02  1.406e-04 16/30  PASS  
+ev4_ec4_n58_s3_gm                                   174     0.036     1.695     1.693   1.18e-15  4.788e-02  8.229e-04  5/30  PASS  
+ev4_ec4_n67_s1                                       67     0.077     0.714     0.717   1.11e-15  1.094e-02  1.382e-04 18/30  PASS  
+ev4_ec4_n75_s2_gs                                   150     0.288     0.445     0.439   1.21e-15  2.493e-02  3.026e-04  8/30  PASS  
+ev4_ec4_n83_s3_gm                                   249     0.022     6.684     6.681   9.12e-15  9.703e-02  1.556e-03  3/30  FAIL  
+ev4_ec4_n92_s1                                       92     0.073     1.107     1.120   1.35e-15  1.768e-02  2.191e-04 12/30  PASS  
+ev4_ec4_n100_s2_gs                                  200     0.367     0.619     0.619   3.93e-15  4.185e-02  1.084e-03  5/30  PASS  
+ev5_ec1_n9_s3_gm                                     27     0.266     0.749     0.767   1.49e-15  4.162e-03  2.198e-05 30/30  PASS  
+ev5_ec1_n18_s1                                       18     0.385     5.241     5.203   2.97e-15  3.529e-03  9.567e-06 30/30  FAIL  
+ev5_ec1_n26_s2_gs                                    52     0.795     1.381     1.377   2.67e-15  5.566e-03  4.776e-05 30/30  PASS  
+ev5_ec1_n34_s3_gm                                   102     0.071     0.824     0.824   2.54e-15  1.729e-02  2.529e-04 12/30  PASS  
+ev5_ec1_n43_s1                                       43     0.147     1.805     1.796   2.54e-15  5.907e-03  5.711e-05 30/30  PASS  
+ev5_ec1_n51_s2_gs                                   102     0.689     0.685     0.688   2.29e-15  1.212e-02  1.492e-04 17/30  PASS  
+ev5_ec1_n59_s3_gm                                   177     0.038     0.385     0.383   9.66e-15  4.749e-02  5.868e-04  5/30  PASS  
+ev5_ec1_n68_s1                                       68     0.085     5.515     5.514   2.47e-15  1.030e-02  6.573e-05 19/30  FAIL  
+ev5_ec1_n76_s2_gs                                   152     0.737     0.421     0.420   4.30e-15  2.277e-02  3.891e-04  9/30  PASS  
+ev5_ec1_n84_s3_gm                                   252     0.028     1.296     1.297   2.85e-15  9.435e-02  9.767e-04  3/30  PASS  
+ev5_ec1_n93_s1                                       93     0.065     0.902     0.902   2.19e-15  1.621e-02  1.790e-04 13/30  PASS  
+ev5_ec4_n2_s2_gs                                      4     2.333     0.502     0.488   1.92e-15  3.202e-03  1.574e-06 30/30  PASS  
+ev5_ec4_n10_s3_gm                                    30     0.596     0.115     0.120   2.01e-15  3.793e-03  2.313e-05 30/30  PASS  
+ev5_ec4_n19_s1                                       19     0.385     1.222     1.224   2.17e-15  3.686e-03  9.598e-06 30/30  PASS  
+ev5_ec4_n27_s2_gs                                    54     0.909     2.190     2.187   6.74e-15  5.318e-03  2.351e-05 30/30  PASS  
+ev5_ec4_n35_s3_gm                                   105     0.135     1.693     1.697   2.79e-15  9.260e-03  8.691e-05 21/30  PASS  
+ev5_ec4_n44_s1                                       44     0.159     0.913     0.911   2.11e-15  5.961e-03  6.697e-05 30/30  PASS  
+ev5_ec4_n52_s2_gs                                   104     0.506     1.074     1.069   1.24e-14  1.032e-02  5.132e-05 19/30  PASS  
+ev5_ec4_n60_s3_gm                                   180     0.203     1.776     1.775   2.23e-15  2.036e-02  1.818e-04 10/30  PASS  
+ev5_ec4_n69_s1                                       69     0.102     3.465     3.465   2.50e-15  9.560e-03  4.610e-05 21/30  PASS  
+ev5_ec4_n77_s2_gs                                   154     0.675     0.768     0.763   1.99e-14  1.784e-02  2.190e-04 12/30  PASS  
+ev5_ec4_n85_s3_gm                                   255     0.141     0.782     0.782   2.34e-15  3.829e-02  3.111e-04  6/30  PASS  
+ev5_ec4_n94_s1                                       94     0.097     1.315     1.315   2.41e-15  1.412e-02  8.449e-05 14/30  PASS  
+ev6_ec1_n3_s2_gs                                      6     0.892     0.250     0.333   1.50e-15  3.108e-03  2.900e-06 30/30  PASS  
+ev6_ec1_n11_s3_gm                                    33     0.206     0.855     0.865   1.40e-15  4.731e-03  3.806e-05 30/30  PASS  
+ev6_ec1_n20_s1                                       20     0.390     4.245     4.193   9.29e-16  3.708e-03  1.910e-05 30/30  PASS  
+ev6_ec1_n28_s2_gs                                    56     0.316     0.649     0.649   1.15e-15  6.259e-03  4.893e-05 30/30  PASS  
+ev6_ec1_n36_s3_gm                                   108     0.068     1.255     1.254   1.75e-15  2.004e-02  3.511e-04 10/30  PASS  
+ev6_ec1_n45_s1                                       45     0.153     1.998     1.983   1.02e-15  6.992e-03  8.332e-05 28/30  PASS  
+ev6_ec1_n53_s2_gs                                   106     0.412     0.748     0.742   9.16e-16  1.506e-02  1.621e-04 14/30  PASS  
+ev6_ec1_n61_s3_gm                                   183     0.036     0.557     0.556   4.35e-15  5.153e-02  8.952e-04  4/30  PASS  
+ev6_ec1_n70_s1                                       70     0.110     2.042     2.045   1.93e-15  1.200e-02  2.024e-04 17/30  PASS  
+ev6_ec1_n78_s2_gs                                   156     0.335     1.722     1.726   1.16e-15  2.857e-02  3.221e-04  7/30  PASS  
+ev6_ec1_n86_s3_gm                                   258     0.030     3.362     3.362   1.91e-15  1.017e-01  1.735e-03  3/30  PASS  
+ev6_ec1_n95_s1                                       95     0.099     1.967     1.964   1.68e-15  2.014e-02  3.036e-04 10/30  PASS  
+ev7_ec1_n4_s2_gs                                      8     0.806     0.125     0.125   1.22e-15  3.020e-03  2.050e-06 30/30  PASS  
+ev7_ec1_n12_s3_gm                                    36     0.225     0.028     0.028   2.11e-15  3.406e-03  5.050e-06 30/30  PASS  
+ev7_ec1_n21_s1                                       21     0.877     0.071     0.048   1.95e-15  3.225e-03  2.733e-06 30/30  PASS  
+ev7_ec1_n29_s2_gs                                    58     0.893     0.009     0.009   1.20e-14  3.458e-03  5.932e-06 30/30  PASS  
+ev7_ec1_n37_s3_gm                                   111     0.742     0.014     0.005   3.08e-15  4.837e-03  8.993e-06 30/30  PASS  
+ev7_ec1_n46_s1                                       46     0.751     0.022     0.022   7.85e-15  3.447e-03  4.605e-06 30/30  PASS  
+ev7_ec1_n54_s2_gs                                   108     0.472     0.012     0.010   2.64e-14  4.752e-03  9.024e-05 30/30  PASS  
+ev7_ec1_n62_s3_gm                                   186     0.733     0.005     0.005   2.57e-14  8.136e-03  1.887e-04 25/30  PASS  
+ev7_ec1_n71_s1                                       71     0.864     0.565     0.565   1.77e-14  5.535e-03  1.567e-04 30/30  PASS  
+ev7_ec1_n79_s2_gs                                   158     0.820     0.006     0.006   2.50e-14  6.567e-03  1.343e-04 30/30  PASS  
+ev7_ec1_n87_s3_gm                                   261     0.315     0.006     0.004   4.93e-14  1.273e-02  6.349e-04 16/30  PASS  
+ev7_ec1_n96_s1                                       96     0.749     0.005     0.010   3.53e-14  4.417e-03  2.002e-04 30/30  PASS  
+ev8_ec1_n5_s2_gs                                     10     0.632     0.147     0.211   1.17e-15  3.108e-03  4.761e-06 30/30  PASS  
+ev8_ec1_n13_s3_gm                                    39     0.199     3.948     3.944   1.93e-15  4.992e-03  5.733e-05 30/30  PASS  
+ev8_ec1_n22_s1                                       22     0.396     0.398     0.401   1.06e-15  3.684e-03  2.051e-05 30/30  PASS  
+ev8_ec1_n30_s2_gs                                    60     0.219     0.084     0.087   9.42e-16  5.661e-03  5.877e-05 30/30  PASS  
+ev8_ec1_n38_s3_gm                                   114     0.075     0.738     0.738   1.16e-15  2.086e-02  4.640e-04 10/30  PASS  
+ev8_ec1_n47_s1                                       47     0.175     0.190     0.204   9.77e-16  5.778e-03  6.716e-05 30/30  PASS  
+ev8_ec1_n55_s2_gs                                   110     0.530     0.259     0.262   1.56e-15  1.198e-02  1.912e-04 17/30  PASS  
+ev8_ec1_n63_s3_gm                                   189     0.041     0.352     0.356   1.41e-15  5.282e-02  1.186e-03  4/30  PASS  
+ev8_ec1_n72_s1                                       72     0.099     0.261     0.258   7.69e-16  9.154e-03  1.475e-04 22/30  PASS  
+ev8_ec1_n80_s2_gs                                   160     0.461     0.149     0.151   1.08e-15  2.072e-02  3.443e-04 10/30  PASS  
+ev8_ec1_n88_s3_gm                                   264     0.032     0.590     0.584   8.25e-15  1.036e-01  2.215e-03  3/30  PASS  
+ev8_ec1_n97_s1                                       97     0.083     0.297     0.296   9.05e-16  1.389e-02  2.405e-04 15/30  PASS  
+ev9_ec1_n6_s2_gs                                     12     0.695     8.945     8.983   1.10e-15  3.288e-03  9.170e-06 30/30  FAIL  
+ev9_ec1_n14_s3_gm                                    42     0.270     0.262     0.268   2.19e-15  5.027e-03  8.138e-05 30/30  PASS  
+ev9_ec1_n23_s1                                       23     0.425     0.654     0.643   1.54e-15  3.534e-03  1.959e-05 30/30  PASS  
+ev9_ec1_n31_s2_gs                                    62     0.140     0.087     0.067   3.73e-15  8.044e-03  1.303e-04 25/30  PASS  
+ev9_ec1_n39_s3_gm                                   117     0.101     0.697     0.699   1.10e-15  1.985e-02  1.856e-04 10/30  PASS  
+ev9_ec1_n48_s1                                       48     0.188     0.228     0.229   1.54e-15  5.478e-03  7.047e-05 30/30  PASS  
+ev9_ec1_n56_s2_gs                                   112     0.082     0.081     0.072   6.36e-15  1.920e-02  3.773e-04 11/30  PASS  
+ev9_ec1_n64_s3_gm                                   192     0.049     0.239     0.235   1.10e-15  4.414e-02  1.251e-03  5/30  PASS  
+ev9_ec1_n73_s1                                       73     0.127     0.313     0.309   3.95e-15  8.033e-03  1.583e-04 25/30  PASS  
+ev9_ec1_n81_s2_gs                                   162     0.059     0.100     0.092   5.71e-15  3.691e-02  7.343e-04  6/30  PASS  
+ev9_ec1_n89_s3_gm                                   267     0.037     0.355     0.358   2.41e-15  8.406e-02  2.286e-03  3/30  PASS  
+ev9_ec1_n98_s1                                       98     0.091     0.391     0.386   1.10e-15  1.183e-02  2.734e-04 17/30  PASS  
+tri2_n24_gs                                          48     0.161     0.680     0.692   1.48e-15  5.215e-03  3.431e-05 30/30  PASS  
+tri2_n57_gm                                         171     0.025     0.076     0.072   2.21e-15  5.153e-02  7.339e-04  4/30  PASS  
+tri2_n91                                             91     0.122     2.824     2.820   1.79e-15  1.733e-02  1.468e-04 12/30  PASS  
+tri3_n25_gs                                          50     0.340     0.229     0.222   1.78e-15  5.679e-03  4.837e-05 30/30  PASS  
+tri3_n58_gm                                         174     0.055     0.275     0.277   1.71e-15  2.382e-02  3.269e-04  9/30  PASS  
+tri3_n92                                             92     0.108     1.163     1.166   2.25e-15  1.628e-02  2.258e-04 13/30  PASS  
+tri4_n26_gs                                          52     0.099     0.389     0.376   1.79e-15  5.909e-03  4.015e-05 30/30  PASS  
+tri4_n59_gm                                         177     0.033     2.105     2.108   2.42e-15  5.243e-02  8.274e-04  4/30  PASS  
+tri4_n93                                             93     0.057     1.070     1.065   1.70e-15  1.805e-02  1.761e-04 11/30  PASS  
+tri5_n27_gs                                          54     0.096     0.477     0.478   1.02e-15  5.903e-03  4.145e-05 30/30  PASS  
+tri5_n60_gm                                         180     0.026     0.117     0.116   6.62e-16  5.565e-02  8.091e-04  4/30  PASS  
+tri5_n94                                             94     0.064     2.446     2.443   6.93e-16  1.839e-02  1.660e-04 11/30  PASS  
+tri6_n28_gs                                          56     0.266     0.102     0.104   1.22e-14  6.156e-03  7.667e-05 30/30  PASS  
+tri6_n61_gm                                         183     0.025     3.169     3.168   3.36e-15  5.441e-02  8.313e-04  4/30  PASS  
+tri6_n95                                             95     0.047     0.261     0.259   4.37e-15  1.879e-02  1.578e-04 11/30  PASS  
+tri7_n29_gs                                          58     0.127     0.422     0.433   8.96e-16  6.493e-03  4.617e-05 30/30  PASS  
+tri7_n62_gm                                         186     0.027     2.596     2.599   1.15e-15  5.441e-02  8.227e-04  4/30  PASS  
+tri7_n96                                             96     0.069     1.749     1.725   9.98e-16  1.905e-02  1.658e-04 11/30  PASS  
+-----------------------------------------------------------------------------------------------------------------------------------------
+PASS: 17747/18438    (7549.2s wall)
+
+Failing (691), sorted by max(ortU,ortV) desc:
+  ev8_ec1_n97_s0_gm                                n=   291  res=     0.025  ortU=   164.183  ortV=   164.182    drift=2.48e-15  t_eval=1.21e-01  t_dbdsqr=2.66e-03
+  ev3_ec1_n53_s2_gm                                n=   159  res=     0.035  ortU=   156.281  ortV=   156.281    drift=3.46e-15  t_eval=3.89e-02  t_dbdsqr=4.91e-04
+  ev8_ec1_n80_s3_gm                                n=   240  res=     0.036  ortU=   142.213  ortV=   142.215    drift=7.88e-15  t_eval=8.33e-02  t_dbdsqr=1.89e-03
+  ev8_ec1_n48_s2_gm                                n=   144  res=     0.050  ortU=   118.719  ortV=   118.723    drift=1.07e-15  t_eval=3.17e-02  t_dbdsqr=7.04e-04
+  ev8_ec1_n92_s1_gm                                n=   276  res=     0.027  ortU=    99.409  ortV=    99.411    drift=2.13e-15  t_eval=1.09e-01  t_dbdsqr=2.49e-03
+  ev8_ec1_n91_s3_gm                                n=   273  res=     0.031  ortU=    63.194  ortV=    63.193    drift=1.39e-15  t_eval=1.09e-01  t_dbdsqr=2.37e-03
+  ev3_ec1_n35_s3_gm                                n=   105  res=     0.067  ortU=    40.300  ortV=    40.298    drift=2.58e-15  t_eval=1.96e-02  t_dbdsqr=2.60e-04
+  ev8_ec1_n86_s0_gm                                n=   258  res=     0.032  ortU=    39.054  ortV=    39.051    drift=6.63e-15  t_eval=9.66e-02  t_dbdsqr=2.17e-03
+  ev4_ec4_n3_s0_gs                                 n=     6  res=     1.067  ortU=    37.397  ortV=    37.415    drift=1.65e-15  t_eval=3.13e-03  t_dbdsqr=2.84e-06
+  ev5_ec1_n100_s2_gm                               n=   300  res=     0.025  ortU=    31.713  ortV=    31.713    drift=2.43e-15  t_eval=1.31e-01  t_dbdsqr=1.06e-03
+  ev8_ec1_n90_s3_gm                                n=   270  res=     0.033  ortU=    31.692  ortV=    31.694    drift=1.50e-15  t_eval=1.05e-01  t_dbdsqr=2.27e-03
+  ev5_ec1_n86_s3_gm                                n=   258  res=     0.029  ortU=    30.280  ortV=    30.278    drift=4.30e-15  t_eval=9.64e-02  t_dbdsqr=1.02e-03
+  ev5_ec1_n70_s2_gm                                n=   210  res=     0.033  ortU=    25.052  ortV=    25.046    drift=6.08e-15  t_eval=6.48e-02  t_dbdsqr=5.10e-04
+  tri4_n86_gm                                      n=   258  res=     0.019  ortU=    23.662  ortV=    23.659    drift=6.21e-15  t_eval=1.06e-01  t_dbdsqr=1.50e-03
+  ev4_ec1_n76_s3_gm                                n=   228  res=     0.024  ortU=    22.977  ortV=    22.979    drift=6.10e-15  t_eval=8.12e-02  t_dbdsqr=1.34e-03
+  ev6_ec1_n76_s3_gm                                n=   228  res=     0.034  ortU=    22.924  ortV=    22.923    drift=1.48e-15  t_eval=7.84e-02  t_dbdsqr=1.44e-03
+  ev8_ec1_n79_s3_gm                                n=   237  res=     0.039  ortU=    22.764  ortV=    22.761    drift=3.22e-15  t_eval=8.00e-02  t_dbdsqr=1.83e-03
+  ev9_ec1_n14_s3_gs                                n=    28  res=     0.387  ortU=    22.673  ortV=    22.643    drift=4.17e-15  t_eval=4.21e-03  t_dbdsqr=2.50e-05
+  ev3_ec4_n13_s1                                   n=    13  res=     0.582  ortU=    22.668  ortV=    22.667    drift=2.19e-15  t_eval=3.35e-03  t_dbdsqr=7.08e-06
+  ev5_ec4_n20_s2                                   n=    20  res=     0.686  ortU=    22.638  ortV=    22.660    drift=3.60e-15  t_eval=3.63e-03  t_dbdsqr=8.22e-06
+  ev8_ec1_n63_s0_gm                                n=   189  res=     0.048  ortU=    21.797  ortV=    21.801    drift=4.51e-15  t_eval=5.42e-02  t_dbdsqr=1.22e-03
+  ev4_ec1_n40_s2_gm                                n=   120  res=     0.055  ortU=    21.530  ortV=    21.542    drift=1.32e-15  t_eval=2.50e-02  t_dbdsqr=4.10e-04
+  ev4_ec4_n64_s2_gm                                n=   192  res=     0.029  ortU=    21.436  ortV=    21.436    drift=2.06e-15  t_eval=5.67e-02  t_dbdsqr=9.92e-04
+  ev3_ec1_n21_s2                                   n=    21  res=     0.289  ortU=    21.069  ortV=    21.026    drift=3.16e-15  t_eval=3.75e-03  t_dbdsqr=1.28e-05
+  ev5_ec1_n93_s2_gm                                n=   279  res=     0.023  ortU=    20.845  ortV=    20.845    drift=2.17e-15  t_eval=1.14e-01  t_dbdsqr=9.41e-04
+  ev3_ec1_n14_s0                                   n=    14  res=     0.438  ortU=    19.872  ortV=    19.873    drift=2.66e-15  t_eval=3.39e-03  t_dbdsqr=7.56e-06
+  ev8_ec1_n23_s2_gm                                n=    69  res=     0.110  ortU=    18.857  ortV=    18.855    drift=2.21e-15  t_eval=9.87e-03  t_dbdsqr=1.87e-04
+  ev9_ec1_n10_s3_gs                                n=    20  res=     0.421  ortU=    18.764  ortV=    18.790    drift=1.10e-15  t_eval=3.67e-03  t_dbdsqr=1.56e-05
+  ev5_ec1_n44_s3                                   n=    44  res=     0.149  ortU=    18.402  ortV=    18.405    drift=2.43e-15  t_eval=6.22e-03  t_dbdsqr=5.77e-05
+  ev3_ec4_n28_s0                                   n=    28  res=     0.285  ortU=    18.235  ortV=    18.213    drift=2.33e-15  t_eval=4.13e-03  t_dbdsqr=4.09e-05
+  ev6_ec1_n90_s0_gm                                n=   270  res=     0.028  ortU=    17.393  ortV=    17.393    drift=1.63e-15  t_eval=1.11e-01  t_dbdsqr=1.85e-03
+  ev4_ec4_n67_s1_gm                                n=   201  res=     0.028  ortU=    17.086  ortV=    17.088    drift=1.82e-15  t_eval=6.33e-02  t_dbdsqr=1.06e-03
+  ev3_ec1_n72_s0_gm                                n=   216  res=     0.029  ortU=    16.991  ortV=    16.991    drift=2.19e-15  t_eval=6.96e-02  t_dbdsqr=7.56e-04
+  ev5_ec1_n19_s3                                   n=    19  res=     0.374  ortU=    16.694  ortV=    16.681    drift=3.02e-15  t_eval=3.56e-03  t_dbdsqr=1.13e-05
+  ev4_ec1_n95_s2_gm                                n=   285  res=     0.024  ortU=    16.488  ortV=    16.483    drift=1.04e-15  t_eval=1.27e-01  t_dbdsqr=2.01e-03
+  ev5_ec1_n7_s0_gm                                 n=    21  res=     0.356  ortU=    16.385  ortV=    16.373    drift=2.40e-15  t_eval=3.73e-03  t_dbdsqr=1.57e-05
+  ev8_ec1_n59_s2_gm                                n=   177  res=     0.063  ortU=    16.307  ortV=    16.308    drift=2.04e-15  t_eval=4.80e-02  t_dbdsqr=1.05e-03
+  ev9_ec1_n6_s3_gs                                 n=    12  res=     0.829  ortU=    16.143  ortV=    16.151    drift=1.76e-15  t_eval=3.21e-03  t_dbdsqr=8.51e-06
+  ev3_ec1_n23_s3                                   n=    23  res=     0.273  ortU=    16.141  ortV=    16.089    drift=2.83e-15  t_eval=3.88e-03  t_dbdsqr=2.80e-05
+  ev3_ec4_n43_s3                                   n=    43  res=     0.165  ortU=    16.023  ortV=    16.024    drift=2.96e-15  t_eval=5.64e-03  t_dbdsqr=2.46e-05
+  ev6_ec1_n15_s3                                   n=    15  res=     0.512  ortU=    15.651  ortV=    15.606    drift=1.74e-15  t_eval=3.39e-03  t_dbdsqr=1.20e-05
+  ev9_ec1_n2_s1_gs                                 n=     4  res=     1.800  ortU=    15.147  ortV=    15.265    drift=1.10e-15  t_eval=3.17e-03  t_dbdsqr=3.04e-06
+  ev5_ec1_n14_s3                                   n=    14  res=     0.478  ortU=    14.973  ortV=    15.018    drift=2.71e-15  t_eval=3.41e-03  t_dbdsqr=8.51e-06
+  ev6_ec1_n98_s2_gm                                n=   294  res=     0.026  ortU=    15.014  ortV=    15.010    drift=1.87e-15  t_eval=1.33e-01  t_dbdsqr=2.15e-03
+  ev5_ec1_n17_s1_gm                                n=    51  res=     0.153  ortU=    14.854  ortV=    14.878    drift=3.00e-15  t_eval=6.87e-03  t_dbdsqr=1.03e-04
+  tri4_n63_gm                                      n=   189  res=     0.027  ortU=    14.721  ortV=    14.715    drift=1.00e-15  t_eval=5.85e-02  t_dbdsqr=8.69e-04
+  ev4_ec4_n50_s0_gm                                n=   150  res=     0.036  ortU=    14.709  ortV=    14.718    drift=1.07e-15  t_eval=3.80e-02  t_dbdsqr=6.28e-04
+  ev9_ec1_n7_s0_gs                                 n=    14  res=     0.686  ortU=    14.625  ortV=    14.634    drift=1.10e-15  t_eval=3.39e-03  t_dbdsqr=1.06e-05
+  ev5_ec1_n9_s1_gm                                 n=    27  res=     0.278  ortU=    14.608  ortV=    14.617    drift=1.84e-15  t_eval=4.27e-03  t_dbdsqr=1.93e-05
+  ev9_ec1_n3_s1_gs                                 n=     6  res=     1.193  ortU=    14.595  ortV=    14.547    drift=1.10e-15  t_eval=3.08e-03  t_dbdsqr=3.91e-06
+  ev4_ec4_n77_s3_gm                                n=   231  res=     0.029  ortU=    14.594  ortV=    14.592    drift=1.23e-15  t_eval=8.31e-02  t_dbdsqr=1.37e-03
+  ev3_ec4_n21_s2                                   n=    21  res=     0.351  ortU=    14.559  ortV=    14.548    drift=3.35e-15  t_eval=3.63e-03  t_dbdsqr=8.25e-06
+  ev6_ec1_n61_s0_gm                                n=   183  res=     0.031  ortU=    14.523  ortV=    14.522    drift=1.36e-15  t_eval=5.42e-02  t_dbdsqr=8.73e-04
+  tri6_n40_gm                                      n=   120  res=     0.031  ortU=    14.509  ortV=    14.505    drift=3.19e-15  t_eval=2.54e-02  t_dbdsqr=3.83e-04
+  ev5_ec4_n23_s2_gs                                n=    46  res=     0.885  ortU=    14.498  ortV=    14.490    drift=5.16e-15  t_eval=4.85e-03  t_dbdsqr=1.98e-05
+  ev5_ec1_n10_s1_gm                                n=    30  res=     0.268  ortU=    14.462  ortV=    14.459    drift=1.44e-15  t_eval=4.65e-03  t_dbdsqr=2.65e-05
+  ev3_ec1_n5_s3                                    n=     5  res=     0.939  ortU=    14.275  ortV=    14.250    drift=2.73e-15  t_eval=3.03e-03  t_dbdsqr=3.49e-06
+  ev5_ec4_n70_s2                                   n=    70  res=     1.014  ortU=    14.187  ortV=    14.185    drift=6.79e-15  t_eval=8.56e-03  t_dbdsqr=3.96e-05
+  ev8_ec1_n8_s0_gm                                 n=    24  res=     0.307  ortU=    14.043  ortV=    14.051    drift=1.31e-15  t_eval=3.89e-03  t_dbdsqr=2.41e-05
+  ev8_ec1_n11_s1_gm                                n=    33  res=     0.223  ortU=    14.019  ortV=    14.022    drift=1.87e-15  t_eval=4.63e-03  t_dbdsqr=4.68e-05
+  ev4_ec1_n75_s0_gm                                n=   225  res=     0.024  ortU=    13.975  ortV=    13.972    drift=2.36e-15  t_eval=7.89e-02  t_dbdsqr=1.31e-03
+  ev4_ec4_n59_s2_gm                                n=   177  res=     0.029  ortU=    13.966  ortV=    13.965    drift=2.07e-15  t_eval=5.07e-02  t_dbdsqr=8.49e-04
+  ev3_ec1_n25_s1                                   n=    25  res=     0.236  ortU=    13.553  ortV=    13.532    drift=3.78e-15  t_eval=4.06e-03  t_dbdsqr=1.48e-05
+  ev5_ec1_n33_s3                                   n=    33  res=     0.204  ortU=    13.532  ortV=    13.544    drift=2.20e-15  t_eval=4.89e-03  t_dbdsqr=2.35e-05
+  tri6_n89_gm                                      n=   267  res=     0.018  ortU=    13.462  ortV=    13.462    drift=2.22e-15  t_eval=1.14e-01  t_dbdsqr=1.71e-03
+  ev3_ec1_n34_s0                                   n=    34  res=     0.198  ortU=    13.373  ortV=    13.376    drift=1.99e-15  t_eval=4.95e-03  t_dbdsqr=4.43e-05
+  ev5_ec1_n48_s1_gm                                n=   144  res=     0.046  ortU=    13.296  ortV=    13.298    drift=2.70e-15  t_eval=3.19e-02  t_dbdsqr=3.14e-04
+  ev5_ec1_n14_s1_gm                                n=    42  res=     0.179  ortU=    13.220  ortV=    13.197    drift=2.93e-15  t_eval=5.80e-03  t_dbdsqr=4.67e-05
+  ev4_ec1_n34_s3_gm                                n=   102  res=     0.062  ortU=    13.192  ortV=    13.192    drift=1.28e-15  t_eval=1.89e-02  t_dbdsqr=3.12e-04
+  ev8_ec1_n74_s0_gm                                n=   222  res=     0.037  ortU=    13.157  ortV=    13.149    drift=3.36e-15  t_eval=7.21e-02  t_dbdsqr=1.59e-03
+  ev9_ec1_n11_s0_gs                                n=    22  res=     0.479  ortU=    13.084  ortV=    13.095    drift=1.32e-15  t_eval=3.62e-03  t_dbdsqr=1.85e-05
+  ev9_ec1_n12_s0_gs                                n=    24  res=     0.462  ortU=    13.036  ortV=    13.040    drift=3.95e-15  t_eval=3.95e-03  t_dbdsqr=2.26e-05
+  ev5_ec1_n50_s3                                   n=    50  res=     0.141  ortU=    12.957  ortV=    12.946    drift=1.96e-15  t_eval=7.16e-03  t_dbdsqr=7.57e-05
+  ev9_ec1_n4_s0_gs                                 n=     8  res=     1.012  ortU=    12.859  ortV=    12.940    drift=4.39e-16  t_eval=3.14e-03  t_dbdsqr=6.13e-06
+  ev8_ec1_n80_s0_gm                                n=   240  res=     0.035  ortU=    12.821  ortV=    12.822    drift=1.67e-15  t_eval=8.27e-02  t_dbdsqr=1.82e-03
+  ev5_ec4_n33_s2_gs                                n=    66  res=     0.115  ortU=    12.726  ortV=    12.727    drift=5.08e-15  t_eval=6.49e-03  t_dbdsqr=2.74e-05
+  ev6_ec1_n88_s0_gm                                n=   264  res=     0.027  ortU=    12.722  ortV=    12.726    drift=8.12e-15  t_eval=1.03e-01  t_dbdsqr=1.78e-03
+  tri7_n29_gm                                      n=    87  res=     0.058  ortU=    12.702  ortV=    12.696    drift=2.71e-15  t_eval=1.46e-02  t_dbdsqr=2.07e-04
+  ev5_ec1_n20_s1_gs                                n=    40  res=     0.858  ortU=    12.674  ortV=    12.671    drift=2.65e-15  t_eval=4.45e-03  t_dbdsqr=1.78e-05
+  ev6_ec1_n19_s1_gm                                n=    57  res=     0.148  ortU=    12.658  ortV=    12.656    drift=1.02e-15  t_eval=8.10e-03  t_dbdsqr=1.09e-04
+  ev5_ec4_n12_s1                                   n=    12  res=     0.601  ortU=    12.621  ortV=    12.559    drift=2.25e-15  t_eval=3.27e-03  t_dbdsqr=1.34e-05
+  ev8_ec1_n8_s3_gm                                 n=    24  res=     0.314  ortU=    12.480  ortV=    12.485    drift=2.06e-15  t_eval=3.79e-03  t_dbdsqr=2.50e-05
+  ev9_ec1_n8_s1_gs                                 n=    16  res=     0.590  ortU=    12.418  ortV=    12.414    drift=1.10e-15  t_eval=3.36e-03  t_dbdsqr=1.21e-05
+  ev5_ec4_n36_s2                                   n=    36  res=     1.070  ortU=    12.207  ortV=    12.200    drift=9.27e-15  t_eval=4.59e-03  t_dbdsqr=3.90e-05
+  ev9_ec1_n8_s2_gs                                 n=    16  res=     0.571  ortU=    11.961  ortV=    12.013    drift=6.58e-16  t_eval=3.35e-03  t_dbdsqr=1.22e-05
+  ev3_ec1_n74_s0_gm                                n=   222  res=     0.032  ortU=    12.006  ortV=    12.001    drift=2.93e-15  t_eval=7.30e-02  t_dbdsqr=8.86e-04
+  ev5_ec4_n20_s2_gm                                n=    60  res=     1.088  ortU=    11.879  ortV=    11.864    drift=4.36e-15  t_eval=5.10e-03  t_dbdsqr=3.28e-05
+  ev9_ec1_n8_s3_gs                                 n=    16  res=     0.542  ortU=    11.795  ortV=    11.828    drift=1.97e-15  t_eval=3.37e-03  t_dbdsqr=1.18e-05
+  ev4_ec4_n100_s0_gm                               n=   300  res=     0.022  ortU=    11.804  ortV=    11.806    drift=1.32e-15  t_eval=1.39e-01  t_dbdsqr=2.20e-03
+  ev9_ec1_n89_s1_gm                                n=   267  res=     0.039  ortU=    11.767  ortV=    11.770    drift=2.63e-15  t_eval=9.43e-02  t_dbdsqr=2.32e-03
+  ev5_ec1_n9_s0_gm                                 n=    27  res=     0.247  ortU=    11.766  ortV=    11.718    drift=1.46e-15  t_eval=4.13e-03  t_dbdsqr=2.30e-05
+  ev5_ec1_n27_s0_gs                                n=    54  res=     0.671  ortU=    11.507  ortV=    11.513    drift=3.60e-15  t_eval=5.58e-03  t_dbdsqr=7.20e-05
+  ev6_ec1_n96_s2_gm                                n=   288  res=     0.028  ortU=    11.434  ortV=    11.433    drift=1.61e-15  t_eval=1.28e-01  t_dbdsqr=2.06e-03
+  ev5_ec1_n2_s1                                    n=     2  res=     5.315  ortU=    11.062  ortV=    11.431    drift=1.92e-15  t_eval=3.10e-03  t_dbdsqr=4.91e-07
+  ev9_ec1_n10_s1_gs                                n=    20  res=     0.442  ortU=    11.402  ortV=    11.379    drift=8.78e-16  t_eval=3.51e-03  t_dbdsqr=1.53e-05
+  ev6_ec1_n90_s2_gm                                n=   270  res=     0.025  ortU=    11.366  ortV=    11.363    drift=2.91e-15  t_eval=1.14e-01  t_dbdsqr=1.83e-03
+  ev3_ec1_n14_s0_gs                                n=    28  res=     0.822  ortU=    11.350  ortV=    11.338    drift=2.79e-15  t_eval=3.85e-03  t_dbdsqr=1.31e-05
+  ev6_ec1_n77_s3_gm                                n=   231  res=     0.033  ortU=    11.344  ortV=    11.346    drift=1.12e-15  t_eval=8.07e-02  t_dbdsqr=1.45e-03
+  ev5_ec1_n8_s1_gm                                 n=    24  res=     0.345  ortU=    11.343  ortV=    11.327    drift=1.52e-15  t_eval=4.06e-03  t_dbdsqr=1.57e-05
+  ev3_ec4_n13_s1_gs                                n=    26  res=     0.291  ortU=    11.334  ortV=    11.333    drift=2.19e-15  t_eval=3.91e-03  t_dbdsqr=1.08e-05
+  ev5_ec4_n20_s2_gs                                n=    40  res=     0.989  ortU=    11.319  ortV=    11.330    drift=4.93e-15  t_eval=4.35e-03  t_dbdsqr=1.81e-05
+  ev4_ec4_n63_s0_gm                                n=   189  res=     0.031  ortU=    11.325  ortV=    11.325    drift=4.98e-15  t_eval=5.67e-02  t_dbdsqr=9.32e-04
+  ev5_ec1_n19_s0                                   n=    19  res=     0.315  ortU=    11.314  ortV=    11.276    drift=1.61e-15  t_eval=3.64e-03  t_dbdsqr=9.67e-06
+  ev9_ec1_n11_s3_gs                                n=    22  res=     0.451  ortU=    11.293  ortV=    11.297    drift=8.78e-16  t_eval=3.80e-03  t_dbdsqr=1.84e-05
+  ev4_ec1_n92_s3_gm                                n=   276  res=     0.022  ortU=    11.185  ortV=    11.185    drift=2.71e-15  t_eval=1.17e-01  t_dbdsqr=1.89e-03
+  ev8_ec1_n76_s2_gm                                n=   228  res=     0.039  ortU=    11.178  ortV=    11.174    drift=2.87e-15  t_eval=7.46e-02  t_dbdsqr=1.71e-03
+  ev6_ec1_n62_s1_gm                                n=   186  res=     0.035  ortU=    11.051  ortV=    11.044    drift=7.04e-15  t_eval=5.27e-02  t_dbdsqr=9.06e-04
+  ev5_ec1_n27_s0                                   n=    27  res=     0.240  ortU=    10.958  ortV=    10.945    drift=1.80e-15  t_eval=4.31e-03  t_dbdsqr=1.60e-05
+  ev3_ec4_n14_s0                                   n=    14  res=     0.489  ortU=    10.884  ortV=    10.906    drift=1.72e-15  t_eval=3.30e-03  t_dbdsqr=2.03e-05
+  ev5_ec4_n10_s1                                   n=    10  res=     0.734  ortU=    10.876  ortV=    10.897    drift=1.51e-15  t_eval=3.30e-03  t_dbdsqr=5.60e-06
+  ev6_ec1_n99_s3_gm                                n=   297  res=     0.024  ortU=    10.880  ortV=    10.877    drift=3.74e-15  t_eval=1.32e-01  t_dbdsqr=2.36e-03
+  ev5_ec1_n37_s2                                   n=    37  res=     0.189  ortU=    10.856  ortV=    10.849    drift=2.69e-15  t_eval=5.31e-03  t_dbdsqr=2.41e-05
+  ev3_ec1_n7_s1_gm                                 n=    21  res=     0.299  ortU=    10.777  ortV=    10.798    drift=2.09e-15  t_eval=3.85e-03  t_dbdsqr=1.55e-05
+  ev4_ec1_n88_s3_gm                                n=   264  res=     0.023  ortU=    10.796  ortV=    10.796    drift=1.55e-15  t_eval=1.09e-01  t_dbdsqr=1.75e-03
+  ev3_ec1_n24_s0                                   n=    24  res=     0.277  ortU=    10.751  ortV=    10.764    drift=2.29e-15  t_eval=4.04e-03  t_dbdsqr=1.41e-05
+  ev5_ec4_n11_s2_gs                                n=    22  res=     0.340  ortU=    10.750  ortV=    10.722    drift=3.24e-15  t_eval=3.81e-03  t_dbdsqr=9.33e-06
+  ev4_ec1_n60_s2_gm                                n=   180  res=     0.029  ortU=    10.711  ortV=    10.712    drift=1.40e-15  t_eval=5.26e-02  t_dbdsqr=8.94e-04
+  ev3_ec1_n19_s3                                   n=    19  res=     0.342  ortU=    10.687  ortV=    10.701    drift=1.99e-15  t_eval=3.70e-03  t_dbdsqr=1.08e-05
+  ev5_ec1_n16_s3                                   n=    16  res=     0.397  ortU=    10.634  ortV=    10.691    drift=3.41e-15  t_eval=3.50e-03  t_dbdsqr=9.90e-06
+  ev3_ec4_n12_s0                                   n=    12  res=     0.523  ortU=    10.665  ortV=    10.672    drift=1.67e-15  t_eval=3.38e-03  t_dbdsqr=5.25e-06
+  ev9_ec1_n18_s2_gs                                n=    36  res=     0.269  ortU=    10.633  ortV=    10.628    drift=7.46e-15  t_eval=4.78e-03  t_dbdsqr=4.37e-05
+  ev3_ec1_n32_s3                                   n=    32  res=     0.188  ortU=    10.596  ortV=    10.572    drift=2.06e-15  t_eval=4.77e-03  t_dbdsqr=2.10e-05
+  ev9_ec1_n15_s0_gs                                n=    30  res=     0.284  ortU=    10.519  ortV=    10.543    drift=1.10e-15  t_eval=4.36e-03  t_dbdsqr=3.16e-05
+  ev5_ec4_n10_s1_gs                                n=    20  res=     0.353  ortU=    10.537  ortV=    10.519    drift=2.27e-15  t_eval=3.72e-03  t_dbdsqr=8.27e-06
+  ev4_ec4_n76_s3_gm                                n=   228  res=     0.024  ortU=    10.514  ortV=    10.516    drift=1.29e-15  t_eval=8.16e-02  t_dbdsqr=1.35e-03
+  ev4_ec1_n82_s1_gm                                n=   246  res=     0.024  ortU=    10.487  ortV=    10.492    drift=1.62e-15  t_eval=9.42e-02  t_dbdsqr=1.54e-03
+  ev5_ec4_n60_s1                                   n=    60  res=     0.107  ortU=    10.475  ortV=    10.473    drift=3.02e-15  t_eval=8.07e-03  t_dbdsqr=3.68e-05
+  ev9_ec1_n3_s3_gs                                 n=     6  res=     1.184  ortU=    10.462  ortV=    10.435    drift=8.78e-16  t_eval=3.18e-03  t_dbdsqr=4.32e-06
+  ev6_ec1_n98_s1                                   n=    98  res=     0.071  ortU=    10.458  ortV=    10.457    drift=1.05e-15  t_eval=2.13e-02  t_dbdsqr=2.45e-04
+  ev9_ec1_n12_s3_gs                                n=    24  res=     0.443  ortU=    10.430  ortV=    10.406    drift=1.32e-15  t_eval=3.82e-03  t_dbdsqr=2.10e-05
+  ev8_ec1_n83_s2_gm                                n=   249  res=     0.039  ortU=    10.382  ortV=    10.382    drift=3.33e-15  t_eval=9.04e-02  t_dbdsqr=2.06e-03
+  ev4_ec4_n83_s2_gm                                n=   249  res=     0.031  ortU=    10.365  ortV=    10.369    drift=3.94e-15  t_eval=9.75e-02  t_dbdsqr=1.57e-03
+  ev5_ec4_n12_s2_gm                                n=    36  res=     0.206  ortU=    10.304  ortV=    10.325    drift=2.92e-15  t_eval=4.95e-03  t_dbdsqr=2.82e-05
+  ev8_ec1_n9_s1_gm                                 n=    27  res=     0.280  ortU=    10.317  ortV=    10.302    drift=1.42e-15  t_eval=4.20e-03  t_dbdsqr=2.78e-05
+  ev3_ec1_n28_s0                                   n=    28  res=     0.233  ortU=    10.265  ortV=    10.279    drift=2.43e-15  t_eval=4.29e-03  t_dbdsqr=1.77e-05
+  ev6_ec1_n17_s3                                   n=    17  res=     0.348  ortU=    10.239  ortV=    10.253    drift=8.92e-16  t_eval=3.58e-03  t_dbdsqr=1.27e-05
+  tri4_n37_gm                                      n=   111  res=     0.050  ortU=    10.196  ortV=    10.196    drift=7.79e-15  t_eval=2.25e-02  t_dbdsqr=3.35e-04
+  ev5_ec1_n37_s2_gs                                n=    74  res=     0.629  ortU=    10.194  ortV=    10.193    drift=2.42e-15  t_eval=7.92e-03  t_dbdsqr=7.85e-05
+  ev3_ec1_n21_s3                                   n=    21  res=     0.350  ortU=    10.186  ortV=    10.185    drift=1.78e-15  t_eval=3.75e-03  t_dbdsqr=1.23e-05
+  ev9_ec1_n16_s2_gs                                n=    32  res=     0.256  ortU=    10.175  ortV=    10.167    drift=6.58e-16  t_eval=4.35e-03  t_dbdsqr=3.23e-05
+  ev3_ec4_n22_s3                                   n=    22  res=     0.613  ortU=    10.169  ortV=    10.173    drift=3.20e-15  t_eval=3.70e-03  t_dbdsqr=1.05e-05
+  ev9_ec1_n15_s1_gs                                n=    30  res=     0.297  ortU=    10.114  ortV=    10.122    drift=3.51e-15  t_eval=4.36e-03  t_dbdsqr=2.93e-05
+  ev3_ec4_n24_s3                                   n=    24  res=     0.420  ortU=    10.112  ortV=    10.122    drift=2.15e-15  t_eval=3.86e-03  t_dbdsqr=1.14e-05
+  ev6_ec1_n22_s3                                   n=    22  res=     0.384  ortU=    10.117  ortV=    10.094    drift=1.62e-15  t_eval=3.98e-03  t_dbdsqr=1.93e-05
+  ev4_ec1_n99_s1_gm                                n=   297  res=     0.020  ortU=    10.110  ortV=    10.106    drift=1.99e-15  t_eval=1.36e-01  t_dbdsqr=2.21e-03
+  ev3_ec4_n25_s2                                   n=    25  res=     0.677  ortU=    10.100  ortV=    10.067    drift=3.06e-15  t_eval=4.42e-03  t_dbdsqr=1.32e-05
+  ev5_ec1_n51_s2_gm                                n=   153  res=     0.050  ortU=    10.085  ortV=    10.080    drift=2.04e-15  t_eval=3.61e-02  t_dbdsqr=3.05e-04
+  ev3_ec1_n15_s0_gm                                n=    45  res=     0.134  ortU=    10.034  ortV=    10.036    drift=1.72e-15  t_eval=6.18e-03  t_dbdsqr=4.01e-05
+  ev3_ec1_n16_s2                                   n=    16  res=     0.426  ortU=     9.972  ortV=    10.022    drift=2.90e-15  t_eval=3.32e-03  t_dbdsqr=8.41e-06
+  ev6_ec1_n79_s3_gm                                n=   237  res=     0.029  ortU=    10.010  ortV=    10.014    drift=5.32e-15  t_eval=8.48e-02  t_dbdsqr=1.51e-03
+  ev4_ec1_n91_s2_gm                                n=   273  res=     0.021  ortU=     9.951  ortV=     9.949    drift=4.44e-15  t_eval=1.13e-01  t_dbdsqr=1.84e-03
+  ev6_ec1_n95_s3_gm                                n=   285  res=     0.026  ortU=     9.925  ortV=     9.929    drift=1.53e-15  t_eval=1.21e-01  t_dbdsqr=2.14e-03
+  ev5_ec1_n92_s0                                   n=    92  res=     0.077  ortU=     9.852  ortV=     9.864    drift=2.02e-15  t_eval=1.64e-02  t_dbdsqr=1.18e-04
+  tri6_n77_gm                                      n=   231  res=     0.019  ortU=     9.843  ortV=     9.840    drift=2.29e-15  t_eval=8.76e-02  t_dbdsqr=1.28e-03
+  tri7_n61_gm                                      n=   183  res=     0.026  ortU=     9.834  ortV=     9.825    drift=1.85e-15  t_eval=5.34e-02  t_dbdsqr=7.99e-04
+  ev5_ec4_n11_s2_gm                                n=    33  res=     0.212  ortU=     9.776  ortV=     9.776    drift=2.22e-15  t_eval=4.65e-03  t_dbdsqr=2.48e-05
+  ev9_ec1_n4_s3_gs                                 n=     8  res=     1.032  ortU=     9.747  ortV=     9.776    drift=6.58e-16  t_eval=3.22e-03  t_dbdsqr=5.59e-06
+  ev3_ec4_n34_s0                                   n=    34  res=     0.641  ortU=     9.767  ortV=     9.766    drift=3.13e-15  t_eval=4.60e-03  t_dbdsqr=1.64e-05
+  ev4_ec1_n59_s1_gm                                n=   177  res=     0.029  ortU=     9.757  ortV=     9.759    drift=9.39e-15  t_eval=5.10e-02  t_dbdsqr=8.32e-04
+  ev5_ec1_n25_s2                                   n=    25  res=     0.258  ortU=     9.724  ortV=     9.753    drift=1.84e-15  t_eval=4.15e-03  t_dbdsqr=1.41e-05
+  ev3_ec1_n4_s2_gm                                 n=    12  res=     0.645  ortU=     9.684  ortV=     9.731    drift=1.45e-15  t_eval=3.39e-03  t_dbdsqr=9.14e-06
+  ev8_ec1_n60_s0_gm                                n=   180  res=     0.048  ortU=     9.721  ortV=     9.722    drift=1.92e-15  t_eval=4.86e-02  t_dbdsqr=1.07e-03
+  ev5_ec4_n38_s2                                   n=    38  res=     0.874  ortU=     9.696  ortV=     9.688    drift=2.16e-15  t_eval=4.90e-03  t_dbdsqr=1.70e-05
+  ev5_ec1_n26_s3                                   n=    26  res=     0.245  ortU=     9.655  ortV=     9.617    drift=2.31e-15  t_eval=4.16e-03  t_dbdsqr=1.53e-05
+  ev9_ec1_n13_s2_gs                                n=    26  res=     0.329  ortU=     9.608  ortV=     9.614    drift=1.32e-15  t_eval=3.81e-03  t_dbdsqr=2.39e-05
+  ev4_ec4_n98_s3_gm                                n=   294  res=     0.026  ortU=     9.541  ortV=     9.547    drift=1.81e-15  t_eval=1.32e-01  t_dbdsqr=2.12e-03
+  ev5_ec4_n5_s1_gm                                 n=    15  res=     0.511  ortU=     9.505  ortV=     9.526    drift=1.25e-15  t_eval=3.41e-03  t_dbdsqr=1.73e-05
+  ev3_ec1_n8_s2                                    n=     8  res=     0.625  ortU=     9.444  ortV=     9.509    drift=1.64e-15  t_eval=3.12e-03  t_dbdsqr=6.66e-06
+  ev4_ec4_n60_s3_gm                                n=   180  res=     0.028  ortU=     9.504  ortV=     9.504    drift=1.45e-15  t_eval=5.16e-02  t_dbdsqr=8.71e-04
+  ev6_ec1_n92_s2_gm                                n=   276  res=     0.024  ortU=     9.478  ortV=     9.482    drift=1.98e-15  t_eval=1.18e-01  t_dbdsqr=1.90e-03
+  ev8_ec1_n98_s3_gm                                n=   294  res=     0.029  ortU=     9.468  ortV=     9.470    drift=1.48e-15  t_eval=1.22e-01  t_dbdsqr=2.70e-03
+  ev4_ec1_n58_s1_gm                                n=   174  res=     0.030  ortU=     9.462  ortV=     9.457    drift=2.69e-15  t_eval=4.95e-02  t_dbdsqr=8.03e-04
+  ev5_ec1_n22_s0                                   n=    22  res=     0.286  ortU=     9.442  ortV=     9.424    drift=1.56e-15  t_eval=3.71e-03  t_dbdsqr=1.23e-05
+  ev4_ec1_n62_s1_gm                                n=   186  res=     0.035  ortU=     9.438  ortV=     9.434    drift=1.35e-15  t_eval=5.49e-02  t_dbdsqr=9.28e-04
+  ev4_ec1_n57_s1_gm                                n=   171  res=     0.030  ortU=     9.438  ortV=     9.435    drift=1.30e-15  t_eval=4.80e-02  t_dbdsqr=7.87e-04
+  ev3_ec1_n23_s0                                   n=    23  res=     0.290  ortU=     9.405  ortV=     9.402    drift=2.16e-15  t_eval=3.78e-03  t_dbdsqr=1.29e-05
+  ev3_ec1_n31_s1                                   n=    31  res=     0.208  ortU=     9.378  ortV=     9.402    drift=2.27e-15  t_eval=4.56e-03  t_dbdsqr=3.91e-05
+  ev5_ec4_n24_s2                                   n=    24  res=     0.289  ortU=     9.397  ortV=     9.385    drift=1.55e-15  t_eval=3.97e-03  t_dbdsqr=1.02e-05
+  ev4_ec4_n78_s2_gm                                n=   234  res=     0.028  ortU=     9.389  ortV=     9.386    drift=1.76e-15  t_eval=8.53e-02  t_dbdsqr=1.39e-03
+  ev5_ec4_n49_s2                                   n=    49  res=     0.542  ortU=     9.325  ortV=     9.303    drift=2.35e-15  t_eval=6.37e-03  t_dbdsqr=2.23e-05
+  ev5_ec1_n11_s1_gm                                n=    33  res=     0.246  ortU=     9.317  ortV=     9.318    drift=2.25e-15  t_eval=5.00e-03  t_dbdsqr=2.70e-05
+  ev6_ec1_n71_s1_gm                                n=   213  res=     0.042  ortU=     9.290  ortV=     9.285    drift=1.37e-15  t_eval=6.82e-02  t_dbdsqr=1.22e-03
+  ev4_ec1_n80_s0_gm                                n=   240  res=     0.024  ortU=     9.260  ortV=     9.266    drift=1.81e-15  t_eval=8.90e-02  t_dbdsqr=1.54e-03
+  ev3_ec1_n29_s0                                   n=    29  res=     0.255  ortU=     9.248  ortV=     9.250    drift=2.16e-15  t_eval=4.67e-03  t_dbdsqr=3.75e-05
+  ev5_ec4_n54_s0                                   n=    54  res=     0.727  ortU=     9.211  ortV=     9.208    drift=7.70e-15  t_eval=6.45e-03  t_dbdsqr=3.03e-05
+  ev5_ec4_n100_s2                                  n=   100  res=     0.973  ortU=     9.204  ortV=     9.204    drift=3.13e-14  t_eval=1.33e-02  t_dbdsqr=1.84e-04
+  ev6_ec1_n92_s0_gm                                n=   276  res=     0.023  ortU=     9.172  ortV=     9.171    drift=3.31e-15  t_eval=1.14e-01  t_dbdsqr=1.98e-03
+  ev3_ec1_n28_s3                                   n=    28  res=     0.215  ortU=     9.150  ortV=     9.148    drift=2.21e-15  t_eval=4.34e-03  t_dbdsqr=3.15e-05
+  ev8_ec1_n7_s0_gm                                 n=    21  res=     0.424  ortU=     9.040  ortV=     9.085    drift=4.68e-15  t_eval=3.75e-03  t_dbdsqr=1.72e-05
+  ev5_ec1_n49_s0                                   n=    49  res=     0.139  ortU=     9.058  ortV=     9.060    drift=2.60e-15  t_eval=6.79e-03  t_dbdsqr=4.07e-05
+  ev6_ec1_n42_s3_gm                                n=   126  res=     0.055  ortU=     9.054  ortV=     9.056    drift=1.43e-15  t_eval=2.56e-02  t_dbdsqr=4.58e-04
+  ev6_ec1_n35_s2_gm                                n=   105  res=     0.080  ortU=     9.048  ortV=     9.045    drift=6.03e-15  t_eval=1.92e-02  t_dbdsqr=3.22e-04
+  ev6_ec1_n99_s0_gm                                n=   297  res=     0.021  ortU=     9.044  ortV=     9.045    drift=1.18e-15  t_eval=1.34e-01  t_dbdsqr=2.19e-03
+  ev4_ec4_n47_s3_gm                                n=   141  res=     0.044  ortU=     9.026  ortV=     9.026    drift=8.74e-16  t_eval=3.45e-02  t_dbdsqr=5.56e-04
+  ev3_ec1_n6_s3_gm                                 n=    18  res=     0.314  ortU=     9.023  ortV=     9.013    drift=2.41e-15  t_eval=3.58e-03  t_dbdsqr=1.08e-05
+  tri4_n77_gm                                      n=   231  res=     0.027  ortU=     8.999  ortV=     9.007    drift=2.56e-15  t_eval=8.59e-02  t_dbdsqr=1.24e-03
+  ev4_ec4_n73_s2_gm                                n=   219  res=     0.023  ortU=     8.996  ortV=     8.999    drift=2.14e-15  t_eval=7.49e-02  t_dbdsqr=1.24e-03
+  ev9_ec1_n8_s0_gs                                 n=    16  res=     0.616  ortU=     8.991  ortV=     8.986    drift=1.97e-15  t_eval=3.34e-03  t_dbdsqr=1.11e-05
+  ev9_ec1_n6_s2_gs                                 n=    12  res=     0.695  ortU=     8.945  ortV=     8.983    drift=1.10e-15  t_eval=3.29e-03  t_dbdsqr=9.17e-06
+  ev5_ec1_n40_s1_gm                                n=   120  res=     0.057  ortU=     8.974  ortV=     8.976    drift=2.23e-15  t_eval=2.36e-02  t_dbdsqr=2.50e-04
+  ev8_ec1_n82_s3_gm                                n=   246  res=     0.031  ortU=     8.959  ortV=     8.959    drift=1.85e-15  t_eval=9.00e-02  t_dbdsqr=1.96e-03
+  ev5_ec1_n6_s2_gm                                 n=    18  res=     0.422  ortU=     8.932  ortV=     8.900    drift=1.11e-15  t_eval=3.51e-03  t_dbdsqr=1.01e-05
+  ev5_ec1_n20_s3_gm                                n=    60  res=     0.120  ortU=     8.883  ortV=     8.896    drift=3.41e-15  t_eval=8.46e-03  t_dbdsqr=8.85e-05
+  ev6_ec1_n98_s0_gm                                n=   294  res=     0.023  ortU=     8.839  ortV=     8.840    drift=4.90e-15  t_eval=1.33e-01  t_dbdsqr=2.18e-03
+  tri6_n66_gm                                      n=   198  res=     0.021  ortU=     8.817  ortV=     8.820    drift=3.30e-15  t_eval=6.36e-02  t_dbdsqr=9.70e-04
+  ev6_ec1_n100_s2_gm                               n=   300  res=     0.022  ortU=     8.815  ortV=     8.810    drift=1.33e-15  t_eval=1.35e-01  t_dbdsqr=2.23e-03
+  ev6_ec1_n93_s0_gm                                n=   279  res=     0.022  ortU=     8.806  ortV=     8.803    drift=1.40e-15  t_eval=1.18e-01  t_dbdsqr=1.97e-03
+  ev4_ec1_n86_s3_gm                                n=   258  res=     0.026  ortU=     8.759  ortV=     8.756    drift=1.39e-15  t_eval=1.02e-01  t_dbdsqr=1.70e-03
+  ev8_ec1_n70_s2_gm                                n=   210  res=     0.042  ortU=     8.751  ortV=     8.753    drift=4.57e-15  t_eval=6.26e-02  t_dbdsqr=1.49e-03
+  ev8_ec1_n54_s2_gm                                n=   162  res=     0.063  ortU=     8.730  ortV=     8.729    drift=2.05e-15  t_eval=4.08e-02  t_dbdsqr=8.91e-04
+  ev5_ec1_n73_s1                                   n=    73  res=     0.074  ortU=     8.721  ortV=     8.719    drift=1.84e-15  t_eval=1.09e-02  t_dbdsqr=7.88e-05
+  ev5_ec1_n21_s0                                   n=    21  res=     0.360  ortU=     8.692  ortV=     8.664    drift=1.43e-15  t_eval=3.94e-03  t_dbdsqr=2.31e-05
+  ev4_ec4_n51_s2_gm                                n=   153  res=     0.037  ortU=     8.674  ortV=     8.677    drift=2.24e-15  t_eval=3.81e-02  t_dbdsqr=6.46e-04
+  ev6_ec1_n85_s3_gm                                n=   255  res=     0.029  ortU=     8.620  ortV=     8.623    drift=1.00e-14  t_eval=9.84e-02  t_dbdsqr=1.78e-03
+  ev6_ec1_n33_s1                                   n=    33  res=     0.266  ortU=     8.590  ortV=     8.622    drift=1.82e-15  t_eval=5.10e-03  t_dbdsqr=4.54e-05
+  ev5_ec1_n23_s3                                   n=    23  res=     0.302  ortU=     8.607  ortV=     8.619    drift=1.51e-15  t_eval=3.96e-03  t_dbdsqr=1.37e-05
+  ev6_ec1_n85_s0_gm                                n=   255  res=     0.026  ortU=     8.604  ortV=     8.605    drift=1.28e-15  t_eval=9.81e-02  t_dbdsqr=1.67e-03
+  ev4_ec1_n87_s2_gm                                n=   261  res=     0.022  ortU=     8.598  ortV=     8.592    drift=2.86e-15  t_eval=1.06e-01  t_dbdsqr=1.73e-03
+  tri3_n11_gm                                      n=    33  res=     0.203  ortU=     8.584  ortV=     8.592    drift=6.38e-16  t_eval=4.92e-03  t_dbdsqr=3.51e-05
+  ev5_ec4_n16_s2                                   n=    16  res=     0.458  ortU=     8.567  ortV=     8.583    drift=1.89e-15  t_eval=3.41e-03  t_dbdsqr=2.07e-05
+  ev5_ec1_n79_s3                                   n=    79  res=     0.085  ortU=     8.583  ortV=     8.579    drift=2.67e-15  t_eval=1.28e-02  t_dbdsqr=1.06e-04
+  ev9_ec1_n14_s2_gs                                n=    28  res=     0.320  ortU=     8.572  ortV=     8.563    drift=4.39e-15  t_eval=3.99e-03  t_dbdsqr=2.53e-05
+  ev9_ec1_n14_s1_gs                                n=    28  res=     0.340  ortU=     8.555  ortV=     8.542    drift=2.63e-15  t_eval=4.02e-03  t_dbdsqr=2.62e-05
+  ev5_ec4_n50_s1                                   n=    50  res=     0.171  ortU=     8.540  ortV=     8.544    drift=2.72e-15  t_eval=6.55e-03  t_dbdsqr=3.13e-05
+  ev5_ec1_n68_s0_gm                                n=   204  res=     0.039  ortU=     8.534  ortV=     8.537    drift=3.24e-15  t_eval=6.34e-02  t_dbdsqr=6.43e-04
+  ev3_ec4_n42_s0                                   n=    42  res=     0.537  ortU=     8.529  ortV=     8.534    drift=2.34e-15  t_eval=5.30e-03  t_dbdsqr=2.26e-05
+  ev6_ec1_n51_s0                                   n=    51  res=     0.109  ortU=     8.527  ortV=     8.511    drift=1.49e-15  t_eval=7.90e-03  t_dbdsqr=7.62e-05
+  ev6_ec1_n31_s3                                   n=    31  res=     0.276  ortU=     8.444  ortV=     8.478    drift=1.19e-15  t_eval=4.91e-03  t_dbdsqr=3.20e-05
+  ev4_ec1_n53_s0_gm                                n=   159  res=     0.037  ortU=     8.468  ortV=     8.471    drift=1.43e-15  t_eval=4.11e-02  t_dbdsqr=6.89e-04
+  ev4_ec4_n62_s3_gm                                n=   186  res=     0.035  ortU=     8.429  ortV=     8.434    drift=1.31e-15  t_eval=5.43e-02  t_dbdsqr=9.20e-04
+  ev3_ec4_n62_s0                                   n=    62  res=     0.783  ortU=     8.431  ortV=     8.431    drift=7.29e-15  t_eval=7.45e-03  t_dbdsqr=1.03e-04
+  ev6_ec1_n89_s3_gm                                n=   267  res=     0.028  ortU=     8.412  ortV=     8.413    drift=1.39e-15  t_eval=1.05e-01  t_dbdsqr=1.97e-03
+  ev4_ec4_n57_s1_gm                                n=   171  res=     0.033  ortU=     8.402  ortV=     8.410    drift=1.00e-15  t_eval=4.77e-02  t_dbdsqr=7.95e-04
+  ev6_ec1_n45_s3_gm                                n=   135  res=     0.055  ortU=     8.403  ortV=     8.405    drift=1.23e-15  t_eval=2.93e-02  t_dbdsqr=5.29e-04
+  ev3_ec4_n27_s3                                   n=    27  res=     0.531  ortU=     8.390  ortV=     8.371    drift=2.41e-15  t_eval=4.14e-03  t_dbdsqr=1.27e-05
+  ev3_ec4_n26_s1                                   n=    26  res=     0.850  ortU=     8.387  ortV=     8.384    drift=3.35e-15  t_eval=3.99e-03  t_dbdsqr=1.19e-05
+  ev3_ec1_n23_s1                                   n=    23  res=     0.247  ortU=     8.366  ortV=     8.373    drift=3.84e-15  t_eval=3.73e-03  t_dbdsqr=1.23e-05
+  ev3_ec1_n5_s0_gm                                 n=    15  res=     0.467  ortU=     8.337  ortV=     8.363    drift=1.24e-15  t_eval=3.42e-03  t_dbdsqr=1.06e-05
+  ev4_ec4_n71_s0_gm                                n=   213  res=     0.027  ortU=     8.353  ortV=     8.354    drift=1.74e-15  t_eval=7.08e-02  t_dbdsqr=1.16e-03
+  ev5_ec1_n24_s3                                   n=    24  res=     0.255  ortU=     8.350  ortV=     8.347    drift=1.42e-15  t_eval=4.16e-03  t_dbdsqr=2.53e-05
+  ev3_ec4_n43_s1                                   n=    43  res=     0.998  ortU=     8.345  ortV=     8.345    drift=8.98e-15  t_eval=5.41e-03  t_dbdsqr=2.31e-05
+  ev3_ec1_n12_s0_gm                                n=    36  res=     0.181  ortU=     8.312  ortV=     8.312    drift=1.69e-15  t_eval=5.11e-03  t_dbdsqr=3.14e-05
+  ev3_ec1_n30_s2                                   n=    30  res=     0.211  ortU=     8.289  ortV=     8.280    drift=2.35e-15  t_eval=4.53e-03  t_dbdsqr=3.95e-05
+  ev3_ec4_n40_s0                                   n=    40  res=     0.876  ortU=     8.234  ortV=     8.246    drift=2.63e-15  t_eval=5.05e-03  t_dbdsqr=2.19e-05
+  ev4_ec1_n36_s1_gm                                n=   108  res=     0.053  ortU=     8.148  ortV=     8.150    drift=2.23e-15  t_eval=2.13e-02  t_dbdsqr=3.53e-04
+  tri4_n70_gm                                      n=   210  res=     0.027  ortU=     8.117  ortV=     8.121    drift=2.16e-15  t_eval=7.15e-02  t_dbdsqr=1.05e-03
+  ev5_ec4_n32_s2                                   n=    32  res=     0.891  ortU=     8.115  ortV=     8.106    drift=2.13e-15  t_eval=4.44e-03  t_dbdsqr=1.42e-05
+  tri6_n75_gm                                      n=   225  res=     0.019  ortU=     8.105  ortV=     8.107    drift=1.92e-15  t_eval=8.15e-02  t_dbdsqr=1.23e-03
+  ev9_ec1_n11_s1_gs                                n=    22  res=     0.426  ortU=     8.074  ortV=     8.106    drift=4.17e-15  t_eval=3.81e-03  t_dbdsqr=1.90e-05
+  ev3_ec4_n24_s0                                   n=    24  res=     0.344  ortU=     8.077  ortV=     8.100    drift=2.44e-15  t_eval=3.83e-03  t_dbdsqr=1.12e-05
+  ev5_ec1_n47_s1                                   n=    47  res=     0.132  ortU=     8.089  ortV=     8.081    drift=2.15e-15  t_eval=6.50e-03  t_dbdsqr=3.51e-05
+  ev5_ec4_n31_s2                                   n=    31  res=     0.482  ortU=     8.073  ortV=     8.056    drift=9.39e-15  t_eval=4.38e-03  t_dbdsqr=1.38e-05
+  ev4_ec4_n54_s0_gm                                n=   162  res=     0.039  ortU=     8.012  ortV=     8.007    drift=1.45e-15  t_eval=4.21e-02  t_dbdsqr=7.07e-04
+  ev6_ec1_n20_s1_gm                                n=    60  res=     0.116  ortU=     7.996  ortV=     7.998    drift=8.44e-16  t_eval=8.85e-03  t_dbdsqr=1.25e-04
+  ev5_ec4_n46_s2                                   n=    46  res=     0.918  ortU=     7.976  ortV=     7.986    drift=1.85e-15  t_eval=5.66e-03  t_dbdsqr=2.27e-05
+  ev3_ec4_n30_s1                                   n=    30  res=     0.429  ortU=     7.969  ortV=     7.954    drift=2.95e-15  t_eval=4.39e-03  t_dbdsqr=1.37e-05
+  ev5_ec1_n57_s2                                   n=    57  res=     0.115  ortU=     7.959  ortV=     7.958    drift=2.59e-15  t_eval=7.99e-03  t_dbdsqr=4.87e-05
+  ev4_ec1_n69_s2_gm                                n=   207  res=     0.026  ortU=     7.930  ortV=     7.924    drift=1.50e-15  t_eval=7.06e-02  t_dbdsqr=1.10e-03
+  ev4_ec4_n86_s3_gm                                n=   258  res=     0.022  ortU=     7.909  ortV=     7.907    drift=1.33e-15  t_eval=1.05e-01  t_dbdsqr=1.67e-03
+  ev5_ec4_n35_s1_gm                                n=   105  res=     0.070  ortU=     7.902  ortV=     7.907    drift=3.17e-15  t_eval=1.87e-02  t_dbdsqr=2.08e-04
+  ev6_ec1_n41_s2_gm                                n=   123  res=     0.065  ortU=     7.877  ortV=     7.879    drift=1.88e-15  t_eval=2.50e-02  t_dbdsqr=4.14e-04
+  ev6_ec1_n28_s0                                   n=    28  res=     0.220  ortU=     7.845  ortV=     7.826    drift=8.51e-16  t_eval=4.50e-03  t_dbdsqr=2.93e-05
+  tri6_n68_gm                                      n=   204  res=     0.020  ortU=     7.843  ortV=     7.843    drift=3.35e-15  t_eval=6.78e-02  t_dbdsqr=1.03e-03
+  ev6_ec1_n15_s3_gs                                n=    30  res=     0.604  ortU=     7.826  ortV=     7.799    drift=1.74e-15  t_eval=3.89e-03  t_dbdsqr=2.03e-05
+  ev5_ec1_n81_s2_gm                                n=   243  res=     0.027  ortU=     7.799  ortV=     7.797    drift=2.47e-15  t_eval=8.71e-02  t_dbdsqr=8.08e-04
+  ev4_ec4_n81_s3_gm                                n=   243  res=     0.023  ortU=     7.798  ortV=     7.798    drift=1.45e-15  t_eval=9.13e-02  t_dbdsqr=1.53e-03
+  ev5_ec1_n47_s2                                   n=    47  res=     0.148  ortU=     7.773  ortV=     7.763    drift=2.07e-15  t_eval=6.61e-03  t_dbdsqr=3.89e-05
+  ev4_ec4_n92_s2_gm                                n=   276  res=     0.017  ortU=     7.772  ortV=     7.773    drift=1.73e-15  t_eval=1.18e-01  t_dbdsqr=1.91e-03
+  ev4_ec1_n66_s2_gm                                n=   198  res=     0.030  ortU=     7.764  ortV=     7.772    drift=2.57e-15  t_eval=6.39e-02  t_dbdsqr=1.05e-03
+  ev4_ec1_n54_s3_gm                                n=   162  res=     0.044  ortU=     7.767  ortV=     7.766    drift=1.67e-15  t_eval=4.30e-02  t_dbdsqr=7.19e-04
+  ev3_ec1_n50_s3                                   n=    50  res=     0.131  ortU=     7.764  ortV=     7.763    drift=1.99e-15  t_eval=6.79e-03  t_dbdsqr=4.38e-05
+  ev8_ec1_n74_s2_gm                                n=   222  res=     0.040  ortU=     7.737  ortV=     7.739    drift=1.59e-15  t_eval=7.13e-02  t_dbdsqr=1.61e-03
+  ev6_ec1_n40_s0                                   n=    40  res=     0.190  ortU=     7.737  ortV=     7.707    drift=1.18e-15  t_eval=6.15e-03  t_dbdsqr=6.35e-05
+  ev6_ec1_n72_s1_gm                                n=   216  res=     0.040  ortU=     7.701  ortV=     7.696    drift=1.75e-15  t_eval=7.14e-02  t_dbdsqr=1.22e-03
+  ev4_ec4_n63_s3_gm                                n=   189  res=     0.038  ortU=     7.691  ortV=     7.692    drift=2.82e-15  t_eval=5.64e-02  t_dbdsqr=9.53e-04
+  ev6_ec1_n65_s0                                   n=    65  res=     0.095  ortU=     7.663  ortV=     7.660    drift=1.14e-15  t_eval=1.11e-02  t_dbdsqr=1.20e-04
+  ev3_ec1_n15_s0                                   n=    15  res=     0.411  ortU=     7.550  ortV=     7.650    drift=1.90e-15  t_eval=3.48e-03  t_dbdsqr=7.24e-06
+  ev3_ec1_n14_s0_gm                                n=    42  res=     0.155  ortU=     7.626  ortV=     7.636    drift=2.66e-15  t_eval=5.79e-03  t_dbdsqr=3.50e-05
+  tri7_n57_gm                                      n=   171  res=     0.028  ortU=     7.627  ortV=     7.627    drift=1.29e-15  t_eval=4.66e-02  t_dbdsqr=7.46e-04
+  ev4_ec1_n99_s2_gm                                n=   297  res=     0.021  ortU=     7.615  ortV=     7.613    drift=1.20e-15  t_eval=1.37e-01  t_dbdsqr=2.16e-03
+  ev4_ec1_n45_s2_gm                                n=   135  res=     0.037  ortU=     7.598  ortV=     7.602    drift=1.68e-15  t_eval=3.08e-02  t_dbdsqr=5.15e-04
+  ev6_ec1_n81_s1_gm                                n=   243  res=     0.034  ortU=     7.594  ortV=     7.593    drift=1.04e-15  t_eval=9.00e-02  t_dbdsqr=1.53e-03
+  ev6_ec1_n71_s3_gm                                n=   213  res=     0.038  ortU=     7.571  ortV=     7.570    drift=1.76e-15  t_eval=6.93e-02  t_dbdsqr=1.23e-03
+  ev3_ec4_n13_s1_gm                                n=    39  res=     0.201  ortU=     7.556  ortV=     7.556    drift=2.19e-15  t_eval=4.03e-03  t_dbdsqr=3.26e-05
+  ev9_ec1_n20_s0_gs                                n=    40  res=     0.254  ortU=     7.496  ortV=     7.506    drift=3.29e-15  t_eval=5.20e-03  t_dbdsqr=5.12e-05
+  ev5_ec1_n28_s2                                   n=    28  res=     0.242  ortU=     7.501  ortV=     7.492    drift=1.82e-15  t_eval=4.27e-03  t_dbdsqr=3.38e-05
+  ev3_ec1_n13_s2                                   n=    13  res=     0.491  ortU=     7.455  ortV=     7.498    drift=3.66e-15  t_eval=3.30e-03  t_dbdsqr=6.58e-06
+  ev4_ec1_n98_s1_gm                                n=   294  res=     0.024  ortU=     7.496  ortV=     7.493    drift=1.27e-15  t_eval=1.32e-01  t_dbdsqr=2.14e-03
+  ev3_ec1_n31_s0_gs                                n=    62  res=     0.799  ortU=     7.488  ortV=     7.488    drift=2.17e-15  t_eval=6.34e-03  t_dbdsqr=1.07e-04
+  tri6_n95_gm                                      n=   285  res=     0.015  ortU=     7.468  ortV=     7.465    drift=3.03e-15  t_eval=1.31e-01  t_dbdsqr=1.93e-03
+  ev4_ec1_n78_s2_gm                                n=   234  res=     0.026  ortU=     7.460  ortV=     7.463    drift=6.30e-15  t_eval=8.36e-02  t_dbdsqr=1.40e-03
+  tri4_n69_gm                                      n=   207  res=     0.034  ortU=     7.460  ortV=     7.460    drift=9.11e-15  t_eval=6.92e-02  t_dbdsqr=1.00e-03
+  tri6_n43_gm                                      n=   129  res=     0.032  ortU=     7.437  ortV=     7.437    drift=1.95e-15  t_eval=3.02e-02  t_dbdsqr=4.39e-04
+  ev3_ec4_n12_s3                                   n=    12  res=     0.503  ortU=     7.425  ortV=     7.434    drift=2.29e-15  t_eval=3.30e-03  t_dbdsqr=5.32e-06
+  ev5_ec1_n6_s0_gm                                 n=    18  res=     0.314  ortU=     7.427  ortV=     7.414    drift=1.18e-15  t_eval=3.60e-03  t_dbdsqr=1.27e-05
+  ev6_ec1_n31_s0                                   n=    31  res=     0.196  ortU=     7.409  ortV=     7.421    drift=6.38e-16  t_eval=4.91e-03  t_dbdsqr=3.02e-05
+  ev6_ec1_n67_s2_gm                                n=   201  res=     0.044  ortU=     7.411  ortV=     7.416    drift=4.10e-15  t_eval=6.29e-02  t_dbdsqr=1.06e-03
+  ev4_ec1_n95_s1_gm                                n=   285  res=     0.022  ortU=     7.407  ortV=     7.401    drift=3.92e-15  t_eval=1.23e-01  t_dbdsqr=2.01e-03
+  ev5_ec4_n29_s2                                   n=    29  res=     1.207  ortU=     7.395  ortV=     7.403    drift=1.94e-15  t_eval=4.35e-03  t_dbdsqr=1.30e-05
+  ev3_ec4_n89_s0                                   n=    89  res=     1.031  ortU=     7.398  ortV=     7.402    drift=1.54e-14  t_eval=1.13e-02  t_dbdsqr=8.28e-05
+  ev5_ec4_n27_s3                                   n=    27  res=     0.279  ortU=     7.390  ortV=     7.397    drift=1.99e-15  t_eval=4.18e-03  t_dbdsqr=3.21e-05
+  ev5_ec4_n40_s0                                   n=    40  res=     0.938  ortU=     7.395  ortV=     7.377    drift=7.17e-15  t_eval=5.03e-03  t_dbdsqr=2.01e-05
+  ev4_ec1_n70_s0_gm                                n=   210  res=     0.031  ortU=     7.362  ortV=     7.365    drift=1.36e-15  t_eval=6.93e-02  t_dbdsqr=1.15e-03
+  ev3_ec1_n18_s3                                   n=    18  res=     0.294  ortU=     7.339  ortV=     7.365    drift=2.18e-15  t_eval=3.70e-03  t_dbdsqr=9.95e-06
+  ev3_ec1_n13_s1_gm                                n=    39  res=     0.169  ortU=     7.340  ortV=     7.354    drift=1.83e-15  t_eval=5.43e-03  t_dbdsqr=4.97e-05
+  ev5_ec4_n29_s1_gs                                n=    58  res=     0.123  ortU=     7.342  ortV=     7.332    drift=3.08e-15  t_eval=8.09e-03  t_dbdsqr=6.61e-05
+  ev3_ec1_n47_s3                                   n=    47  res=     0.143  ortU=     7.314  ortV=     7.313    drift=2.18e-15  t_eval=6.49e-03  t_dbdsqr=7.50e-05
+  ev5_ec1_n33_s2_gm                                n=    99  res=     0.079  ortU=     7.310  ortV=     7.310    drift=2.58e-15  t_eval=1.71e-02  t_dbdsqr=2.26e-04
+  ev3_ec1_n6_s1_gm                                 n=    18  res=     0.413  ortU=     7.275  ortV=     7.285    drift=1.23e-15  t_eval=3.41e-03  t_dbdsqr=1.44e-05
+  ev6_ec1_n46_s2_gm                                n=   138  res=     0.067  ortU=     7.278  ortV=     7.284    drift=5.15e-15  t_eval=3.08e-02  t_dbdsqr=5.18e-04
+  ev6_ec1_n87_s3_gm                                n=   261  res=     0.034  ortU=     7.248  ortV=     7.254    drift=2.80e-15  t_eval=1.01e-01  t_dbdsqr=1.88e-03
+  ev4_ec4_n45_s0_gm                                n=   135  res=     0.041  ortU=     7.246  ortV=     7.250    drift=9.11e-16  t_eval=3.09e-02  t_dbdsqr=5.06e-04
+  ev4_ec4_n75_s3_gm                                n=   225  res=     0.029  ortU=     7.232  ortV=     7.234    drift=3.96e-15  t_eval=7.80e-02  t_dbdsqr=1.33e-03
+  ev6_ec1_n83_s3_gm                                n=   249  res=     0.039  ortU=     7.221  ortV=     7.217    drift=5.85e-15  t_eval=9.34e-02  t_dbdsqr=1.70e-03
+  ev4_ec1_n90_s1_gm                                n=   270  res=     0.024  ortU=     7.218  ortV=     7.217    drift=1.30e-15  t_eval=1.12e-01  t_dbdsqr=1.80e-03
+  ev5_ec1_n62_s2_gm                                n=   186  res=     0.039  ortU=     7.214  ortV=     7.213    drift=2.01e-15  t_eval=5.15e-02  t_dbdsqr=5.04e-04
+  ev5_ec1_n5_s0                                    n=     5  res=     0.992  ortU=     7.120  ortV=     7.183    drift=9.12e-16  t_eval=3.06e-03  t_dbdsqr=3.11e-06
+  ev3_ec4_n19_s1_gs                                n=    38  res=     0.331  ortU=     7.171  ortV=     7.154    drift=3.09e-15  t_eval=4.14e-03  t_dbdsqr=1.53e-05
+  ev5_ec1_n24_s3_gm                                n=    72  res=     0.097  ortU=     7.165  ortV=     7.164    drift=2.43e-15  t_eval=1.04e-02  t_dbdsqr=1.42e-04
+  ev6_ec1_n73_s3_gm                                n=   219  res=     0.033  ortU=     7.156  ortV=     7.162    drift=3.75e-15  t_eval=7.34e-02  t_dbdsqr=1.32e-03
+  ev6_ec1_n72_s3_gm                                n=   216  res=     0.042  ortU=     7.154  ortV=     7.154    drift=5.30e-15  t_eval=7.18e-02  t_dbdsqr=1.26e-03
+  ev5_ec4_n88_s1                                   n=    88  res=     0.073  ortU=     7.151  ortV=     7.154    drift=2.14e-15  t_eval=1.31e-02  t_dbdsqr=1.65e-04
+  ev3_ec1_n13_s1                                   n=    13  res=     0.462  ortU=     7.126  ortV=     7.143    drift=1.83e-15  t_eval=3.21e-03  t_dbdsqr=6.83e-06
+  ev5_ec1_n95_s2_gm                                n=   285  res=     0.025  ortU=     7.129  ortV=     7.130    drift=4.58e-15  t_eval=1.18e-01  t_dbdsqr=9.48e-04
+  ev5_ec4_n9_s1                                    n=     9  res=     1.144  ortU=     7.115  ortV=     7.049    drift=1.55e-15  t_eval=3.23e-03  t_dbdsqr=4.61e-06
+  ev5_ec4_n70_s2_gs                                n=   140  res=     0.722  ortU=     7.093  ortV=     7.093    drift=1.02e-14  t_eval=1.58e-02  t_dbdsqr=8.80e-05
+  ev3_ec1_n41_s0                                   n=    41  res=     0.166  ortU=     7.084  ortV=     7.077    drift=2.64e-15  t_eval=5.71e-03  t_dbdsqr=2.96e-05
+  ev5_ec4_n45_s2                                   n=    45  res=     0.989  ortU=     7.082  ortV=     7.080    drift=2.19e-15  t_eval=5.43e-03  t_dbdsqr=5.36e-05
+  tri7_n75_gm                                      n=   225  res=     0.022  ortU=     7.074  ortV=     7.076    drift=2.99e-15  t_eval=7.81e-02  t_dbdsqr=1.18e-03
+  ev5_ec1_n3_s1                                    n=     3  res=     1.699  ortU=     7.072  ortV=     7.065    drift=9.26e-16  t_eval=3.11e-03  t_dbdsqr=2.25e-06
+  ev9_ec1_n9_s1_gs                                 n=    18  res=     0.476  ortU=     7.029  ortV=     7.069    drift=1.10e-15  t_eval=3.41e-03  t_dbdsqr=1.42e-05
+  ev3_ec4_n15_s3                                   n=    15  res=     0.488  ortU=     7.035  ortV=     7.065    drift=2.48e-15  t_eval=3.49e-03  t_dbdsqr=6.42e-06
+  ev4_ec4_n99_s2_gm                                n=   297  res=     0.023  ortU=     7.063  ortV=     7.063    drift=1.43e-15  t_eval=1.35e-01  t_dbdsqr=2.18e-03
+  ev5_ec4_n75_s0                                   n=    75  res=     1.186  ortU=     7.060  ortV=     7.060    drift=1.43e-14  t_eval=9.08e-03  t_dbdsqr=4.79e-05
+  ev5_ec1_n43_s2                                   n=    43  res=     0.140  ortU=     7.058  ortV=     7.059    drift=1.50e-15  t_eval=6.11e-03  t_dbdsqr=2.88e-05
+  ev5_ec1_n57_s3                                   n=    57  res=     0.129  ortU=     7.055  ortV=     7.049    drift=3.07e-15  t_eval=8.30e-03  t_dbdsqr=5.13e-05
+  ev5_ec1_n22_s1                                   n=    22  res=     0.326  ortU=     7.026  ortV=     7.050    drift=3.38e-15  t_eval=3.78e-03  t_dbdsqr=2.16e-05
+  ev5_ec1_n49_s3                                   n=    49  res=     0.133  ortU=     7.039  ortV=     7.030    drift=2.59e-15  t_eval=6.80e-03  t_dbdsqr=7.32e-05
+  ev5_ec4_n29_s0                                   n=    29  res=     1.159  ortU=     7.026  ortV=     7.035    drift=1.84e-15  t_eval=4.40e-03  t_dbdsqr=1.27e-05
+  ev5_ec4_n40_s3_gs                                n=    80  res=     0.152  ortU=     7.027  ortV=     7.031    drift=3.07e-15  t_eval=7.87e-03  t_dbdsqr=7.55e-05
+  ev3_ec1_n4_s2                                    n=     4  res=     2.336  ortU=     6.854  ortV=     7.003    drift=1.45e-15  t_eval=3.14e-03  t_dbdsqr=3.59e-06
+  ev6_ec1_n79_s2_gm                                n=   237  res=     0.036  ortU=     6.991  ortV=     6.984    drift=6.30e-15  t_eval=8.58e-02  t_dbdsqr=1.45e-03
+  ev6_ec1_n24_s3                                   n=    24  res=     0.291  ortU=     6.972  ortV=     6.979    drift=1.16e-15  t_eval=4.04e-03  t_dbdsqr=2.20e-05
+  tri4_n82_gm                                      n=   246  res=     0.024  ortU=     6.974  ortV=     6.973    drift=2.80e-15  t_eval=9.77e-02  t_dbdsqr=1.39e-03
+  ev3_ec4_n46_s1                                   n=    46  res=     0.753  ortU=     6.960  ortV=     6.959    drift=9.70e-15  t_eval=5.62e-03  t_dbdsqr=2.66e-05
+  ev4_ec1_n65_s2_gm                                n=   195  res=     0.028  ortU=     6.924  ortV=     6.923    drift=1.14e-15  t_eval=6.14e-02  t_dbdsqr=1.02e-03
+  tri4_n67_gm                                      n=   201  res=     0.027  ortU=     6.920  ortV=     6.915    drift=2.32e-15  t_eval=6.58e-02  t_dbdsqr=9.60e-04
+  ev6_ec1_n32_s3                                   n=    32  res=     0.257  ortU=     6.883  ortV=     6.915    drift=1.95e-15  t_eval=4.88e-03  t_dbdsqr=3.45e-05
+  ev8_ec1_n94_s0_gm                                n=   282  res=     0.033  ortU=     6.898  ortV=     6.898    drift=1.78e-15  t_eval=1.13e-01  t_dbdsqr=2.54e-03
+  ev4_ec1_n57_s2_gm                                n=   171  res=     0.030  ortU=     6.886  ortV=     6.889    drift=2.10e-15  t_eval=4.81e-02  t_dbdsqr=8.04e-04
+  ev6_ec1_n88_s0                                   n=    88  res=     0.068  ortU=     6.868  ortV=     6.853    drift=1.50e-15  t_eval=1.74e-02  t_dbdsqr=2.62e-04
+  ev9_ec1_n20_s2_gs                                n=    40  res=     0.246  ortU=     6.845  ortV=     6.820    drift=1.32e-15  t_eval=5.06e-03  t_dbdsqr=4.99e-05
+  ev3_ec1_n35_s1                                   n=    35  res=     0.190  ortU=     6.841  ortV=     6.828    drift=2.62e-15  t_eval=4.93e-03  t_dbdsqr=2.51e-05
+  ev5_ec4_n93_s1                                   n=    93  res=     0.867  ortU=     6.839  ortV=     6.840    drift=3.23e-15  t_eval=1.39e-02  t_dbdsqr=8.45e-05
+  ev3_ec4_n53_s2                                   n=    53  res=     0.804  ortU=     6.832  ortV=     6.816    drift=1.54e-14  t_eval=6.40e-03  t_dbdsqr=3.26e-05
+  ev4_ec1_n81_s2_gm                                n=   243  res=     0.025  ortU=     6.810  ortV=     6.811    drift=1.06e-14  t_eval=9.23e-02  t_dbdsqr=1.49e-03
+  tri4_n91_gm                                      n=   273  res=     0.021  ortU=     6.806  ortV=     6.808    drift=2.23e-15  t_eval=1.21e-01  t_dbdsqr=1.65e-03
+  ev3_ec4_n33_s3_gs                                n=    66  res=     0.624  ortU=     6.808  ortV=     6.806    drift=2.95e-15  t_eval=6.26e-03  t_dbdsqr=3.43e-05
+  ev5_ec4_n95_s2                                   n=    95  res=     0.858  ortU=     6.797  ortV=     6.792    drift=1.58e-14  t_eval=1.26e-02  t_dbdsqr=1.75e-04
+  ev4_ec4_n66_s2_gm                                n=   198  res=     0.033  ortU=     6.776  ortV=     6.783    drift=7.22e-15  t_eval=6.11e-02  t_dbdsqr=1.04e-03
+  ev4_ec1_n50_s0_gm                                n=   150  res=     0.035  ortU=     6.765  ortV=     6.767    drift=1.07e-15  t_eval=3.68e-02  t_dbdsqr=6.35e-04
+  ev6_ec1_n9_s1                                    n=     9  res=     0.714  ortU=     6.708  ortV=     6.764    drift=1.06e-15  t_eval=3.18e-03  t_dbdsqr=7.33e-06
+  tri6_n60_gm                                      n=   180  res=     0.024  ortU=     6.760  ortV=     6.762    drift=2.81e-15  t_eval=5.27e-02  t_dbdsqr=8.08e-04
+  ev9_ec1_n10_s2_gs                                n=    20  res=     0.415  ortU=     6.754  ortV=     6.743    drift=4.17e-15  t_eval=3.74e-03  t_dbdsqr=1.54e-05
+  ev3_ec4_n22_s3_gs                                n=    44  res=     0.897  ortU=     6.754  ortV=     6.745    drift=3.32e-15  t_eval=4.61e-03  t_dbdsqr=1.84e-05
+  ev8_ec1_n13_s0_gm                                n=    39  res=     0.177  ortU=     6.741  ortV=     6.751    drift=1.67e-15  t_eval=5.10e-03  t_dbdsqr=8.28e-05
+  ev5_ec1_n14_s3_gs                                n=    28  res=     0.604  ortU=     6.732  ortV=     6.750    drift=3.21e-15  t_eval=3.90e-03  t_dbdsqr=1.47e-05
+  ev6_ec1_n47_s1_gm                                n=   141  res=     0.047  ortU=     6.742  ortV=     6.739    drift=4.27e-15  t_eval=3.36e-02  t_dbdsqr=5.56e-04
+  ev3_ec1_n48_s1                                   n=    48  res=     0.127  ortU=     6.731  ortV=     6.727    drift=2.88e-15  t_eval=6.44e-03  t_dbdsqr=4.09e-05
+  ev9_ec1_n17_s3_gs                                n=    34  res=     0.266  ortU=     6.724  ortV=     6.718    drift=8.12e-15  t_eval=4.91e-03  t_dbdsqr=3.42e-05
+  ev3_ec4_n84_s2                                   n=    84  res=     0.703  ortU=     6.720  ortV=     6.716    drift=1.19e-14  t_eval=1.05e-02  t_dbdsqr=7.61e-05
+  ev5_ec1_n29_s2                                   n=    29  res=     0.228  ortU=     6.695  ortV=     6.699    drift=1.42e-15  t_eval=4.36e-03  t_dbdsqr=3.30e-05
+  ev4_ec4_n83_s3_gm                                n=   249  res=     0.022  ortU=     6.684  ortV=     6.681    drift=9.12e-15  t_eval=9.70e-02  t_dbdsqr=1.56e-03
+  ev5_ec4_n43_s0                                   n=    43  res=     0.613  ortU=     6.682  ortV=     6.679    drift=3.94e-15  t_eval=5.61e-03  t_dbdsqr=2.29e-05
+  ev9_ec1_n14_s0_gs                                n=    28  res=     0.347  ortU=     6.667  ortV=     6.658    drift=1.54e-15  t_eval=3.90e-03  t_dbdsqr=2.62e-05
+  ev4_ec1_n84_s3_gm                                n=   252  res=     0.029  ortU=     6.659  ortV=     6.662    drift=1.32e-15  t_eval=9.79e-02  t_dbdsqr=1.64e-03
+  ev5_ec4_n27_s1                                   n=    27  res=     0.251  ortU=     6.653  ortV=     6.630    drift=2.87e-15  t_eval=4.20e-03  t_dbdsqr=3.46e-05
+  ev4_ec1_n83_s1_gm                                n=   249  res=     0.029  ortU=     6.638  ortV=     6.640    drift=3.55e-15  t_eval=9.67e-02  t_dbdsqr=1.58e-03
+  ev6_ec1_n14_s1                                   n=    14  res=     0.629  ortU=     6.616  ortV=     6.634    drift=1.24e-15  t_eval=3.38e-03  t_dbdsqr=9.94e-06
+  ev5_ec1_n71_s2_gm                                n=   213  res=     0.030  ortU=     6.629  ortV=     6.624    drift=2.52e-15  t_eval=6.81e-02  t_dbdsqr=5.26e-04
+  ev3_ec1_n94_s0                                   n=    94  res=     0.070  ortU=     6.626  ortV=     6.623    drift=2.36e-15  t_eval=1.59e-02  t_dbdsqr=1.40e-04
+  ev5_ec4_n50_s0                                   n=    50  res=     0.196  ortU=     6.607  ortV=     6.611    drift=6.87e-15  t_eval=6.57e-03  t_dbdsqr=2.67e-05
+  ev3_ec4_n51_s3                                   n=    51  res=     0.740  ortU=     6.605  ortV=     6.605    drift=3.11e-15  t_eval=6.13e-03  t_dbdsqr=3.09e-05
+  ev4_ec4_n34_s1_gm                                n=   102  res=     0.044  ortU=     6.586  ortV=     6.585    drift=1.66e-15  t_eval=1.91e-02  t_dbdsqr=3.05e-04
+  ev4_ec1_n94_s0_gm                                n=   282  res=     0.019  ortU=     6.577  ortV=     6.581    drift=1.69e-15  t_eval=1.23e-01  t_dbdsqr=1.95e-03
+  ev8_ec1_n76_s1_gm                                n=   228  res=     0.033  ortU=     6.562  ortV=     6.562    drift=1.67e-15  t_eval=7.55e-02  t_dbdsqr=1.70e-03
+  ev6_ec1_n43_s0_gm                                n=   129  res=     0.039  ortU=     6.562  ortV=     6.557    drift=1.32e-15  t_eval=2.82e-02  t_dbdsqr=4.76e-04
+  ev3_ec4_n13_s2_gm                                n=    39  res=     0.988  ortU=     6.560  ortV=     6.555    drift=5.56e-15  t_eval=4.09e-03  t_dbdsqr=4.71e-05
+  ev3_ec1_n27_s2                                   n=    27  res=     0.216  ortU=     6.550  ortV=     6.559    drift=2.05e-15  t_eval=4.34e-03  t_dbdsqr=1.63e-05
+  ev4_ec4_n69_s3_gm                                n=   207  res=     0.036  ortU=     6.550  ortV=     6.551    drift=8.47e-15  t_eval=6.72e-02  t_dbdsqr=1.14e-03
+  ev3_ec4_n14_s1_gs                                n=    28  res=     0.308  ortU=     6.549  ortV=     6.531    drift=3.08e-15  t_eval=4.23e-03  t_dbdsqr=1.74e-05
+  ev5_ec1_n71_s0                                   n=    71  res=     0.145  ortU=     6.544  ortV=     6.548    drift=3.07e-15  t_eval=1.09e-02  t_dbdsqr=7.49e-05
+  ev4_ec4_n90_s3_gm                                n=   270  res=     0.025  ortU=     6.542  ortV=     6.538    drift=1.68e-15  t_eval=1.13e-01  t_dbdsqr=1.84e-03
+  ev4_ec1_n97_s2_gm                                n=   291  res=     0.024  ortU=     6.541  ortV=     6.540    drift=6.43e-15  t_eval=1.29e-01  t_dbdsqr=2.13e-03
+  ev5_ec4_n88_s1_gm                                n=   264  res=     0.855  ortU=     6.523  ortV=     6.525    drift=4.45e-14  t_eval=4.19e-02  t_dbdsqr=4.47e-04
+  ev3_ec1_n20_s0                                   n=    20  res=     0.311  ortU=     6.494  ortV=     6.524    drift=1.73e-15  t_eval=3.55e-03  t_dbdsqr=2.45e-05
+  ev3_ec4_n27_s2                                   n=    27  res=     0.767  ortU=     6.503  ortV=     6.519    drift=2.17e-15  t_eval=4.13e-03  t_dbdsqr=1.28e-05
+  ev5_ec4_n21_s2_gm                                n=    63  res=     0.589  ortU=     6.498  ortV=     6.498    drift=4.81e-15  t_eval=5.71e-03  t_dbdsqr=7.61e-05
+  tri4_n85_gm                                      n=   255  res=     0.021  ortU=     6.492  ortV=     6.496    drift=3.92e-15  t_eval=1.06e-01  t_dbdsqr=1.46e-03
+  ev6_ec1_n15_s0                                   n=    15  res=     0.442  ortU=     6.489  ortV=     6.493    drift=1.35e-15  t_eval=3.41e-03  t_dbdsqr=1.12e-05
+  ev3_ec1_n9_s3_gm                                 n=    27  res=     0.220  ortU=     6.476  ortV=     6.488    drift=1.94e-15  t_eval=4.25e-03  t_dbdsqr=1.72e-05
+  ev5_ec1_n14_s0_gm                                n=    42  res=     0.158  ortU=     6.474  ortV=     6.487    drift=1.59e-15  t_eval=5.67e-03  t_dbdsqr=3.80e-05
+  ev4_ec4_n46_s3_gm                                n=   138  res=     0.047  ortU=     6.483  ortV=     6.487    drift=2.50e-15  t_eval=3.15e-02  t_dbdsqr=5.91e-04
+  ev6_ec1_n26_s1_gm                                n=    78  res=     0.092  ortU=     6.485  ortV=     6.482    drift=1.08e-15  t_eval=1.21e-02  t_dbdsqr=1.92e-04
+  ev5_ec1_n51_s3                                   n=    51  res=     0.120  ortU=     6.484  ortV=     6.484    drift=2.05e-15  t_eval=7.11e-03  t_dbdsqr=4.56e-05
+  ev6_ec1_n48_s3                                   n=    48  res=     0.144  ortU=     6.470  ortV=     6.477    drift=1.51e-15  t_eval=7.43e-03  t_dbdsqr=6.71e-05
+  ev5_ec4_n37_s0                                   n=    37  res=     0.674  ortU=     6.439  ortV=     6.415    drift=8.60e-15  t_eval=4.84e-03  t_dbdsqr=1.73e-05
+  ev5_ec1_n20_s0_gs                                n=    40  res=     0.642  ortU=     6.433  ortV=     6.418    drift=1.27e-15  t_eval=4.52e-03  t_dbdsqr=4.23e-05
+  ev5_ec4_n14_s1                                   n=    14  res=     0.498  ortU=     6.428  ortV=     6.417    drift=2.52e-15  t_eval=3.38e-03  t_dbdsqr=6.44e-06
+  ev5_ec4_n42_s1_gs                                n=    84  res=     0.088  ortU=     6.427  ortV=     6.421    drift=2.38e-15  t_eval=1.33e-02  t_dbdsqr=7.90e-05
+  ev8_ec1_n78_s2_gm                                n=   234  res=     0.034  ortU=     6.426  ortV=     6.424    drift=2.63e-15  t_eval=7.90e-02  t_dbdsqr=1.78e-03
+  tri7_n94_gm                                      n=   282  res=     0.023  ortU=     6.416  ortV=     6.417    drift=1.51e-15  t_eval=1.25e-01  t_dbdsqr=1.85e-03
+  ev3_ec1_n35_s2                                   n=    35  res=     0.173  ortU=     6.404  ortV=     6.406    drift=2.67e-15  t_eval=4.98e-03  t_dbdsqr=2.46e-05
+  ev4_ec1_n55_s2_gm                                n=   165  res=     0.036  ortU=     6.404  ortV=     6.405    drift=1.42e-15  t_eval=4.45e-02  t_dbdsqr=7.36e-04
+  ev5_ec1_n36_s0                                   n=    36  res=     0.178  ortU=     6.387  ortV=     6.401    drift=1.50e-15  t_eval=5.07e-03  t_dbdsqr=2.30e-05
+  ev5_ec4_n13_s1_gm                                n=    39  res=     0.185  ortU=     6.396  ortV=     6.394    drift=2.10e-15  t_eval=5.41e-03  t_dbdsqr=5.01e-05
+  ev5_ec1_n12_s3                                   n=    12  res=     0.476  ortU=     6.312  ortV=     6.385    drift=1.28e-15  t_eval=3.39e-03  t_dbdsqr=6.80e-06
+  ev6_ec1_n8_s1                                    n=     8  res=     0.788  ortU=     6.344  ortV=     6.384    drift=4.40e-16  t_eval=3.18e-03  t_dbdsqr=5.87e-06
+  ev4_ec1_n70_s3_gm                                n=   210  res=     0.026  ortU=     6.371  ortV=     6.365    drift=1.44e-15  t_eval=6.98e-02  t_dbdsqr=1.16e-03
+  tri4_n98_gm                                      n=   294  res=     0.025  ortU=     6.366  ortV=     6.368    drift=6.03e-15  t_eval=1.40e-01  t_dbdsqr=1.94e-03
+  ev5_ec1_n33_s1                                   n=    33  res=     0.203  ortU=     6.355  ortV=     6.357    drift=2.99e-15  t_eval=4.78e-03  t_dbdsqr=2.16e-05
+  ev6_ec1_n38_s3                                   n=    38  res=     0.168  ortU=     6.332  ortV=     6.353    drift=1.04e-15  t_eval=5.94e-03  t_dbdsqr=4.38e-05
+  ev4_ec4_n97_s1_gm                                n=   291  res=     0.024  ortU=     6.347  ortV=     6.352    drift=1.74e-15  t_eval=1.30e-01  t_dbdsqr=2.11e-03
+  ev4_ec1_n31_s2_gm                                n=    93  res=     0.053  ortU=     6.343  ortV=     6.346    drift=1.66e-15  t_eval=1.66e-02  t_dbdsqr=2.67e-04
+  ev6_ec1_n38_s0_gm                                n=   114  res=     0.052  ortU=     6.339  ortV=     6.345    drift=1.20e-15  t_eval=2.32e-02  t_dbdsqr=3.82e-04
+  ev3_ec4_n42_s3                                   n=    42  res=     0.914  ortU=     6.342  ortV=     6.334    drift=3.26e-15  t_eval=4.93e-03  t_dbdsqr=5.93e-05
+  ev6_ec1_n96_s1_gm                                n=   288  res=     0.027  ortU=     6.335  ortV=     6.335    drift=1.94e-15  t_eval=1.26e-01  t_dbdsqr=2.06e-03
+  ev4_ec1_n100_s0_gm                               n=   300  res=     0.019  ortU=     6.327  ortV=     6.326    drift=1.92e-15  t_eval=1.37e-01  t_dbdsqr=2.23e-03
+  ev4_ec4_n37_s3_gm                                n=   111  res=     0.053  ortU=     6.323  ortV=     6.323    drift=1.29e-15  t_eval=2.19e-02  t_dbdsqr=3.68e-04
+  ev5_ec4_n9_s0                                    n=     9  res=     0.819  ortU=     6.323  ortV=     6.237    drift=1.69e-15  t_eval=3.12e-03  t_dbdsqr=4.27e-06
+  ev3_ec4_n41_s2                                   n=    41  res=     1.018  ortU=     6.282  ortV=     6.313    drift=3.96e-15  t_eval=5.28e-03  t_dbdsqr=2.36e-05
+  ev6_ec1_n55_s1_gm                                n=   165  res=     0.047  ortU=     6.311  ortV=     6.313    drift=2.60e-15  t_eval=4.21e-02  t_dbdsqr=7.43e-04
+  ev6_ec1_n55_s0_gm                                n=   165  res=     0.040  ortU=     6.309  ortV=     6.311    drift=8.29e-15  t_eval=4.24e-02  t_dbdsqr=7.32e-04
+  ev3_ec4_n9_s1_gm                                 n=    27  res=     0.361  ortU=     6.311  ortV=     6.303    drift=2.00e-15  t_eval=4.03e-03  t_dbdsqr=3.20e-05
+  ev4_ec1_n78_s1_gm                                n=   234  res=     0.026  ortU=     6.309  ortV=     6.309    drift=1.44e-15  t_eval=8.50e-02  t_dbdsqr=1.41e-03
+  ev4_ec1_n93_s0_gm                                n=   279  res=     0.020  ortU=     6.283  ortV=     6.280    drift=3.61e-15  t_eval=1.21e-01  t_dbdsqr=1.94e-03
+  ev9_ec1_n7_s1_gs                                 n=    14  res=     0.596  ortU=     6.274  ortV=     6.261    drift=1.10e-15  t_eval=3.30e-03  t_dbdsqr=1.00e-05
+  ev6_ec1_n95_s0_gm                                n=   285  res=     0.031  ortU=     6.271  ortV=     6.271    drift=1.44e-15  t_eval=1.24e-01  t_dbdsqr=2.09e-03
+  ev3_ec1_n12_s0                                   n=    12  res=     0.605  ortU=     6.268  ortV=     6.230    drift=2.35e-15  t_eval=3.24e-03  t_dbdsqr=6.04e-06
+  ev6_ec1_n34_s0                                   n=    34  res=     0.198  ortU=     6.268  ortV=     6.264    drift=2.32e-15  t_eval=5.23e-03  t_dbdsqr=4.54e-05
+  ev5_ec4_n24_s1                                   n=    24  res=     0.299  ortU=     6.251  ortV=     6.262    drift=1.70e-15  t_eval=4.20e-03  t_dbdsqr=1.31e-05
+  ev9_ec1_n9_s3_gs                                 n=    18  res=     0.479  ortU=     6.245  ortV=     6.257    drift=1.76e-15  t_eval=3.54e-03  t_dbdsqr=1.42e-05
+  ev5_ec4_n15_s0_gs                                n=    30  res=     0.219  ortU=     6.254  ortV=     6.244    drift=2.83e-15  t_eval=4.40e-03  t_dbdsqr=1.52e-05
+  tri4_n94_gm                                      n=   282  res=     0.019  ortU=     6.252  ortV=     6.251    drift=3.41e-15  t_eval=1.29e-01  t_dbdsqr=1.72e-03
+  ev3_ec1_n63_s2                                   n=    63  res=     0.087  ortU=     6.247  ortV=     6.250    drift=2.34e-15  t_eval=9.14e-03  t_dbdsqr=1.12e-04
+  ev5_ec1_n19_s0_gs                                n=    38  res=     0.706  ortU=     6.232  ortV=     6.249    drift=1.74e-15  t_eval=4.32e-03  t_dbdsqr=1.84e-05
+  ev5_ec4_n13_s0_gs                                n=    26  res=     0.290  ortU=     6.232  ortV=     6.209    drift=3.34e-15  t_eval=3.97e-03  t_dbdsqr=1.02e-05
+  ev3_ec1_n19_s3_gm                                n=    57  res=     0.120  ortU=     6.231  ortV=     6.224    drift=2.24e-15  t_eval=7.55e-03  t_dbdsqr=9.21e-05
+  ev6_ec1_n34_s3                                   n=    34  res=     0.230  ortU=     6.226  ortV=     6.209    drift=1.29e-15  t_eval=5.30e-03  t_dbdsqr=3.59e-05
+  ev6_ec1_n54_s0                                   n=    54  res=     0.148  ortU=     6.225  ortV=     6.219    drift=1.40e-15  t_eval=8.62e-03  t_dbdsqr=8.39e-05
+  ev6_ec1_n100_s1_gm                               n=   300  res=     0.027  ortU=     6.220  ortV=     6.220    drift=2.15e-15  t_eval=1.33e-01  t_dbdsqr=2.19e-03
+  ev5_ec4_n8_s0_gs                                 n=    16  res=     0.485  ortU=     6.202  ortV=     6.220    drift=2.40e-15  t_eval=3.53e-03  t_dbdsqr=6.28e-06
+  ev4_ec1_n61_s3_gm                                n=   183  res=     0.029  ortU=     6.197  ortV=     6.200    drift=6.11e-15  t_eval=5.37e-02  t_dbdsqr=9.02e-04
+  ev5_ec4_n18_s1_gs                                n=    36  res=     0.772  ortU=     6.196  ortV=     6.197    drift=1.54e-15  t_eval=4.23e-03  t_dbdsqr=3.89e-05
+  ev6_ec1_n98_s0                                   n=    98  res=     0.081  ortU=     6.191  ortV=     6.174    drift=1.09e-15  t_eval=2.09e-02  t_dbdsqr=3.28e-04
+  ev5_ec4_n6_s0                                    n=     6  res=     1.208  ortU=     6.099  ortV=     6.167    drift=1.66e-15  t_eval=3.24e-03  t_dbdsqr=3.18e-06
+  ev5_ec4_n31_s0                                   n=    31  res=     0.224  ortU=     6.138  ortV=     6.142    drift=4.21e-15  t_eval=4.36e-03  t_dbdsqr=1.40e-05
+  ev5_ec1_n45_s0                                   n=    45  res=     0.152  ortU=     6.130  ortV=     6.141    drift=1.60e-15  t_eval=6.33e-03  t_dbdsqr=6.19e-05
+  ev6_ec1_n78_s0_gm                                n=   234  res=     0.027  ortU=     6.131  ortV=     6.134    drift=1.54e-15  t_eval=8.55e-02  t_dbdsqr=1.44e-03
+  ev4_ec1_n42_s1_gm                                n=   126  res=     0.039  ortU=     6.129  ortV=     6.126    drift=7.09e-15  t_eval=2.78e-02  t_dbdsqr=4.46e-04
+  ev6_ec1_n78_s3_gm                                n=   234  res=     0.041  ortU=     6.123  ortV=     6.125    drift=1.03e-14  t_eval=8.21e-02  t_dbdsqr=1.53e-03
+  ev5_ec4_n73_s3                                   n=    73  res=     0.313  ortU=     6.110  ortV=     6.124    drift=3.01e-15  t_eval=9.61e-03  t_dbdsqr=1.23e-04
+  ev4_ec1_n92_s2_gm                                n=   276  res=     0.020  ortU=     6.116  ortV=     6.115    drift=3.16e-15  t_eval=1.18e-01  t_dbdsqr=1.87e-03
+  ev3_ec1_n48_s3                                   n=    48  res=     0.157  ortU=     6.110  ortV=     6.116    drift=2.88e-15  t_eval=6.69e-03  t_dbdsqr=7.58e-05
+  ev4_ec1_n81_s1_gm                                n=   243  res=     0.025  ortU=     6.111  ortV=     6.112    drift=1.34e-15  t_eval=9.06e-02  t_dbdsqr=1.55e-03
+  ev5_ec4_n25_s1                                   n=    25  res=     0.285  ortU=     6.111  ortV=     6.102    drift=3.10e-15  t_eval=4.02e-03  t_dbdsqr=1.39e-05
+  ev3_ec4_n43_s3_gs                                n=    86  res=     0.479  ortU=     6.106  ortV=     6.105    drift=6.61e-15  t_eval=8.37e-03  t_dbdsqr=6.97e-05
+  ev3_ec4_n25_s0                                   n=    25  res=     0.279  ortU=     6.092  ortV=     6.104    drift=2.74e-15  t_eval=4.00e-03  t_dbdsqr=1.07e-05
+  ev3_ec4_n16_s0                                   n=    16  res=     0.401  ortU=     6.071  ortV=     6.103    drift=2.24e-15  t_eval=3.29e-03  t_dbdsqr=6.74e-06
+  ev3_ec4_n28_s1                                   n=    28  res=     0.239  ortU=     6.086  ortV=     6.097    drift=2.68e-15  t_eval=4.13e-03  t_dbdsqr=1.33e-05
+  ev6_ec1_n81_s2_gm                                n=   243  res=     0.030  ortU=     6.094  ortV=     6.092    drift=9.58e-16  t_eval=9.04e-02  t_dbdsqr=1.53e-03
+  tri6_n63_gm                                      n=   189  res=     0.022  ortU=     6.092  ortV=     6.092    drift=3.59e-15  t_eval=5.85e-02  t_dbdsqr=8.86e-04
+  ev5_ec4_n93_s2                                   n=    93  res=     0.729  ortU=     6.081  ortV=     6.089    drift=1.17e-14  t_eval=1.21e-02  t_dbdsqr=1.70e-04
+  ev5_ec1_n42_s2                                   n=    42  res=     0.161  ortU=     6.085  ortV=     6.079    drift=2.02e-15  t_eval=6.07e-03  t_dbdsqr=3.05e-05
+  ev4_ec1_n36_s2_gm                                n=   108  res=     0.047  ortU=     6.083  ortV=     6.085    drift=1.77e-15  t_eval=2.13e-02  t_dbdsqr=3.41e-04
+  ev4_ec4_n41_s2_gm                                n=   123  res=     0.052  ortU=     6.079  ortV=     6.070    drift=1.50e-15  t_eval=2.58e-02  t_dbdsqr=4.47e-04
+  ev4_ec1_n44_s1_gm                                n=   132  res=     0.046  ortU=     6.068  ortV=     6.076    drift=1.58e-15  t_eval=2.96e-02  t_dbdsqr=4.94e-04
+  ev3_ec1_n11_s3_gm                                n=    33  res=     0.170  ortU=     6.074  ortV=     6.069    drift=1.70e-15  t_eval=4.59e-03  t_dbdsqr=2.91e-05
+  ev3_ec1_n18_s3_gs                                n=    36  res=     0.616  ortU=     6.062  ortV=     6.073    drift=2.45e-15  t_eval=4.04e-03  t_dbdsqr=1.80e-05
+  ev5_ec1_n25_s1                                   n=    25  res=     0.298  ortU=     6.066  ortV=     6.045    drift=3.05e-15  t_eval=3.99e-03  t_dbdsqr=1.48e-05
+  ev3_ec4_n35_s2                                   n=    35  res=     0.312  ortU=     6.065  ortV=     6.065    drift=3.15e-15  t_eval=4.70e-03  t_dbdsqr=1.77e-05
+  ev4_ec4_n77_s1_gm                                n=   231  res=     0.028  ortU=     6.054  ortV=     6.048    drift=1.76e-15  t_eval=8.40e-02  t_dbdsqr=1.36e-03
+  ev6_ec1_n96_s3_gm                                n=   288  res=     0.027  ortU=     6.051  ortV=     6.053    drift=2.69e-15  t_eval=1.23e-01  t_dbdsqr=2.25e-03
+  ev4_ec4_n76_s0_gm                                n=   228  res=     0.026  ortU=     6.040  ortV=     6.050    drift=1.25e-15  t_eval=8.18e-02  t_dbdsqr=1.30e-03
+  ev5_ec1_n47_s3                                   n=    47  res=     0.132  ortU=     6.028  ortV=     6.046    drift=1.59e-15  t_eval=6.71e-03  t_dbdsqr=6.73e-05
+  ev3_ec4_n40_s3                                   n=    40  res=     0.922  ortU=     6.031  ortV=     6.041    drift=3.45e-15  t_eval=5.08e-03  t_dbdsqr=2.17e-05
+  ev4_ec1_n100_s2_gm                               n=   300  res=     0.022  ortU=     6.034  ortV=     6.031    drift=1.34e-15  t_eval=1.39e-01  t_dbdsqr=2.23e-03
+  ev6_ec1_n23_s2_gm                                n=    69  res=     0.115  ortU=     6.027  ortV=     6.016    drift=3.49e-15  t_eval=1.03e-02  t_dbdsqr=1.51e-04
+  ev6_ec1_n53_s2_gm                                n=   159  res=     0.051  ortU=     6.011  ortV=     6.012    drift=1.37e-15  t_eval=4.05e-02  t_dbdsqr=7.11e-04
+  ev9_ec1_n5_s3_gs                                 n=    10  res=     0.809  ortU=     6.009  ortV=     6.004    drift=8.78e-16  t_eval=3.14e-03  t_dbdsqr=6.75e-06
+  ev3_ec4_n36_s0                                   n=    36  res=     0.231  ortU=     6.004  ortV=     6.006    drift=2.49e-15  t_eval=5.02e-03  t_dbdsqr=1.72e-05
+  ev4_ec1_n35_s0_gm                                n=   105  res=     0.065  ortU=     5.997  ortV=     5.998    drift=1.12e-15  t_eval=2.06e-02  t_dbdsqr=3.22e-04
+  tri7_n90_gm                                      n=   270  res=     0.019  ortU=     5.992  ortV=     5.994    drift=2.20e-15  t_eval=1.13e-01  t_dbdsqr=1.63e-03
+  ev4_ec1_n83_s3_gm                                n=   249  res=     0.022  ortU=     5.993  ortV=     5.993    drift=1.30e-15  t_eval=9.66e-02  t_dbdsqr=1.55e-03
+  ev5_ec4_n48_s3                                   n=    48  res=     0.369  ortU=     5.988  ortV=     5.988    drift=2.38e-15  t_eval=6.01e-03  t_dbdsqr=6.59e-05
+  ev9_ec1_n9_s0_gs                                 n=    18  res=     0.463  ortU=     5.974  ortV=     5.964    drift=1.10e-15  t_eval=3.50e-03  t_dbdsqr=1.33e-05
+  ev5_ec4_n68_s3                                   n=    68  res=     0.372  ortU=     5.949  ortV=     5.944    drift=2.84e-15  t_eval=8.49e-03  t_dbdsqr=1.12e-04
+  ev3_ec1_n5_s1_gm                                 n=    15  res=     0.541  ortU=     5.940  ortV=     5.906    drift=1.51e-15  t_eval=3.29e-03  t_dbdsqr=9.41e-06
+  ev5_ec1_n30_s0                                   n=    30  res=     0.212  ortU=     5.938  ortV=     5.924    drift=2.14e-15  t_eval=4.53e-03  t_dbdsqr=1.86e-05
+  ev5_ec1_n66_s0                                   n=    66  res=     0.180  ortU=     5.914  ortV=     5.919    drift=2.77e-15  t_eval=1.02e-02  t_dbdsqr=6.58e-05
+  ev4_ec1_n80_s1_gm                                n=   240  res=     0.023  ortU=     5.899  ortV=     5.899    drift=2.12e-15  t_eval=8.86e-02  t_dbdsqr=1.46e-03
+  ev6_ec1_n42_s1_gm                                n=   126  res=     0.059  ortU=     5.883  ortV=     5.894    drift=1.02e-15  t_eval=2.64e-02  t_dbdsqr=4.64e-04
+  tri6_n57_gm                                      n=   171  res=     0.027  ortU=     5.887  ortV=     5.883    drift=3.26e-15  t_eval=4.84e-02  t_dbdsqr=7.38e-04
+  ev3_ec4_n46_s3                                   n=    46  res=     0.446  ortU=     5.887  ortV=     5.881    drift=3.23e-15  t_eval=5.75e-03  t_dbdsqr=7.32e-05
+  ev5_ec1_n42_s3_gs                                n=    84  res=     0.774  ortU=     5.876  ortV=     5.879    drift=2.72e-15  t_eval=9.32e-03  t_dbdsqr=1.90e-04
+  ev5_ec1_n55_s2_gm                                n=   165  res=     0.041  ortU=     5.875  ortV=     5.874    drift=1.63e-15  t_eval=4.05e-02  t_dbdsqr=4.09e-04
+  ev5_ec1_n57_s3_gs                                n=   114  res=     0.623  ortU=     5.870  ortV=     5.872    drift=6.70e-15  t_eval=1.48e-02  t_dbdsqr=2.21e-04
+  ev5_ec1_n21_s3_gm                                n=    63  res=     0.108  ortU=     5.869  ortV=     5.871    drift=2.60e-15  t_eval=8.74e-03  t_dbdsqr=9.44e-05
+  ev4_ec1_n46_s2_gm                                n=   138  res=     0.052  ortU=     5.868  ortV=     5.867    drift=2.08e-15  t_eval=3.19e-02  t_dbdsqr=5.35e-04
+  tri6_n82_gm                                      n=   246  res=     0.019  ortU=     5.861  ortV=     5.864    drift=2.77e-15  t_eval=9.83e-02  t_dbdsqr=1.46e-03
+  ev5_ec1_n92_s3_gm                                n=   276  res=     0.025  ortU=     5.862  ortV=     5.862    drift=2.75e-15  t_eval=1.09e-01  t_dbdsqr=1.08e-03
+  ev3_ec4_n15_s2                                   n=    15  res=     0.465  ortU=     5.858  ortV=     5.851    drift=3.31e-15  t_eval=3.53e-03  t_dbdsqr=6.00e-06
+  tri4_n99_gm                                      n=   297  res=     0.020  ortU=     5.852  ortV=     5.853    drift=2.15e-15  t_eval=1.45e-01  t_dbdsqr=1.93e-03
+  ev5_ec1_n18_s3_gm                                n=    54  res=     0.135  ortU=     5.842  ortV=     5.824    drift=3.38e-15  t_eval=7.25e-03  t_dbdsqr=7.64e-05
+  ev4_ec1_n50_s1_gm                                n=   150  res=     0.038  ortU=     5.795  ortV=     5.804    drift=5.29e-15  t_eval=3.70e-02  t_dbdsqr=6.05e-04
+  ev5_ec4_n76_s2                                   n=    76  res=     0.890  ortU=     5.779  ortV=     5.792    drift=1.27e-14  t_eval=9.27e-03  t_dbdsqr=4.86e-05
+  ev5_ec4_n67_s1                                   n=    67  res=     0.154  ortU=     5.784  ortV=     5.783    drift=1.94e-15  t_eval=8.85e-03  t_dbdsqr=4.37e-05
+  ev5_ec4_n48_s2                                   n=    48  res=     0.542  ortU=     5.756  ortV=     5.771    drift=1.90e-15  t_eval=5.98e-03  t_dbdsqr=6.58e-05
+  ev5_ec1_n25_s3_gm                                n=    75  res=     0.106  ortU=     5.767  ortV=     5.770    drift=2.51e-15  t_eval=1.09e-02  t_dbdsqr=1.14e-04
+  ev4_ec4_n82_s0_gm                                n=   246  res=     0.027  ortU=     5.767  ortV=     5.766    drift=2.05e-15  t_eval=9.43e-02  t_dbdsqr=1.50e-03
+  ev3_ec1_n54_s1_gm                                n=   162  res=     0.047  ortU=     5.766  ortV=     5.765    drift=3.00e-15  t_eval=4.03e-02  t_dbdsqr=5.12e-04
+  ev3_ec4_n23_s3                                   n=    23  res=     0.929  ortU=     5.748  ortV=     5.731    drift=2.88e-15  t_eval=3.74e-03  t_dbdsqr=1.08e-05
+  ev3_ec1_n35_s0                                   n=    35  res=     0.213  ortU=     5.724  ortV=     5.744    drift=2.05e-15  t_eval=5.06e-03  t_dbdsqr=2.35e-05
+  ev4_ec1_n79_s2_gm                                n=   237  res=     0.025  ortU=     5.743  ortV=     5.739    drift=8.47e-15  t_eval=8.72e-02  t_dbdsqr=1.42e-03
+  tri4_n61_gm                                      n=   183  res=     0.024  ortU=     5.740  ortV=     5.740    drift=2.97e-15  t_eval=5.57e-02  t_dbdsqr=8.07e-04
+  ev8_ec1_n37_s0_gm                                n=   111  res=     0.070  ortU=     5.730  ortV=     5.732    drift=2.18e-15  t_eval=1.95e-02  t_dbdsqr=4.81e-04
+  ev4_ec1_n39_s2_gm                                n=   117  res=     0.044  ortU=     5.715  ortV=     5.723    drift=8.09e-16  t_eval=2.34e-02  t_dbdsqr=3.85e-04
+  ev3_ec1_n94_s1                                   n=    94  res=     0.063  ortU=     5.715  ortV=     5.721    drift=2.08e-15  t_eval=1.60e-02  t_dbdsqr=2.16e-04
+  ev5_ec1_n2_s1_gs                                 n=     4  res=     2.657  ortU=     5.531  ortV=     5.715    drift=1.92e-15  t_eval=3.06e-03  t_dbdsqr=1.68e-06
+  ev3_ec1_n25_s1_gs                                n=    50  res=     0.800  ortU=     5.705  ortV=     5.700    drift=3.59e-15  t_eval=5.37e-03  t_dbdsqr=4.88e-05
+  tri7_n59_gm                                      n=   177  res=     0.030  ortU=     5.695  ortV=     5.699    drift=1.26e-15  t_eval=5.16e-02  t_dbdsqr=7.52e-04
+  tri7_n65_gm                                      n=   195  res=     0.023  ortU=     5.695  ortV=     5.691    drift=2.40e-15  t_eval=5.96e-02  t_dbdsqr=9.26e-04
+  ev4_ec4_n81_s1_gm                                n=   243  res=     0.037  ortU=     5.675  ortV=     5.678    drift=1.27e-15  t_eval=9.22e-02  t_dbdsqr=1.50e-03
+  tri6_n85_gm                                      n=   255  res=     0.021  ortU=     5.676  ortV=     5.677    drift=1.85e-15  t_eval=1.05e-01  t_dbdsqr=1.58e-03
+  ev5_ec1_n57_s1_gs                                n=   114  res=     0.787  ortU=     5.673  ortV=     5.673    drift=2.75e-15  t_eval=1.41e-02  t_dbdsqr=1.98e-04
+  ev5_ec4_n37_s1                                   n=    37  res=     0.189  ortU=     5.660  ortV=     5.662    drift=2.44e-15  t_eval=5.06e-03  t_dbdsqr=5.31e-05
+  ev4_ec1_n78_s3_gm                                n=   234  res=     0.023  ortU=     5.650  ortV=     5.654    drift=1.40e-15  t_eval=8.44e-02  t_dbdsqr=1.39e-03
+  ev5_ec1_n13_s2_gm                                n=    39  res=     0.141  ortU=     5.651  ortV=     5.645    drift=3.67e-15  t_eval=5.34e-03  t_dbdsqr=3.92e-05
+  ev8_ec1_n84_s2_gm                                n=   252  res=     0.035  ortU=     5.648  ortV=     5.651    drift=5.26e-15  t_eval=8.86e-02  t_dbdsqr=2.11e-03
+  ev3_ec4_n38_s0                                   n=    38  res=     0.834  ortU=     5.641  ortV=     5.649    drift=2.46e-15  t_eval=4.85e-03  t_dbdsqr=1.96e-05
+  ev3_ec4_n18_s1                                   n=    18  res=     0.376  ortU=     5.645  ortV=     5.648    drift=2.25e-15  t_eval=3.66e-03  t_dbdsqr=7.87e-06
+  ev3_ec1_n75_s0                                   n=    75  res=     0.088  ortU=     5.635  ortV=     5.644    drift=2.08e-15  t_eval=1.13e-02  t_dbdsqr=8.75e-05
+  ev5_ec1_n24_s1                                   n=    24  res=     0.279  ortU=     5.631  ortV=     5.638    drift=2.85e-15  t_eval=4.04e-03  t_dbdsqr=1.52e-05
+  ev9_ec1_n18_s1_gs                                n=    36  res=     0.274  ortU=     5.622  ortV=     5.636    drift=3.73e-15  t_eval=4.66e-03  t_dbdsqr=4.04e-05
+  ev5_ec4_n11_s3                                   n=    11  res=     0.707  ortU=     5.598  ortV=     5.632    drift=1.92e-15  t_eval=3.37e-03  t_dbdsqr=1.69e-05
+  ev3_ec4_n40_s1                                   n=    40  res=     0.513  ortU=     5.627  ortV=     5.631    drift=2.64e-15  t_eval=5.04e-03  t_dbdsqr=2.16e-05
+  ev3_ec4_n21_s1                                   n=    21  res=     0.306  ortU=     5.622  ortV=     5.575    drift=2.64e-15  t_eval=3.69e-03  t_dbdsqr=9.27e-06
+  ev6_ec1_n57_s0_gm                                n=   171  res=     0.039  ortU=     5.622  ortV=     5.621    drift=1.19e-15  t_eval=4.62e-02  t_dbdsqr=7.94e-04
+  ev5_ec1_n19_s2                                   n=    19  res=     0.360  ortU=     5.614  ortV=     5.620    drift=2.48e-15  t_eval=3.69e-03  t_dbdsqr=2.01e-05
+  ev5_ec1_n73_s1_gs                                n=   146  res=     0.886  ortU=     5.619  ortV=     5.620    drift=2.02e-15  t_eval=2.11e-02  t_dbdsqr=3.31e-04
+  ev8_ec1_n7_s1_gm                                 n=    21  res=     0.358  ortU=     5.585  ortV=     5.610    drift=1.32e-15  t_eval=3.75e-03  t_dbdsqr=3.14e-05
+  ev3_ec4_n34_s2                                   n=    34  res=     0.821  ortU=     5.581  ortV=     5.593    drift=2.50e-15  t_eval=4.61e-03  t_dbdsqr=1.64e-05
+  ev3_ec1_n78_s1                                   n=    78  res=     0.080  ortU=     5.591  ortV=     5.593    drift=3.03e-15  t_eval=1.20e-02  t_dbdsqr=1.07e-04
+  ev9_ec1_n13_s3_gs                                n=    26  res=     0.353  ortU=     5.589  ortV=     5.584    drift=2.41e-15  t_eval=3.86e-03  t_dbdsqr=2.31e-05
+  ev4_ec4_n88_s1_gm                                n=   264  res=     0.023  ortU=     5.587  ortV=     5.587    drift=2.25e-15  t_eval=1.08e-01  t_dbdsqr=1.73e-03
+  ev3_ec1_n39_s3                                   n=    39  res=     0.169  ortU=     5.568  ortV=     5.570    drift=2.28e-15  t_eval=5.38e-03  t_dbdsqr=2.99e-05
+  ev3_ec1_n19_s0                                   n=    19  res=     0.385  ortU=     5.569  ortV=     5.568    drift=2.70e-15  t_eval=3.68e-03  t_dbdsqr=2.05e-05
+  ev3_ec4_n38_s1                                   n=    38  res=     0.783  ortU=     5.551  ortV=     5.567    drift=1.03e-14  t_eval=4.95e-03  t_dbdsqr=2.03e-05
+  ev5_ec1_n30_s2                                   n=    30  res=     0.253  ortU=     5.549  ortV=     5.566    drift=2.02e-15  t_eval=4.63e-03  t_dbdsqr=1.80e-05
+  ev5_ec4_n35_s1                                   n=    35  res=     0.200  ortU=     5.565  ortV=     5.552    drift=2.96e-15  t_eval=4.81e-03  t_dbdsqr=1.77e-05
+  ev9_ec1_n5_s2_gs                                 n=    10  res=     0.847  ortU=     5.560  ortV=     5.551    drift=6.58e-16  t_eval=3.19e-03  t_dbdsqr=7.63e-06
+  ev5_ec1_n13_s0_gs                                n=    26  res=     0.815  ortU=     5.537  ortV=     5.556    drift=2.32e-15  t_eval=3.76e-03  t_dbdsqr=1.12e-05
+  ev4_ec4_n87_s3_gm                                n=   261  res=     0.023  ortU=     5.551  ortV=     5.555    drift=7.84e-15  t_eval=1.10e-01  t_dbdsqr=1.73e-03
+  ev6_ec1_n10_s3                                   n=    10  res=     0.595  ortU=     5.527  ortV=     5.553    drift=9.71e-16  t_eval=3.20e-03  t_dbdsqr=8.05e-06
+  ev3_ec1_n48_s2_gm                                n=   144  res=     0.044  ortU=     5.551  ortV=     5.552    drift=2.66e-15  t_eval=3.16e-02  t_dbdsqr=3.97e-04
+  ev3_ec1_n42_s3_gs                                n=    84  res=     0.722  ortU=     5.549  ortV=     5.550    drift=2.34e-15  t_eval=9.10e-03  t_dbdsqr=1.38e-04
+  ev3_ec1_n100_s1_gm                               n=   300  res=     0.023  ortU=     5.540  ortV=     5.538    drift=2.93e-15  t_eval=1.32e-01  t_dbdsqr=1.48e-03
+  ev9_ec1_n21_s0_gm                                n=    63  res=     0.204  ortU=     5.540  ortV=     5.540    drift=6.80e-15  t_eval=7.67e-03  t_dbdsqr=9.80e-05
+  ev6_ec1_n36_s2_gm                                n=   108  res=     0.106  ortU=     5.537  ortV=     5.537    drift=2.21e-15  t_eval=2.00e-02  t_dbdsqr=3.39e-04
+  ev3_ec4_n90_s3                                   n=    90  res=     0.962  ortU=     5.536  ortV=     5.535    drift=1.64e-14  t_eval=1.15e-02  t_dbdsqr=8.29e-05
+  ev6_ec1_n33_s3                                   n=    33  res=     0.215  ortU=     5.518  ortV=     5.535    drift=1.55e-15  t_eval=5.25e-03  t_dbdsqr=3.52e-05
+  tri4_n75_gm                                      n=   225  res=     0.029  ortU=     5.529  ortV=     5.521    drift=2.34e-15  t_eval=8.13e-02  t_dbdsqr=1.21e-03
+  ev9_ec1_n29_s1_gs                                n=    58  res=     0.173  ortU=     5.513  ortV=     5.526    drift=5.71e-15  t_eval=7.32e-03  t_dbdsqr=1.00e-04
+  ev5_ec1_n68_s1                                   n=    68  res=     0.085  ortU=     5.515  ortV=     5.514    drift=2.47e-15  t_eval=1.03e-02  t_dbdsqr=6.57e-05
+  ev5_ec4_n76_s0_gs                                n=   152  res=     0.734  ortU=     5.514  ortV=     5.512    drift=2.64e-14  t_eval=1.70e-02  t_dbdsqr=1.59e-04
+  ev4_ec4_n80_s2_gm                                n=   240  res=     0.021  ortU=     5.514  ortV=     5.513    drift=1.07e-15  t_eval=8.89e-02  t_dbdsqr=1.44e-03
+  ev5_ec1_n23_s2_gs                                n=    46  res=     0.903  ortU=     5.510  ortV=     5.500    drift=2.02e-15  t_eval=5.14e-03  t_dbdsqr=7.04e-05
+  tri4_n93_gm                                      n=   279  res=     0.019  ortU=     5.506  ortV=     5.509    drift=3.62e-15  t_eval=1.25e-01  t_dbdsqr=1.75e-03
+  ev3_ec1_n60_s0                                   n=    60  res=     0.125  ortU=     5.500  ortV=     5.501    drift=2.64e-15  t_eval=8.62e-03  t_dbdsqr=5.90e-05
+  ev5_ec4_n23_s1                                   n=    23  res=     0.328  ortU=     5.496  ortV=     5.491    drift=2.65e-15  t_eval=3.85e-03  t_dbdsqr=3.06e-05
+  ev3_ec1_n13_s0                                   n=    13  res=     0.496  ortU=     5.494  ortV=     5.428    drift=2.10e-15  t_eval=3.29e-03  t_dbdsqr=6.82e-06
+  tri6_n99_gm                                      n=   297  res=     0.014  ortU=     5.486  ortV=     5.487    drift=5.20e-15  t_eval=1.44e-01  t_dbdsqr=2.06e-03
+  ev5_ec4_n11_s3_gs                                n=    22  res=     0.317  ortU=     5.471  ortV=     5.485    drift=2.27e-15  t_eval=3.81e-03  t_dbdsqr=3.21e-05
+  ev4_ec4_n73_s3_gm                                n=   219  res=     0.028  ortU=     5.479  ortV=     5.479    drift=2.17e-15  t_eval=7.56e-02  t_dbdsqr=1.24e-03
+  ev3_ec1_n52_s3                                   n=    52  res=     0.125  ortU=     5.476  ortV=     5.462    drift=2.13e-15  t_eval=6.98e-03  t_dbdsqr=4.71e-05
+  ev3_ec1_n90_s2                                   n=    90  res=     0.099  ortU=     5.465  ortV=     5.466    drift=2.30e-15  t_eval=1.51e-02  t_dbdsqr=2.04e-04
+  ev5_ec4_n77_s1_gm                                n=   231  res=     0.028  ortU=     5.453  ortV=     5.456    drift=2.78e-15  t_eval=3.38e-02  t_dbdsqr=2.33e-04
+  ev5_ec4_n37_s2                                   n=    37  res=     0.839  ortU=     5.451  ortV=     5.450    drift=2.10e-15  t_eval=4.76e-03  t_dbdsqr=1.63e-05
+  ev5_ec1_n44_s2_gm                                n=   132  res=     0.053  ortU=     5.446  ortV=     5.451    drift=2.61e-15  t_eval=2.81e-02  t_dbdsqr=2.26e-04
+  ev4_ec1_n69_s3_gm                                n=   207  res=     0.028  ortU=     5.450  ortV=     5.451    drift=1.43e-15  t_eval=7.08e-02  t_dbdsqr=1.17e-03
+  tri7_n96_gm                                      n=   288  res=     0.022  ortU=     5.448  ortV=     5.447    drift=1.14e-15  t_eval=1.30e-01  t_dbdsqr=1.92e-03
+  ev4_ec1_n68_s1_gm                                n=   204  res=     0.030  ortU=     5.446  ortV=     5.446    drift=1.88e-15  t_eval=6.59e-02  t_dbdsqr=1.12e-03
+  tri7_n79_gm                                      n=   237  res=     0.024  ortU=     5.445  ortV=     5.442    drift=2.16e-15  t_eval=8.80e-02  t_dbdsqr=1.29e-03
+  tri6_n56_gm                                      n=   168  res=     0.031  ortU=     5.440  ortV=     5.437    drift=2.89e-15  t_eval=4.64e-02  t_dbdsqr=7.22e-04
+  ev3_ec1_n25_s1_gm                                n=    75  res=     0.080  ortU=     5.435  ortV=     5.430    drift=3.78e-15  t_eval=1.10e-02  t_dbdsqr=1.16e-04
+  ev8_ec1_n12_s2_gm                                n=    36  res=     0.216  ortU=     5.412  ortV=     5.432    drift=2.89e-15  t_eval=4.87e-03  t_dbdsqr=4.58e-05
+  ev4_ec1_n91_s0_gm                                n=   273  res=     0.019  ortU=     5.421  ortV=     5.422    drift=1.43e-15  t_eval=1.15e-01  t_dbdsqr=1.86e-03
+  ev3_ec4_n82_s1                                   n=    82  res=     0.657  ortU=     5.417  ortV=     5.421    drift=1.32e-14  t_eval=1.03e-02  t_dbdsqr=6.89e-05
+  ev6_ec1_n65_s1_gm                                n=   195  res=     0.039  ortU=     5.415  ortV=     5.412    drift=1.29e-15  t_eval=5.76e-02  t_dbdsqr=1.01e-03
+  ev3_ec4_n21_s0_gs                                n=    42  res=     0.832  ortU=     5.402  ortV=     5.411    drift=2.59e-15  t_eval=4.36e-03  t_dbdsqr=1.50e-05
+  ev3_ec4_n51_s0                                   n=    51  res=     0.961  ortU=     5.406  ortV=     5.404    drift=7.38e-15  t_eval=6.16e-03  t_dbdsqr=3.26e-05
+  ev4_ec4_n84_s0_gm                                n=   252  res=     0.026  ortU=     5.397  ortV=     5.403    drift=2.16e-15  t_eval=9.90e-02  t_dbdsqr=1.58e-03
+  ev3_ec1_n9_s2_gm                                 n=    27  res=     0.279  ortU=     5.401  ortV=     5.403    drift=1.94e-15  t_eval=4.20e-03  t_dbdsqr=1.68e-05
+  ev5_ec1_n32_s1                                   n=    32  res=     0.182  ortU=     5.394  ortV=     5.401    drift=2.05e-15  t_eval=4.78e-03  t_dbdsqr=2.09e-05
+  ev3_ec1_n15_s0_gs                                n=    30  res=     0.736  ortU=     5.377  ortV=     5.400    drift=1.75e-15  t_eval=3.81e-03  t_dbdsqr=1.38e-05
+  ev5_ec1_n44_s3_gs                                n=    88  res=     0.721  ortU=     5.393  ortV=     5.399    drift=2.72e-15  t_eval=9.83e-03  t_dbdsqr=1.80e-04
+  ev5_ec1_n19_s1_gs                                n=    38  res=     0.731  ortU=     5.395  ortV=     5.398    drift=2.58e-15  t_eval=4.26e-03  t_dbdsqr=1.84e-05
+  ev5_ec1_n54_s0                                   n=    54  res=     0.126  ortU=     5.392  ortV=     5.391    drift=2.99e-15  t_eval=7.46e-03  t_dbdsqr=4.73e-05
+  ev9_ec1_n11_s2_gs                                n=    22  res=     0.437  ortU=     5.375  ortV=     5.378    drift=1.32e-15  t_eval=3.63e-03  t_dbdsqr=1.76e-05
+  ev6_ec1_n61_s1_gm                                n=   183  res=     0.041  ortU=     5.375  ortV=     5.373    drift=1.57e-15  t_eval=5.15e-02  t_dbdsqr=9.07e-04
+  ev6_ec1_n30_s3_gm                                n=    90  res=     0.062  ortU=     5.375  ortV=     5.370    drift=2.63e-15  t_eval=1.51e-02  t_dbdsqr=2.41e-04
+  ev4_ec1_n86_s2_gm                                n=   258  res=     0.024  ortU=     5.366  ortV=     5.368    drift=1.68e-15  t_eval=1.04e-01  t_dbdsqr=1.69e-03
+  ev5_ec1_n97_s1                                   n=    97  res=     0.118  ortU=     5.363  ortV=     5.366    drift=1.89e-15  t_eval=1.77e-02  t_dbdsqr=1.27e-04
+  tri4_n44_gm                                      n=   132  res=     0.037  ortU=     5.363  ortV=     5.358    drift=2.42e-15  t_eval=3.01e-02  t_dbdsqr=4.53e-04
+  ev5_ec1_n16_s3_gs                                n=    32  res=     0.907  ortU=     5.317  ortV=     5.346    drift=3.41e-15  t_eval=4.02e-03  t_dbdsqr=1.70e-05
+  tri7_n95_gm                                      n=   285  res=     0.017  ortU=     5.343  ortV=     5.341    drift=1.40e-15  t_eval=1.27e-01  t_dbdsqr=1.88e-03
+  ev4_ec1_n31_s1_gm                                n=    93  res=     0.055  ortU=     5.340  ortV=     5.342    drift=1.42e-15  t_eval=1.65e-02  t_dbdsqr=2.64e-04
+  tri4_n73_gm                                      n=   219  res=     0.025  ortU=     5.321  ortV=     5.327    drift=1.65e-15  t_eval=7.86e-02  t_dbdsqr=1.12e-03
+  ev3_ec4_n21_s1_gm                                n=    63  res=     0.433  ortU=     5.322  ortV=     5.318    drift=5.89e-15  t_eval=5.60e-03  t_dbdsqr=9.20e-05
+  ev5_ec1_n27_s1                                   n=    27  res=     0.241  ortU=     5.303  ortV=     5.318    drift=2.63e-15  t_eval=4.21e-03  t_dbdsqr=1.73e-05
+  ev5_ec1_n19_s3_gm                                n=    57  res=     0.124  ortU=     5.318  ortV=     5.313    drift=3.16e-15  t_eval=7.76e-03  t_dbdsqr=7.88e-05
+  ev4_ec1_n36_s3_gm                                n=   108  res=     0.044  ortU=     5.312  ortV=     5.313    drift=1.30e-15  t_eval=2.13e-02  t_dbdsqr=3.55e-04
+  tri7_n100_gm                                     n=   300  res=     0.018  ortU=     5.302  ortV=     5.305    drift=1.41e-15  t_eval=1.39e-01  t_dbdsqr=2.05e-03
+  ev4_ec4_n95_s2_gm                                n=   285  res=     0.019  ortU=     5.304  ortV=     5.304    drift=1.50e-15  t_eval=1.24e-01  t_dbdsqr=2.00e-03
+  ev3_ec1_n11_s0_gm                                n=    33  res=     0.183  ortU=     5.280  ortV=     5.296    drift=1.61e-15  t_eval=4.70e-03  t_dbdsqr=2.79e-05
+  ev3_ec1_n9_s0_gm                                 n=    27  res=     0.272  ortU=     5.295  ortV=     5.287    drift=1.70e-15  t_eval=4.29e-03  t_dbdsqr=1.67e-05
+  ev4_ec4_n36_s2_gm                                n=   108  res=     0.053  ortU=     5.288  ortV=     5.288    drift=8.10e-15  t_eval=2.13e-02  t_dbdsqr=3.50e-04
+  ev3_ec1_n7_s3_gm                                 n=    21  res=     0.356  ortU=     5.284  ortV=     5.242    drift=2.58e-15  t_eval=3.70e-03  t_dbdsqr=1.33e-05
+  ev5_ec1_n36_s0_gs                                n=    72  res=     0.621  ortU=     5.272  ortV=     5.280    drift=3.76e-15  t_eval=7.39e-03  t_dbdsqr=1.04e-04
+  ev5_ec4_n9_s2_gs                                 n=    18  res=     0.830  ortU=     5.266  ortV=     5.269    drift=1.46e-15  t_eval=3.38e-03  t_dbdsqr=7.74e-06
+  ev3_ec4_n23_s2                                   n=    23  res=     0.521  ortU=     5.247  ortV=     5.266    drift=3.86e-15  t_eval=3.67e-03  t_dbdsqr=1.05e-05
+  ev3_ec1_n80_s0_gm                                n=   240  res=     0.030  ortU=     5.265  ortV=     5.255    drift=2.61e-15  t_eval=8.26e-02  t_dbdsqr=1.01e-03
+  ev5_ec1_n39_s3                                   n=    39  res=     0.168  ortU=     5.263  ortV=     5.254    drift=2.59e-15  t_eval=5.59e-03  t_dbdsqr=2.80e-05
+  ev5_ec1_n17_s1_gs                                n=    34  res=     0.230  ortU=     5.240  ortV=     5.256    drift=3.40e-15  t_eval=4.89e-03  t_dbdsqr=2.56e-05
+  ev5_ec1_n16_s0                                   n=    16  res=     0.420  ortU=     5.252  ortV=     5.250    drift=1.67e-15  t_eval=3.49e-03  t_dbdsqr=8.30e-06
+  ev4_ec4_n80_s1_gm                                n=   240  res=     0.023  ortU=     5.247  ortV=     5.249    drift=2.05e-15  t_eval=8.92e-02  t_dbdsqr=1.50e-03
+  ev6_ec1_n94_s2_gm                                n=   282  res=     0.025  ortU=     5.247  ortV=     5.244    drift=1.32e-15  t_eval=1.21e-01  t_dbdsqr=1.98e-03
+  tri4_n100_gm                                     n=   300  res=     0.025  ortU=     5.246  ortV=     5.247    drift=2.42e-15  t_eval=1.47e-01  t_dbdsqr=1.99e-03
+  ev3_ec4_n26_s1_gs                                n=    52  res=     0.425  ortU=     5.244  ortV=     5.233    drift=3.35e-15  t_eval=5.23e-03  t_dbdsqr=2.47e-05
+  ev5_ec1_n18_s1                                   n=    18  res=     0.385  ortU=     5.241  ortV=     5.203    drift=2.97e-15  t_eval=3.53e-03  t_dbdsqr=9.57e-06
+  ev6_ec1_n98_s1_gs                                n=   196  res=     0.335  ortU=     5.229  ortV=     5.228    drift=1.05e-15  t_eval=4.36e-02  t_dbdsqr=4.91e-04
+  tri4_n95_gm                                      n=   285  res=     0.024  ortU=     5.220  ortV=     5.225    drift=3.19e-15  t_eval=1.31e-01  t_dbdsqr=1.82e-03
+  ev5_ec4_n26_s2                                   n=    26  res=     0.970  ortU=     5.211  ortV=     5.219    drift=2.21e-15  t_eval=4.05e-03  t_dbdsqr=1.20e-05
+  ev3_ec4_n35_s2_gs                                n=    70  res=     1.089  ortU=     5.216  ortV=     5.217    drift=2.28e-14  t_eval=6.37e-03  t_dbdsqr=3.77e-05
+  ev3_ec1_n27_s1_gs                                n=    54  res=     0.103  ortU=     5.205  ortV=     5.205    drift=2.56e-15  t_eval=7.41e-03  t_dbdsqr=5.72e-05
+  ev6_ec1_n34_s0_gm                                n=   102  res=     0.053  ortU=     5.203  ortV=     5.205    drift=9.65e-16  t_eval=1.90e-02  t_dbdsqr=3.11e-04
+  ev6_ec1_n93_s0                                   n=    93  res=     0.060  ortU=     5.179  ortV=     5.186    drift=9.42e-16  t_eval=1.92e-02  t_dbdsqr=2.36e-04
+  ev5_ec4_n16_s3_gm                                n=    48  res=     0.570  ortU=     5.177  ortV=     5.179    drift=3.90e-15  t_eval=4.31e-03  t_dbdsqr=4.77e-05
+  ev3_ec1_n56_s3                                   n=    56  res=     0.110  ortU=     5.179  ortV=     5.172    drift=2.22e-15  t_eval=7.61e-03  t_dbdsqr=6.12e-05
+  ev5_ec4_n27_s0                                   n=    27  res=     1.007  ortU=     5.167  ortV=     5.176    drift=3.30e-15  t_eval=4.28e-03  t_dbdsqr=1.18e-05
+  ev8_ec1_n77_s1_gm                                n=   231  res=     0.038  ortU=     5.174  ortV=     5.170    drift=1.41e-15  t_eval=7.81e-02  t_dbdsqr=1.74e-03
+  ev6_ec1_n42_s1                                   n=    42  res=     0.177  ortU=     5.149  ortV=     5.168    drift=9.69e-16  t_eval=6.33e-03  t_dbdsqr=5.19e-05
+  ev4_ec4_n88_s3_gm                                n=   264  res=     0.025  ortU=     5.158  ortV=     5.153    drift=1.82e-15  t_eval=1.07e-01  t_dbdsqr=1.78e-03
+  ev5_ec1_n73_s3                                   n=    73  res=     0.083  ortU=     5.153  ortV=     5.158    drift=2.10e-15  t_eval=1.12e-02  t_dbdsqr=8.51e-05
+  ev5_ec1_n7_s1_gm                                 n=    21  res=     0.320  ortU=     5.157  ortV=     5.144    drift=2.15e-15  t_eval=3.82e-03  t_dbdsqr=1.38e-05
+  ev4_ec4_n96_s1_gm                                n=   288  res=     0.018  ortU=     5.150  ortV=     5.153    drift=1.37e-15  t_eval=1.27e-01  t_dbdsqr=2.08e-03
+  ev6_ec1_n50_s2_gm                                n=   150  res=     0.053  ortU=     5.153  ortV=     5.153    drift=3.88e-15  t_eval=3.56e-02  t_dbdsqr=6.13e-04
+  ev3_ec1_n71_s1                                   n=    71  res=     0.091  ortU=     5.138  ortV=     5.147    drift=2.43e-15  t_eval=1.05e-02  t_dbdsqr=1.41e-04
+  ev5_ec1_n78_s3                                   n=    78  res=     0.085  ortU=     5.136  ortV=     5.146    drift=1.82e-15  t_eval=1.25e-02  t_dbdsqr=9.83e-05
+  tri3_n21_gm                                      n=    63  res=     0.143  ortU=     5.143  ortV=     5.144    drift=2.25e-15  t_eval=8.79e-03  t_dbdsqr=1.18e-04
+  ev5_ec4_n7_s2                                    n=     7  res=     0.924  ortU=     5.061  ortV=     5.144    drift=1.43e-15  t_eval=3.12e-03  t_dbdsqr=4.60e-06
+  ev3_ec4_n52_s0                                   n=    52  res=     0.521  ortU=     5.135  ortV=     5.136    drift=2.50e-15  t_eval=6.35e-03  t_dbdsqr=8.20e-05
+  ev6_ec1_n17_s3_gs                                n=    34  res=     0.379  ortU=     5.119  ortV=     5.127    drift=8.92e-16  t_eval=4.27e-03  t_dbdsqr=2.40e-05
+  ev5_ec1_n28_s3                                   n=    28  res=     0.243  ortU=     5.103  ortV=     5.122    drift=2.24e-15  t_eval=4.37e-03  t_dbdsqr=1.84e-05
+  ev3_ec1_n64_s0                                   n=    64  res=     0.100  ortU=     5.106  ortV=     5.114    drift=1.74e-15  t_eval=9.38e-03  t_dbdsqr=1.17e-04
+  ev9_ec1_n15_s2_gs                                n=    30  res=     0.316  ortU=     5.113  ortV=     5.092    drift=1.54e-15  t_eval=4.15e-03  t_dbdsqr=3.01e-05
+  tri4_n56_gm                                      n=   168  res=     0.026  ortU=     5.108  ortV=     5.111    drift=3.70e-15  t_eval=4.71e-02  t_dbdsqr=7.02e-04
+  ev3_ec1_n69_s0                                   n=    69  res=     0.095  ortU=     5.109  ortV=     5.103    drift=2.27e-15  t_eval=9.98e-03  t_dbdsqr=7.64e-05
+  ev5_ec4_n50_s3                                   n=    50  res=     0.219  ortU=     5.102  ortV=     5.099    drift=2.75e-15  t_eval=6.09e-03  t_dbdsqr=2.61e-05
+  ev5_ec4_n21_s3                                   n=    21  res=     0.805  ortU=     5.086  ortV=     5.091    drift=1.77e-15  t_eval=3.76e-03  t_dbdsqr=8.06e-06
+  ev6_ec1_n11_s3                                   n=    11  res=     0.499  ortU=     5.005  ortV=     5.083    drift=1.09e-15  t_eval=3.27e-03  t_dbdsqr=7.98e-06
+  ev9_ec1_n6_s0_gs                                 n=    12  res=     0.775  ortU=     5.056  ortV=     5.073    drift=6.58e-16  t_eval=3.24e-03  t_dbdsqr=8.29e-06
+  ev3_ec4_n74_s0_gs                                n=   148  res=     0.678  ortU=     5.065  ortV=     5.062    drift=2.11e-14  t_eval=1.68e-02  t_dbdsqr=1.67e-04
+  ev4_ec1_n96_s2_gm                                n=   288  res=     0.018  ortU=     5.062  ortV=     5.056    drift=1.07e-15  t_eval=1.29e-01  t_dbdsqr=2.01e-03
+  ev6_ec1_n22_s3_gs                                n=    44  res=     0.539  ortU=     5.059  ortV=     5.047    drift=1.62e-15  t_eval=5.08e-03  t_dbdsqr=3.67e-05
+  ev5_ec4_n88_s1_gs                                n=   176  res=     1.001  ortU=     5.054  ortV=     5.052    drift=1.81e-14  t_eval=2.45e-02  t_dbdsqr=2.88e-04
+  ev6_ec1_n64_s0                                   n=    64  res=     0.086  ortU=     5.039  ortV=     5.054    drift=8.97e-16  t_eval=1.09e-02  t_dbdsqr=1.54e-04
+  ev5_ec1_n28_s0                                   n=    28  res=     0.251  ortU=     5.051  ortV=     5.028    drift=2.79e-15  t_eval=4.48e-03  t_dbdsqr=1.73e-05
+  ev5_ec4_n29_s2_gs                                n=    58  res=     1.027  ortU=     5.050  ortV=     5.048    drift=1.31e-14  t_eval=5.53e-03  t_dbdsqr=2.69e-05
+  ev5_ec1_n64_s3                                   n=    64  res=     0.114  ortU=     5.048  ortV=     5.037    drift=2.22e-15  t_eval=9.46e-03  t_dbdsqr=1.08e-04
+  ev3_ec1_n74_s1                                   n=    74  res=     0.081  ortU=     5.044  ortV=     5.040    drift=2.31e-15  t_eval=1.12e-02  t_dbdsqr=1.40e-04
+  ev6_ec1_n59_s3_gm                                n=   177  res=     0.045  ortU=     5.039  ortV=     5.041    drift=1.50e-15  t_eval=4.86e-02  t_dbdsqr=8.33e-04
+  tri4_n87_gm                                      n=   261  res=     0.021  ortU=     5.024  ortV=     5.027    drift=4.94e-15  t_eval=1.10e-01  t_dbdsqr=1.55e-03
+  ev5_ec4_n30_s2                                   n=    30  res=     0.909  ortU=     5.023  ortV=     5.010    drift=1.69e-15  t_eval=4.33e-03  t_dbdsqr=1.30e-05
+  ev4_ec1_n70_s2_gm                                n=   210  res=     0.030  ortU=     5.020  ortV=     5.018    drift=7.55e-15  t_eval=6.98e-02  t_dbdsqr=1.14e-03
+  ev3_ec1_n41_s0_gm                                n=   123  res=     0.056  ortU=     5.014  ortV=     5.016    drift=2.40e-15  t_eval=2.51e-02  t_dbdsqr=3.09e-04
+  ev6_ec1_n39_s2_gm                                n=   117  res=     0.061  ortU=     5.011  ortV=     5.015    drift=2.38e-15  t_eval=2.27e-02  t_dbdsqr=3.70e-04
+  ev3_ec1_n16_s2_gs                                n=    32  res=     0.944  ortU=     4.986  ortV=     5.011    drift=3.22e-15  t_eval=3.96e-03  t_dbdsqr=2.43e-05
+  ev3_ec1_n15_s1                                   n=    15  res=     0.378  ortU=     5.009  ortV=     4.965    drift=2.93e-15  t_eval=3.39e-03  t_dbdsqr=7.63e-06
+  ev5_ec1_n31_s1                                   n=    31  res=     0.208  ortU=     4.991  ortV=     5.002    drift=2.70e-15  t_eval=4.51e-03  t_dbdsqr=3.43e-05
+  ev8_ec1_n8_s2_gm                                 n=    24  res=     0.343  ortU=     4.974  ortV=     5.001    drift=2.17e-15  t_eval=3.87e-03  t_dbdsqr=2.12e-05
+

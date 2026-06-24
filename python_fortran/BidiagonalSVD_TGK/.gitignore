@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+*.o
+*.mod
+*.a
+*.so
+*.dylib
+
+# Test executables (no extension, built into build/ but also guard top-level)
+test_svd
+test_stcoll
+test_stcoll_alloc
+test_glued
+test_grow
+test_dbdsqr_full
+dbdsqr_ref
+
+# Editor / OS cruft
+.DS_Store
+*~
+*.bak
+*.swp
+
+# Scratch run output
+*.out
+*.log
+
+# Reference papers (large PDFs; kept locally, not in version control)
+Papers/
+dev/smallglue/print_sv

@@ -28,6 +28,8 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIN = os.path.join(HERE, 'BidiagonalSVD_TGK', 'test_stcoll_alloc')
+DBDSQR_REF_BIN = os.path.join(HERE, 'BidiagonalSVD_TGK', 'dbdsqr_ref')
+DBDSQR_FULL_BIN = os.path.join(HERE, 'BidiagonalSVD_TGK', 'test_dbdsqr_full')
 SC = os.path.join(HERE, 'self-contained-fortran-bidiagsvd')
 LDBD = os.path.join(HERE, 'lapack-dbdsvr')
 
@@ -54,8 +56,83 @@ PAPER_ABS_RE = re.compile(
     r'paper\.orthU=\s*([-\d.E+]+)\s+'
     r'paper\.orthV=\s*([-\d.E+]+)'
 )
+TIMING_RE = re.compile(
+    r't_eval=\s*([-\d.E+]+)\s+'
+    r't_dbdsqr=\s*([-\d.E+]+)\s+'
+    r'sv_drift=\s*([-\d.E+]+)\s+'
+    r'nreps_eval=\s*(\d+)\s+'
+    r'nreps_ref=\s*(\d+)'
+)
+DBDSQR_REF_HDR_RE = re.compile(
+    r'INFO=\s*(-?\d+)\s+T_SEC=\s*([-\d.E+]+)\s+NREPS=\s*(\d+)'
+)
 INFO_RE = re.compile(r'\bINFO=\s*(-?\d+)\b')
 EPS = 2.2204460492503131e-16
+
+
+def parse_dbdsqr_ref_sigma(out, n):
+    """Parse the dbdsqr_ref binary's output: header line + n (idx, sigma) lines.
+    Returns (info, t_sec, nreps, sigma) or (None, ...) on parse failure."""
+    m = DBDSQR_REF_HDR_RE.search(out)
+    if not m:
+        return None, None, None, None
+    info = int(m.group(1)); t_sec = float(m.group(2)); nreps = int(m.group(3))
+    sigma = np.zeros(n)
+    cnt = 0
+    for line in out.splitlines():
+        s = line.strip().split()
+        if len(s) == 2:
+            try:
+                i = int(s[0]); val = float(s[1])
+                if 1 <= i <= n:
+                    sigma[i - 1] = val
+                    cnt += 1
+            except ValueError:
+                continue
+    if cnt != n:
+        return info, t_sec, nreps, None
+    return info, t_sec, nreps, sigma
+
+
+def run_dbdsqr_ref(d, e, timeout):
+    """Subprocess dbdsqr_ref for reference singular values + benchmarked time.
+    Returns (sigma_ref_desc, t_dbdsqr, nreps, info)."""
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.dat',
+                                     prefix='dbdsqr_', delete=False) as tf:
+        tmp = tf.name
+    try:
+        write_dat(tmp, d, e)
+        try:
+            r = subprocess.run([DBDSQR_REF_BIN, tmp], capture_output=True,
+                               text=True, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return None, float('inf'), 0, -999
+        if r.returncode != 0:
+            return None, float('inf'), 0, -1
+        info, t_sec, nreps, sigma = parse_dbdsqr_ref_sigma(r.stdout, len(d))
+        if sigma is None:
+            return None, float('inf'), 0, info if info is not None else -1
+        return sigma, t_sec, nreps, info
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+
+def sv_drift_rel(sigma_test, sigma_ref):
+    """Maximum relative deviation between two sorted-descending arrays of
+    singular values.  Uses descending sort so largest σ are compared first."""
+    a = np.sort(np.asarray(sigma_test, dtype=np.float64))[::-1]
+    b = np.sort(np.asarray(sigma_ref, dtype=np.float64))[::-1]
+    m = min(len(a), len(b))
+    if m == 0:
+        return 0.0
+    a = a[:m]; b = b[:m]
+    mask = b > 0.0
+    if not np.any(mask):
+        return 0.0
+    return float(np.max(np.abs(a[mask] - b[mask]) / b[mask]))
 
 
 # ----- subprocess core -----
@@ -85,10 +162,22 @@ def _parse_advisor_output(out, n, paper_norms):
             float(am.group(3)) / scale)
 
 
-def run_one_advisor(name, d, e, timeout, paper_norms):
+def _empty_result(ok, dt, note):
+    return {'ok': ok, 'res': float('inf') if not ok else 0.0,
+            'ortU': float('inf') if not ok else 0.0,
+            'ortV': float('inf') if not ok else 0.0,
+            'dt': dt, 't_eval': float('nan'), 't_dbdsqr': float('nan'),
+            'sv_drift': float('nan'), 'nreps_eval': 0, 'nreps_ref': 0,
+            'note': note}
+
+
+def _run_advisor_binary(bin_path, name, d, e, timeout, paper_norms):
+    """Shared subprocess runner for advisor-style binaries
+    (test_stcoll_alloc, test_dbdsqr_full).  Both share the same output
+    grammar; parse all the same fields."""
     n = len(d)
     if n < 2:
-        return True, 0.0, 0.0, 0.0, 0.0, 'n<2'
+        return _empty_result(True, 0.0, 'n<2')
     with tempfile.NamedTemporaryFile(mode='w', suffix='.dat',
                                      prefix='eval_', delete=False) as tf:
         tmp = tf.name
@@ -96,29 +185,53 @@ def run_one_advisor(name, d, e, timeout, paper_norms):
         write_dat(tmp, d, e)
         t0 = time.perf_counter()
         try:
-            r = subprocess.run([BIN, tmp], capture_output=True, text=True,
-                               timeout=timeout)
+            r = subprocess.run([bin_path, tmp], capture_output=True,
+                               text=True, timeout=timeout)
         except subprocess.TimeoutExpired:
-            return False, float('inf'), float('inf'), float('inf'), timeout, 'TIMEOUT'
+            return _empty_result(False, timeout, 'TIMEOUT')
         dt = time.perf_counter() - t0
         out = r.stdout + r.stderr
         if r.returncode != 0:
-            return False, float('inf'), float('inf'), float('inf'), dt, f'rc={r.returncode}'
+            return _empty_result(False, dt, f'rc={r.returncode}')
         info_m = INFO_RE.search(out)
         info = int(info_m.group(1)) if info_m else 0
         parsed = _parse_advisor_output(out, n, paper_norms)
         if parsed is None:
-            return False, float('inf'), float('inf'), float('inf'), dt, 'parse-fail'
+            return _empty_result(False, dt, 'parse-fail')
         res, ou, ov = parsed
         ok = (info == 0 and res <= RES_THRESH
               and ou <= ORTHO_THRESH and ov <= ORTHO_THRESH)
         note = '' if info == 0 else f'INFO={info}'
-        return ok, res, ou, ov, dt, note
+        t_eval = t_dbdsqr = sv_drift = float('nan')
+        nr_eval = nr_ref = 0
+        if paper_norms:
+            tm = TIMING_RE.search(out)
+            if tm:
+                t_eval = float(tm.group(1))
+                t_dbdsqr = float(tm.group(2))
+                sv_drift = float(tm.group(3))
+                nr_eval = int(tm.group(4))
+                nr_ref = int(tm.group(5))
+        return {'ok': ok, 'res': res, 'ortU': ou, 'ortV': ov, 'dt': dt,
+                't_eval': t_eval, 't_dbdsqr': t_dbdsqr,
+                'sv_drift': sv_drift,
+                'nreps_eval': nr_eval, 'nreps_ref': nr_ref,
+                'note': note}
     finally:
         try:
             os.unlink(tmp)
         except OSError:
             pass
+
+
+def run_one_advisor(name, d, e, timeout, paper_norms):
+    return _run_advisor_binary(BIN, name, d, e, timeout, paper_norms)
+
+
+def run_one_dbdsqr(name, d, e, timeout, paper_norms):
+    """Run DBDSQR (full SVD with U,V) as the solver under evaluation."""
+    return _run_advisor_binary(DBDSQR_FULL_BIN, name, d, e, timeout,
+                               paper_norms)
 
 
 _SC_bidiag_svd = None
@@ -182,32 +295,78 @@ def _compute_metrics_py(d, e, sigma, U, V, paper_norms):
     return res / scale, ortU, ortV
 
 
+def _bench_selfcontained(solver, d, e, time_budget=0.2, max_reps=30):
+    """Adaptive min-of-N benchmarking for self-contained bidiag_svd.
+    Each call is a fresh subprocess => naturally cold-process timing.  We
+    perform one warmup, then time min(NREPS, max_reps) calls, taking the
+    MIN.  Stop on first-call >= 0.5 s, or total >= time_budget once
+    NREPS >= 3, or NREPS >= max_reps."""
+    # Warmup
+    sigma, U, V, info = solver(d, e)
+    if info != 0:
+        return sigma, U, V, info, float('inf'), 0
+    t_min = float('inf')
+    t_total = 0.0
+    nreps = 0
+    while True:
+        t0 = time.perf_counter()
+        sigma, U, V, info = solver(d, e)
+        t = time.perf_counter() - t0
+        if info != 0:
+            return sigma, U, V, info, float('inf'), 0
+        t_min = min(t_min, t)
+        t_total += t
+        nreps += 1
+        if nreps == 1 and t >= 0.5:
+            break
+        if nreps >= 3 and t_total >= time_budget:
+            break
+        if nreps >= max_reps:
+            break
+    return sigma, U, V, info, t_min, nreps
+
+
 def run_one_selfcontained(name, d, e, timeout, paper_norms):
     n = len(d)
     if n < 2:
-        return True, 0.0, 0.0, 0.0, 0.0, 'n<2'
+        return _empty_result(True, 0.0, 'n<2')
     solver = _get_selfcontained_solver()
     t0 = time.perf_counter()
     try:
-        sigma, U, V, info = solver(d, e)
+        if paper_norms:
+            sigma, U, V, info, t_eval, nr_eval = _bench_selfcontained(
+                solver, d, e)
+        else:
+            sigma, U, V, info = solver(d, e)
+            t_eval, nr_eval = float('nan'), 0
     except subprocess.TimeoutExpired:
-        return False, float('inf'), float('inf'), float('inf'), \
-               time.perf_counter() - t0, 'TIMEOUT'
+        return _empty_result(False, time.perf_counter() - t0, 'TIMEOUT')
     except Exception as ex:
-        return False, float('inf'), float('inf'), float('inf'), \
-               time.perf_counter() - t0, f'err:{type(ex).__name__}'
+        return _empty_result(False, time.perf_counter() - t0,
+                             f'err:{type(ex).__name__}')
     dt = time.perf_counter() - t0
     if info != 0:
-        return False, float('inf'), float('inf'), float('inf'), dt, f'INFO={info}'
-    # Detect non-finite output before metric loop (paper-norm would NaN otherwise).
+        return _empty_result(False, dt, f'INFO={info}')
     if not (np.all(np.isfinite(sigma)) and np.all(np.isfinite(U))
             and np.all(np.isfinite(V))):
-        return False, float('inf'), float('inf'), float('inf'), dt, 'non-finite'
+        return _empty_result(False, dt, 'non-finite')
     res, ou, ov = _compute_metrics_py(np.asarray(d, dtype=np.float64),
                                        np.asarray(e, dtype=np.float64),
                                        sigma, U, V, paper_norms)
     ok = res <= RES_THRESH and ou <= ORTHO_THRESH and ov <= ORTHO_THRESH
-    return ok, res, ou, ov, dt, ''
+    # DBDSQR reference σ + bench timing
+    t_dbdsqr = float('nan'); sv_drift = float('nan'); nr_ref = 0
+    if paper_norms:
+        sigma_ref, t_ref, nr_ref, info_ref = run_dbdsqr_ref(d, e, timeout)
+        if sigma_ref is not None:
+            t_dbdsqr = t_ref
+            sv_drift = sv_drift_rel(sigma, sigma_ref)
+        else:
+            t_dbdsqr = float('inf')
+            sv_drift = float('inf')
+    return {'ok': ok, 'res': res, 'ortU': ou, 'ortV': ov, 'dt': dt,
+            't_eval': t_eval, 't_dbdsqr': t_dbdsqr, 'sv_drift': sv_drift,
+            'nreps_eval': nr_eval, 'nreps_ref': nr_ref, 'note': ''}
 
 
 def run_one(name, d, e, timeout, solver='advisor', paper_norms=False):
@@ -215,6 +374,8 @@ def run_one(name, d, e, timeout, solver='advisor', paper_norms=False):
         return run_one_advisor(name, d, e, timeout, paper_norms)
     if solver == 'selfcontained':
         return run_one_selfcontained(name, d, e, timeout, paper_norms)
+    if solver == 'dbdsqr':
+        return run_one_dbdsqr(name, d, e, timeout, paper_norms)
     raise ValueError(solver)
 
 
@@ -350,41 +511,57 @@ def get_generator(suite, synth_mode):
     raise ValueError(suite)
 
 
+SOLVER_LABELS = {
+    'advisor':       ('BidiagonalSVD_TGK / DBDSVDMR3 (advisor)',
+                      'python_fortran/BidiagonalSVD_TGK/  (advisor, origin/main 15a946d)'),
+    'selfcontained': ('self-contained-fortran-bidiagsvd / mr3gk_run (lab)',
+                      'python_fortran/self-contained-fortran-bidiagsvd/'),
+    'dbdsqr':        ('LAPACK DBDSQR full SVD (reference, n^3)',
+                      'BidiagonalSVD_TGK/dev/test_dbdsqr_full.f'),
+}
+
+
 def run_suite(suite, synth_mode, max_n, timeout, limit, smoke, only=None,
               solver='advisor', paper_norms=False):
     gen_name, gen_src = SUITE_DISPATCH[suite]
-    if solver == 'advisor':
-        solver_label = 'BidiagonalSVD_TGK / DBDSVDMR3 (advisor)'
-        source = 'python_fortran/BidiagonalSVD_TGK/  (advisor, origin/main 15a946d)'
-    else:
-        solver_label = 'self-contained-fortran-bidiagsvd / mr3gk_run (lab)'
-        source = 'python_fortran/self-contained-fortran-bidiagsvd/'
+    solver_label, source = SOLVER_LABELS[solver]
     norm_label = ('Willems-Lang 2012 paper-norm (res=per-triplet 2-norm)'
                   if paper_norms else 'reconstruction max-norm (default)')
-    print('=' * 110)
+    print('=' * 130)
     print(f"BidiagonalSVD evaluation -- suite={suite}  solver={solver}  "
           f"norms={'paper' if paper_norms else 'maxnorm'}"
           + (f"  synth-mode={synth_mode}" if suite == 'synth' else ''))
-    print('=' * 110)
+    print('=' * 130)
     print(f"Solver:     {solver_label}")
     print(f"Source:     {source}")
     print(f"Metric:     {norm_label}")
     print(f"Generator:  {gen_name}  ({gen_src})")
     print(f"Thresholds: res<=7 n.eps,  ortU/ortV<=5 n.eps")
     print(f"Timeout:    {timeout}s/matrix")
+    if paper_norms:
+        print(f"Reference:  DBDSQR (singular values only)  -- "
+              f"min-of-N adaptive bench, cache-flushed (32 MiB scratch)")
     if smoke:
         print(f"SMOKE MODE: first 5 matrices only")
     if max_n:
         print(f"max-n:      skip matrices with n > {max_n}")
     if limit:
         print(f"limit:      first {limit} matrices")
-    print('=' * 110)
+    print('=' * 130)
     print()
-    print(f"{'Matrix':<54} {'n':>6} {'res':>10} {'ortU':>10} {'ortV':>10} {'dt(s)':>8}  status  note")
-    print('-' * 130)
+    if paper_norms:
+        hdr = (f"{'Matrix':<48} {'n':>6} {'res':>9} {'ortU':>9} "
+               f"{'ortV':>9} {'sv_drift':>10} {'t_eval':>10} "
+               f"{'t_dbdsqr':>10} {'reps':>4}  status  note")
+    else:
+        hdr = (f"{'Matrix':<54} {'n':>6} {'res':>10} {'ortU':>10} "
+               f"{'ortV':>10} {'dt(s)':>8}  status  note")
+    print(hdr)
+    print('-' * len(hdr))
 
     n_pass = n_total = 0
     fails = []
+    rows_379 = []  # (pattern, size, t_eval) for scaling aggregation
     t_start = time.time()
     cap = 5 if smoke else (limit if limit else None)
 
@@ -395,7 +572,6 @@ def run_suite(suite, synth_mode, max_n, timeout, limit, smoke, only=None,
         if only and name not in only:
             continue
         if d is None:
-            # generator error
             print(f"{name:<54}     -            ERROR: {e}")
             continue
         n = len(d)
@@ -405,31 +581,79 @@ def run_suite(suite, synth_mode, max_n, timeout, limit, smoke, only=None,
             print(f"{name:<54} {n:>6}  (skipped: n > {max_n})")
             continue
         n_total += 1
-        ok, res, ou, ov, dt, note = run_one(name, d, e, timeout,
-                                            solver=solver,
-                                            paper_norms=paper_norms)
+        r = run_one(name, d, e, timeout, solver=solver,
+                    paper_norms=paper_norms)
+        ok = r['ok']
         status = 'PASS' if ok else 'FAIL'
         if ok:
             n_pass += 1
         else:
-            fails.append((name, n, res, ou, ov, note))
+            fails.append((name, n, r['res'], r['ortU'], r['ortV'],
+                          r['t_eval'], r['t_dbdsqr'], r['sv_drift'],
+                          r['note']))
+        # collect 379 scaling timing (only on PASS to avoid skewed ratios from TIMEOUT)
+        if suite == '379' and paper_norms and ok and \
+                np.isfinite(r['t_eval']):
+            if name.startswith('adv:') and '@' in name:
+                pat, sz_s = name.rsplit('@', 1)
+                try:
+                    sz = int(sz_s)
+                    rows_379.append((pat, sz, r['t_eval']))
+                except ValueError:
+                    pass
         if (n_total % 100 == 0) or smoke or (suite != 'synth'):
-            print(f"{name:<54} {n:>6} {res:>10.3f} {ou:>10.3f} {ov:>10.3f} {dt:>8.3f}  {status}  {note}")
-            sys.stdout.flush()
-        elif suite == 'synth' and n_total % 100 == 0:
-            elapsed = time.time() - t_start
-            print(f"  [progress] {n_pass}/{n_total} passed  ({elapsed:.1f}s elapsed)")
+            if paper_norms:
+                print(f"{name:<48} {n:>6} {r['res']:>9.3f} "
+                      f"{r['ortU']:>9.3f} {r['ortV']:>9.3f} "
+                      f"{r['sv_drift']:>10.2e} {r['t_eval']:>10.3e} "
+                      f"{r['t_dbdsqr']:>10.3e} "
+                      f"{r['nreps_eval']:>2}/{r['nreps_ref']:<2}  "
+                      f"{status}  {r['note']}")
+            else:
+                print(f"{name:<54} {n:>6} {r['res']:>10.3f} "
+                      f"{r['ortU']:>10.3f} {r['ortV']:>10.3f} "
+                      f"{r['dt']:>8.3f}  {status}  {r['note']}")
             sys.stdout.flush()
 
-    print('-' * 130)
+    print('-' * len(hdr))
     elapsed = time.time() - t_start
     print(f"PASS: {n_pass}/{n_total}    ({elapsed:.1f}s wall)")
     if fails:
         print()
         print(f"Failing ({len(fails)}), sorted by max(ortU,ortV) desc:")
         fails_sorted = sorted(fails, key=lambda x: -max(x[3], x[4]))
-        for name, n, res, ou, ov, note in fails_sorted:
-            print(f"  {name:<54} n={n:>6}  res={res:>10.3f}  ortU={ou:>10.3f}  ortV={ov:>10.3f}  {note}")
+        for name, n, res, ou, ov, t_e, t_r, drift, note in fails_sorted:
+            extra = ''
+            if paper_norms and np.isfinite(drift):
+                extra = (f"  drift={drift:.2e}  "
+                         f"t_eval={t_e:.2e}  t_dbdsqr={t_r:.2e}")
+            print(f"  {name:<48} n={n:>6}  res={res:>10.3f}  "
+                  f"ortU={ou:>10.3f}  ortV={ov:>10.3f}  {note}{extra}")
+    if suite == '379' and paper_norms and rows_379:
+        emit_scaling_379(rows_379)
+
+
+def emit_scaling_379(rows):
+    """Aggregate per-pattern timing and report t(400)/t(200) ratio.
+    Mirrors lapack-dbdsvr/evaluate.py:130 print_scoring() scaling block."""
+    by_pat = {}
+    for pat, sz, t in rows:
+        by_pat.setdefault(pat, {})[sz] = t
+    ratios = []
+    for pat, d in by_pat.items():
+        if 200 in d and 400 in d and d[200] > 1e-9:
+            ratios.append((d[400] / d[200], pat, d[200], d[400]))
+    ratios.sort(reverse=True)
+    print()
+    print(f"Scaling (per-pattern timing across sizes, "
+          f"{len(ratios)} patterns paired @200/@400):")
+    print(f"  {'ratio':>8}  {'pattern':<38}  {'t@200':>10}  {'t@400':>10}")
+    for ratio, pat, t200, t400 in ratios[:15]:
+        print(f"  {ratio:>8.2f}  {pat:<38}  {t200:>10.3e}  {t400:>10.3e}")
+    if ratios:
+        worst, worst_pat, _, _ = ratios[0]
+        print(f"  worst_ratio={worst:.2f}  ({worst_pat})  "
+              f"(ideal MR^3 ~ 4.0, HARD GATE > 5.0)")
 
 
 def main():
@@ -449,9 +673,12 @@ def main():
     ap.add_argument('--only', default='',
                     help='Comma-separated subset of matrix names to run.')
     ap.add_argument('--solver', default='advisor',
-                    choices=['advisor', 'selfcontained', 'both'],
+                    choices=['advisor', 'selfcontained', 'dbdsqr',
+                             'both', 'all'],
                     help='advisor: BidiagonalSVD_TGK; selfcontained: '
-                         'self-contained-fortran-bidiagsvd; both: run both.')
+                         'self-contained-fortran-bidiagsvd; dbdsqr: '
+                         'reference DBDSQR full SVD; both: advisor+selfcontained; '
+                         'all: advisor+selfcontained+dbdsqr.')
     ap.add_argument('--paper-norms', action='store_true',
                     help='Use Willems-Lang 2012 Table 5.1 residual '
                          '(per-triplet 2-norm) instead of reconstruction max-norm.')
@@ -463,13 +690,21 @@ def main():
         print(f"build with: bash {os.path.dirname(BIN)}/build.sh")
         sys.exit(1)
     sc_bin = os.path.join(SC, 'mr3gk_fortran', 'mr3gk_run')
-    if args.solver in ('selfcontained', 'both') and not os.path.exists(sc_bin):
+    if args.solver in ('selfcontained', 'both', 'all') and not os.path.exists(sc_bin):
         print(f"self-contained binary not found: {sc_bin}")
         print(f"build with: bash {os.path.dirname(sc_bin)}/build.sh")
         sys.exit(1)
+    if args.solver in ('dbdsqr', 'all') and not os.path.exists(DBDSQR_FULL_BIN):
+        print(f"dbdsqr full-SVD binary not found: {DBDSQR_FULL_BIN}")
+        print(f"build with: bash {os.path.dirname(DBDSQR_FULL_BIN)}/build.sh")
+        sys.exit(1)
 
-    solvers = ['advisor', 'selfcontained'] if args.solver == 'both' \
-              else [args.solver]
+    if args.solver == 'both':
+        solvers = ['advisor', 'selfcontained']
+    elif args.solver == 'all':
+        solvers = ['advisor', 'selfcontained', 'dbdsqr']
+    else:
+        solvers = [args.solver]
     suites = ('pract', 'synth', '379', 'dense_to_bidiag') \
              if args.suite == 'all' else (args.suite,)
 

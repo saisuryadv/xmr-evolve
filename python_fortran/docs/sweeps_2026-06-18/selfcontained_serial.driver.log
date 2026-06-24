@@ -1,0 +1,8 @@
+[serial] selfcontained suite=pract start 2026-06-18T03:25:37-0700
+[serial] selfcontained suite=pract end   2026-06-18T03:48:38-0700
+[serial] selfcontained suite=synth start 2026-06-18T03:48:38-0700
+[serial] selfcontained suite=synth end   2026-06-18T05:54:27-0700
+[serial] selfcontained suite=379 start 2026-06-18T05:54:27-0700
+[serial] selfcontained suite=379 end   2026-06-18T05:57:46-0700
+[serial] selfcontained suite=dense_to_bidiag start 2026-06-18T05:57:46-0700
+[serial] selfcontained suite=dense_to_bidiag end   2026-06-18T05:59:55-0700

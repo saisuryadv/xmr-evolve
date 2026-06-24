@@ -1,0 +1,10 @@
+[launch] solver=advisor suite=pract core=0 pid=64293 log=docs/sweeps_2026-06-18/pract_advisor_paper_norms.log
+[launch] solver=advisor suite=synth core=1 pid=64294 log=docs/sweeps_2026-06-18/synth_advisor_paper_norms.log
+[launch] solver=advisor suite=379 core=2 pid=64295 log=docs/sweeps_2026-06-18/379_advisor_paper_norms.log
+[launch] solver=advisor suite=dense_to_bidiag core=3 pid=64296 log=docs/sweeps_2026-06-18/dense_to_bidiag_advisor_paper_norms.log
+[launch] solver=dbdsqr suite=pract core=4 pid=64297 log=docs/sweeps_2026-06-18/pract_dbdsqr_paper_norms.log
+[launch] solver=dbdsqr suite=synth core=5 pid=64298 log=docs/sweeps_2026-06-18/synth_dbdsqr_paper_norms.log
+[launch] solver=dbdsqr suite=379 core=6 pid=64299 log=docs/sweeps_2026-06-18/379_dbdsqr_paper_norms.log
+[launch] solver=dbdsqr suite=dense_to_bidiag core=7 pid=64300 log=docs/sweeps_2026-06-18/dense_to_bidiag_dbdsqr_paper_norms.log
+[launch] selfcontained serial driver pid=64301
+[done] all 12 sweeps complete 2026-06-18T08:36:11-0700

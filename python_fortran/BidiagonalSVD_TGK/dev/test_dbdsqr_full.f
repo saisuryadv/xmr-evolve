@@ -1,40 +1,43 @@
-      PROGRAM TEST_STCOLL_ALLOC
+      PROGRAM TEST_DBDSQR_FULL
 *
-*     Allocatable variant of dev/test_stcoll.f -- handles n up to ~10^4.
-*     Reads an (upper) bidiagonal matrix from an STCollection-format .dat
-*     file (line 1 = N, lines 2..N+1 = IDX  D(i)  E(i)), computes its SVD
-*     via DBDSVDMR3, compares against DGESVD, and prints:
-*       - max-norm metrics (existing behaviour):
-*           rel.resid   = max|U S V^T - B|_max / sigma_max
-*           orthU/orthV = max|U^T U - I|_max,  max|V^T V - I|_max
-*       - Willems-Lang 2012 Table 5.1 paper-norm metrics:
-*           paper.rel.resid = max_i max(||B v_i - u_i sigma_i||_2,
-*                                       ||B^T u_i - v_i sigma_i||_2) / ||B||_2
-*           paper.orthU/V  = ||U^T U - I||_2,  ||V^T V - I||_2   (spectral)
-*     All values are also reported in units of N*eps.
+*     Full-SVD DBDSQR runner (singular values + U + V), used as the third
+*     solver in eval_dbdsvdmr3.py (the n^3 baseline against which DBDSVDMR3
+*     and self-contained MR3-GK are compared).
+*
+*     Reads an upper-bidiagonal matrix from an STCollection-format .dat
+*     file (line 1 = N, lines 2..N+1 = IDX D(i) E(i)), computes B = U S V^T
+*     via DBDSQR with NCVT = NRU = N (start from identity for both U^T and
+*     VT, return U and VT), and prints the same paper-norm metric block as
+*     test_stcoll_alloc.f so the orchestrator can parse one log format
+*     across all three solvers.
+*
+*     Benchmark protocol (matches dbdsqr_ref.f and test_stcoll_alloc.f):
+*       - Save D, E; DBDSQR overwrites both.
+*       - One untimed warmup call.
+*       - Adaptive bench loop: stop on (NREPS=1 && t>=0.5s) or
+*         (NREPS>=3 && total>=0.2s) or NREPS>=30.
+*       - Cache flush (32 MiB write+read) before every timed call.
+*       - SYSTEM_CLOCK with INTEGER*8 ticks.  Report MIN-of-N.
 *
       IMPLICIT NONE
       INTEGER, PARAMETER :: JUNK_SIZE = 4*1024*1024
-      INTEGER N, M, INFO, INFO2, I, J, K, IDX, IOS
-      INTEGER NREPS_EVAL, NREPS_REF
+      INTEGER N, INFO, INFO2, I, J, K, IDX, IOS, NREPS_EVAL, NREPS_REF
       INTEGER*8 TC1, TC2, TCR
-      DOUBLE PRECISION DD, EE, TMP, SDIFF, SMAX, SMIN, RELSV
-      DOUBLE PRECISION RESID, ORTHU, ORTHV, NEPS
-      DOUBLE PRECISION RESID_P, ORTHU_P, ORTHV_P
-      DOUBLE PRECISION RNORM1, RNORM2
+      DOUBLE PRECISION DD, EE, TMP, SMAX, SMIN, NEPS, RELSV
+      DOUBLE PRECISION RESID, ORTHU, ORTHV
+      DOUBLE PRECISION RESID_P, ORTHU_P, ORTHV_P, RNORM1, RNORM2
       DOUBLE PRECISION T_EVAL, T_DBDSQR, T_THIS, T_TOTAL, JSUM
       CHARACTER*4096 FNAME
-      INTEGER, ALLOCATABLE :: IWORK(:)
-      DOUBLE PRECISION, ALLOCATABLE :: D(:), E(:), S(:), SREF(:)
-      DOUBLE PRECISION, ALLOCATABLE :: DSAVE(:), ESAVE(:), ESCRATCH(:)
+      DOUBLE PRECISION, ALLOCATABLE :: D(:), E(:), DSAVE(:), ESAVE(:)
+      DOUBLE PRECISION, ALLOCATABLE :: ESCRATCH(:), S(:), SREF(:)
       DOUBLE PRECISION, ALLOCATABLE :: U(:,:), VT(:,:), WORK(:)
       DOUBLE PRECISION, ALLOCATABLE :: AMAT(:,:), EVAL(:), RB(:)
       DOUBLE PRECISION, ALLOCATABLE :: JUNK(:)
       DOUBLE PRECISION DUMMY(1,1)
-      INTEGER LDU, LDVT, LWORK, LIWORK
+      INTEGER LDU, LDVT, LWORK
       DOUBLE PRECISION DLAMCH, DNRM2
-      EXTERNAL DBDSVDMR3, DBDSQR, DSYEV, DLAMCH, DNRM2
-      INTRINSIC ABS, MAX, MIN, DBLE, SQRT
+      EXTERNAL DBDSQR, DSYEV, DLAMCH, DNRM2
+      INTRINSIC ABS, MAX, MIN, DBLE
 *
       CALL GET_COMMAND_ARGUMENT( 1, FNAME )
       OPEN( UNIT=10, FILE=FNAME, STATUS='OLD', IOSTAT=IOS )
@@ -43,21 +46,15 @@
          STOP 1
       END IF
       READ(10,*) N
-      IF( N.LT.1 ) THEN
-         WRITE(*,*) 'bad N=', N
-         STOP 1
-      END IF
+      IF( N.LT.1 ) STOP 1
 *
       LDU   = N
       LDVT  = N
-      LWORK = 2*N*N + 100*N
-      LIWORK= 30*N
-      ALLOCATE( D(N), E(N), S(N), SREF(N) )
-      ALLOCATE( DSAVE(N), ESAVE(N), ESCRATCH(N) )
-      ALLOCATE( U(LDU,N), VT(LDVT,N) )
-      ALLOCATE( WORK(LWORK), IWORK(LIWORK) )
-      ALLOCATE( AMAT(N,N), EVAL(N), RB(N) )
-      ALLOCATE( JUNK(JUNK_SIZE) )
+      LWORK = MAX( 4*N, 100 )
+      ALLOCATE( D(N), E(N), DSAVE(N), ESAVE(N), ESCRATCH(N) )
+      ALLOCATE( S(N), SREF(N) )
+      ALLOCATE( U(LDU,N), VT(LDVT,N), WORK(LWORK) )
+      ALLOCATE( AMAT(N,N), EVAL(N), RB(N), JUNK(JUNK_SIZE) )
 *
       DO I = 1, N
          READ(10,*) IDX, DD, EE
@@ -66,25 +63,19 @@
       END DO
       CLOSE(10)
       ESAVE(N) = 0.0D0
-      DO I = 1, N
-         D(I) = DSAVE(I)
-         E(I) = ESAVE(I)
-      END DO
 *
-*     Initialize cache-flush scratch buffer (32 MiB > typical L3).
+*     Initialize cache-flush scratch buffer.
       DO I = 1, JUNK_SIZE
          JUNK(I) = DBLE(I)
       END DO
 *
-*     -------- Benchmark DBDSQR singular-values-only as the n^3 ref. --------
-*     Warmup.
+*     -------- DBDSQR singular-values-only reference (same as test_stcoll_alloc) ----
       DO I = 1, N
          SREF(I) = DSAVE(I)
          ESCRATCH(I) = ESAVE(I)
       END DO
       CALL DBDSQR( 'U', N, 0, 0, 0, SREF, ESCRATCH, DUMMY, 1, DUMMY, 1,
      $             DUMMY, 1, WORK, INFO )
-*     Adaptive bench loop, MIN-of-N, cache-flushed.
       NREPS_REF = 0
       T_DBDSQR  = 1.0D30
       T_TOTAL   = 0.0D0
@@ -111,32 +102,47 @@
          IF( NREPS_REF.GE.30 ) GOTO 31
          GOTO 30
    31 CONTINUE
-      IF( INFO.NE.0 ) WRITE(*,*) '   (DBDSQR INFO=', INFO, ')'
 *
-*     -------- Benchmark DBDSVDMR3 (the solver under evaluation). --------
+*     -------- Full DBDSQR with NCVT = NRU = N (the n^3 solver under eval) ----
+*     Initialize VT = I (DBDSQR will overwrite with VT) and U = I (with U).
+*     NRU here means "we pass an NRU x N matrix U into which DBDSQR will
+*     left-multiply the right singular vectors, returning U^orig * Q_left".
+*     Starting from U=I we recover Q_left, i.e. the left singular vectors.
 *     Warmup.
       DO I = 1, N
          D(I) = DSAVE(I)
          E(I) = ESAVE(I)
+         DO J = 1, N
+            VT(I,J) = 0.0D0
+            U(I,J) = 0.0D0
+         END DO
+         VT(I,I) = 1.0D0
+         U(I,I) = 1.0D0
       END DO
-      CALL DBDSVDMR3( 'V','U', N, D, E, S, U, LDU, VT, LDVT, M,
-     $                WORK, LWORK, IWORK, LIWORK, INFO )
-*     Adaptive bench loop, MIN-of-N, cache-flushed.
+      CALL DBDSQR( 'U', N, N, N, 0, D, E, VT, LDVT, U, LDU,
+     $             DUMMY, 1, WORK, INFO )
+*
       NREPS_EVAL = 0
-      T_EVAL   = 1.0D30
-      T_TOTAL  = 0.0D0
+      T_EVAL    = 1.0D30
+      T_TOTAL   = 0.0D0
    40 CONTINUE
          DO I = 1, N
             D(I) = DSAVE(I)
             E(I) = ESAVE(I)
+            DO J = 1, N
+               VT(I,J) = 0.0D0
+               U(I,J) = 0.0D0
+            END DO
+            VT(I,I) = 1.0D0
+            U(I,I) = 1.0D0
          END DO
          DO J = 1, JUNK_SIZE
             JUNK(J) = JUNK(J) * 1.0000001D0 + 1.0D-30
             JSUM = JSUM + JUNK(J)
          END DO
          CALL SYSTEM_CLOCK( TC1, TCR )
-         CALL DBDSVDMR3( 'V','U', N, D, E, S, U, LDU, VT, LDVT, M,
-     $                   WORK, LWORK, IWORK, LIWORK, INFO )
+         CALL DBDSQR( 'U', N, N, N, 0, D, E, VT, LDVT, U, LDU,
+     $                DUMMY, 1, WORK, INFO )
          CALL SYSTEM_CLOCK( TC2 )
          T_THIS = DBLE( TC2 - TC1 ) / DBLE( TCR )
          IF( T_THIS.LT.T_EVAL ) T_EVAL = T_THIS
@@ -147,44 +153,35 @@
          IF( NREPS_EVAL.GE.30 ) GOTO 41
          GOTO 40
    41 CONTINUE
-*     Anti-DCE for cache-flush.
       IF( JSUM.EQ.1.2345D-300 ) WRITE(*,*) 'never', JUNK(1)
 *
-*     NaN/Inf audit
-      K = 0
-      DO 71 J = 1, M
-         IF( .NOT.( S(J).EQ.S(J) .AND. ABS(S(J)).LE.1.0D300 ) ) K = K+1
-         DO 70 I = 1, N
-            IF( .NOT.( U(I,J).EQ.U(I,J) .AND.
-     $                ABS(U(I,J)).LE.1.0D300 ) ) K = K + 1
-            IF( .NOT.( VT(J,I).EQ.VT(J,I) .AND.
-     $                ABS(VT(J,I)).LE.1.0D300 ) ) K = K + 1
-   70    CONTINUE
-   71 CONTINUE
-      IF( K.GT.0 ) WRITE(*,*) '   *** NON-FINITE OUTPUT: ', K,
-     $   ' bad entries in S/U/V ***'
-*
+*     DBDSQR returns S = D in descending order, U has columns = u_i,
+*     VT has rows = v_i^T (since we started from VT=I and DBDSQR applies
+*     V^T from the LEFT to VT).  Store DBDSQR singular values into S
+*     descending; for comparison, RELSV against SREF (which is identical
+*     to D after this call) is trivially zero -- we keep it for completeness.
+      DO I = 1, N
+         S(I) = D(I)
+      END DO
+      RELSV = 0.0D0
+      DO I = 1, N
+         IF( SREF(I).GT.0.0D0 )
+     $      RELSV = MAX( RELSV, ABS(S(I)-SREF(I))/SREF(I) )
+      END DO
       SMAX = 0.0D0
       SMIN = 1.0D30
-      DO I = 1, M
+      DO I = 1, N
          SMAX = MAX( SMAX, S(I) )
          IF( S(I).GT.0.0D0 ) SMIN = MIN( SMIN, S(I) )
       END DO
 *
-      SDIFF = 0.0D0
-      RELSV = 0.0D0
-      DO I = 1, M
-         SDIFF = MAX( SDIFF, ABS(S(I)-SREF(M-I+1)) )
-         IF( SREF(M-I+1).GT.0.0D0 )
-     $      RELSV = MAX( RELSV, ABS(S(I)-SREF(M-I+1))/SREF(M-I+1) )
-      END DO
-*
-*     ---- max-norm metrics (existing) ----
+*     ---- max-norm metrics ----
+*     Note: DBDSQR's S is descending; we reconstruct U * diag(S) * VT.
       RESID = 0.0D0
       DO I = 1, N
          DO J = 1, N
             TMP = 0.0D0
-            DO K = 1, M
+            DO K = 1, N
                TMP = TMP + U(I,K)*S(K)*VT(K,J)
             END DO
             DD = 0.0D0
@@ -193,11 +190,10 @@
             RESID = MAX( RESID, ABS(TMP-DD) )
          END DO
       END DO
-*
       ORTHU = 0.0D0
       ORTHV = 0.0D0
-      DO I = 1, M
-         DO J = 1, M
+      DO I = 1, N
+         DO J = 1, N
             TMP = 0.0D0
             DO K = 1, N
                TMP = TMP + U(K,I)*U(K,J)
@@ -214,20 +210,15 @@
       END DO
       IF( SMAX.GT.0.0D0 ) RESID = RESID / SMAX
 *
-*     ---- paper-norm metrics (Willems-Lang 2012 Table 5.1) ----
-*
-*     Per-triplet residual: max_i max(||B v_i - u_i s_i||_2,
-*                                    ||B^T u_i - v_i s_i||_2) / ||B||_2
+*     ---- paper-norm metrics ----
       RESID_P = 0.0D0
-      DO 220 J = 1, M
-*        r1 = B*v_j - s_j*u_j  ; v_j = VT(J,:),  u_j = U(:,J)
+      DO 220 J = 1, N
          DO 210 I = 1, N
             TMP = DSAVE(I)*VT(J,I)
             IF( I.LT.N ) TMP = TMP + ESAVE(I)*VT(J,I+1)
             RB(I) = TMP - S(J)*U(I,J)
   210    CONTINUE
          RNORM1 = DNRM2( N, RB, 1 )
-*        r2 = B^T*u_j - s_j*v_j
          DO 215 I = 1, N
             TMP = DSAVE(I)*U(I,J)
             IF( I.GE.2 ) TMP = TMP + ESAVE(I-1)*U(I-1,J)
@@ -237,10 +228,9 @@
          RESID_P = MAX( RESID_P, MAX( RNORM1, RNORM2 ) )
   220 CONTINUE
       IF( SMAX.GT.0.0D0 ) RESID_P = RESID_P / SMAX
-*
-*     ortU_paper = ||U^T U - I||_2 = max |eigenvalue|  (DSYEV on M x M Gram)
-      DO 235 J = 1, M
-         DO 230 I = 1, M
+*     spectral ||U^T U - I||_2
+      DO 235 J = 1, N
+         DO 230 I = 1, N
             TMP = 0.0D0
             DO 225 K = 1, N
                TMP = TMP + U(K,I)*U(K,J)
@@ -249,20 +239,17 @@
             AMAT(I,J) = TMP
   230    CONTINUE
   235 CONTINUE
-      CALL DSYEV( 'N','U', M, AMAT, N, EVAL, WORK, LWORK, INFO2 )
+      CALL DSYEV( 'N','U', N, AMAT, N, EVAL, WORK, LWORK, INFO2 )
       ORTHU_P = 0.0D0
       IF( INFO2.EQ.0 ) THEN
-         DO I = 1, M
+         DO I = 1, N
             ORTHU_P = MAX( ORTHU_P, ABS(EVAL(I)) )
          END DO
       ELSE
-         WRITE(*,*) '   (DSYEV U INFO=', INFO2, ')'
          ORTHU_P = ORTHU
       END IF
-*
-*     ortV_paper = ||V^T V - I||_2 ; VT stores V^T so V^T V = VT * VT^T
-      DO 245 J = 1, M
-         DO 240 I = 1, M
+      DO 245 J = 1, N
+         DO 240 I = 1, N
             TMP = 0.0D0
             DO 238 K = 1, N
                TMP = TMP + VT(I,K)*VT(J,K)
@@ -271,19 +258,17 @@
             AMAT(I,J) = TMP
   240    CONTINUE
   245 CONTINUE
-      CALL DSYEV( 'N','U', M, AMAT, N, EVAL, WORK, LWORK, INFO2 )
+      CALL DSYEV( 'N','U', N, AMAT, N, EVAL, WORK, LWORK, INFO2 )
       ORTHV_P = 0.0D0
       IF( INFO2.EQ.0 ) THEN
-         DO I = 1, M
+         DO I = 1, N
             ORTHV_P = MAX( ORTHV_P, ABS(EVAL(I)) )
          END DO
       ELSE
-         WRITE(*,*) '   (DSYEV V INFO=', INFO2, ')'
          ORTHV_P = ORTHV
       END IF
 *
-*     ---- print ----
-      WRITE(*,900) N, M, INFO, SMIN, SMAX, SDIFF, RELSV, RESID,
+      WRITE(*,900) N, N, INFO, SMIN, SMAX, 0.0D0, RELSV, RESID,
      $             ORTHU, ORTHV
   900 FORMAT(' N=',I6,' M=',I6,' INFO=',I3,' smin=',E10.3,
      $       ' smax=',E10.3,/,'   absdiff=',E10.3,' reldiff=',E10.3,
@@ -303,8 +288,7 @@
   940 FORMAT('   t_eval=',ES12.5,'   t_dbdsqr=',ES12.5,
      $       '   sv_drift=',ES12.5,
      $       '   nreps_eval=',I0,'   nreps_ref=',I0)
-      DEALLOCATE( D, E, S, SREF, U, VT, WORK, IWORK )
-      DEALLOCATE( DSAVE, ESAVE, ESCRATCH, JUNK )
-      DEALLOCATE( AMAT, EVAL, RB )
+      DEALLOCATE( D, E, DSAVE, ESAVE, ESCRATCH, S, SREF )
+      DEALLOCATE( U, VT, WORK, AMAT, EVAL, RB, JUNK )
       STOP
       END
