@@ -17,17 +17,24 @@
 *     |  1 | dchkbd type 1                      | Zero bidiagonal                            |
 *     |  2 | dchkbd type 2                      | Identity bidiagonal                        |
 *     |  3 | dchkbd type 3  (DLATMS mode 4)     | Arithmetic-spectrum bidiag                 |
-*     |  4 | dchkbd type 4  (DLATMS mode 3)     | Clustered-spectrum bidiag                  |
-*     |  5 | dchkbd type 16                     | Log-distributed bidiag on [ulp^2, ulp^-2]  |
+*     |  4 | dchkbd type 4  (DLATMS mode 3)     | Geometric-spectrum bidiag                  |
+*     |  5 | dchkbd type 16                     | Log-distributed bidiag on [ulp, 1/ulp]     |
 *     |  6 | dchkst type 8  (mode 4)            | Symm-tridiag arithmetic  -> Cholesky -> B  |
-*     |  7 | dchkst type 9  (mode 3)            | Symm-tridiag clustered   -> Cholesky -> B  |
-*     |  8 | dchkst type 10 (mode 1)            | Symm-tridiag random-log  -> Cholesky -> B  |
+*     |  7 | dchkst type 9  (mode 3)            | Symm-tridiag geometric   -> Cholesky -> B  |
+*     |  8 | dchkst type 10 (mode 1)            | Symm-tridiag clustered   -> Cholesky -> B  |
 *     |  9 | dchkbd type 5                      | Arithmetic-spectrum bidiag x sqrt(overflow)|
 *     | 10 | dchkbd type 6                      | Arithmetic-spectrum bidiag x sqrt(underflow)|
+*     | 11 | dchkst type 3  (mode 4)            | Diagonal arithmetic                        |
+*     | 12 | dchkst type 4  (mode 3)            | Diagonal geometric                         |
+*     | 13 | dchkst type 5  (mode 1)            | Diagonal clustered (1, ulp, ..., ulp)      |
+*     | 14 | dchkst type 6                      | Diagonal arithmetic x sqrt(overflow)       |
+*     | 15 | dchkst type 7                      | Diagonal arithmetic x sqrt(underflow)      |
+*     | 16 | dchkst type 21 (mode 3)            | SPD tridiag geometric, diag-dominant       |
+*                                               |   -> Cholesky -> B                         |
 *
 *     Arguments
 *     ---------
-*     JTYPE (input)  INTEGER              matrix type 1..12
+*     JTYPE (input)  INTEGER              matrix type 1..16
 *     N     (input)  INTEGER              order (N >= 2 for interesting types)
 *     ISEED (in/out) INTEGER(4)           random seed for DLATMS/DLARNV
 *     BD    (output) DOUBLE(N)            bidiagonal main diagonal
@@ -153,24 +160,82 @@
          RETURN
       END IF
 *
-*     ================= tridiagonal-plus-Cholesky types =================
+*     ================= diagonal-spectrum types (dchkst 3-7) ============
 *
-      IF( JTYPE.EQ.6 .OR. JTYPE.EQ.7 .OR. JTYPE.EQ.8 ) THEN
-*        Build symmetric tridiagonal via DLATMS(SYM='S', KL=KU=1).
-         IF( JTYPE.EQ.6 ) THEN
+      IF( JTYPE.EQ.11 .OR. JTYPE.EQ.12 .OR. JTYPE.EQ.13 .OR.
+     $    JTYPE.EQ.14 .OR. JTYPE.EQ.15 ) THEN
+*        Diagonal spectra via DLATMS(SYM='S', KL=KU=0):
+*          11 = dchkst 3  (arith), 12 = dchkst 4  (geometric),
+*          13 = dchkst 5  (clustered),
+*          14 = dchkst 6  arith x sqrt(overflow),
+*          15 = dchkst 7  arith x sqrt(underflow).
+         IF( JTYPE.EQ.11 .OR. JTYPE.EQ.14 .OR. JTYPE.EQ.15 ) THEN
             MODE = 4
-         ELSE IF( JTYPE.EQ.7 ) THEN
+         ELSE IF( JTYPE.EQ.12 ) THEN
             MODE = 3
          ELSE
             MODE = 1
          END IF
          COND = ONE / EPS
-         DMAX = ONE
+         IF( JTYPE.EQ.14 ) THEN
+            DMAX = SQRT( OVFL ) * ULP / DBLE( N )
+         ELSE IF( JTYPE.EQ.15 ) THEN
+            DMAX = SQRT( SFMIN ) * DBLE( N ) / ULP
+         ELSE
+            DMAX = ONE
+         END IF
          CALL DLATMS( N, N, 'S', ISEED, 'S', D, MODE, COND, DMAX,
-     $                1, 1, 'N', A, LDA, WORK, INFO )
+     $                0, 0, 'N', A, LDA, WORK, INFO )
+         IF( INFO.NE.0 ) THEN
+            INFO = 400 + INFO
+            RETURN
+         END IF
+         DO 32 I = 1, N
+            BD( I ) = A( I, I )
+   32    CONTINUE
+         RETURN
+      END IF
+*
+*     ================= tridiagonal-plus-Cholesky types =================
+*
+      IF( JTYPE.EQ.6 .OR. JTYPE.EQ.7 .OR. JTYPE.EQ.8 .OR.
+     $    JTYPE.EQ.16 ) THEN
+*        Build symmetric tridiagonal via DLATMS(SYM='S' or 'P', KL=KU=1).
+         IF( JTYPE.EQ.6 ) THEN
+            MODE = 4
+         ELSE IF( JTYPE.EQ.7 ) THEN
+            MODE = 3
+         ELSE IF( JTYPE.EQ.8 ) THEN
+            MODE = 1
+         ELSE
+*           JTYPE = 16: dchkst 21 -- geometric SPD tridiag.
+            MODE = 3
+         END IF
+         COND = ONE / EPS
+         DMAX = ONE
+         IF( JTYPE.EQ.16 ) THEN
+            CALL DLATMS( N, N, 'S', ISEED, 'P', D, MODE, COND, DMAX,
+     $                   1, 1, 'N', A, LDA, WORK, INFO )
+         ELSE
+            CALL DLATMS( N, N, 'S', ISEED, 'S', D, MODE, COND, DMAX,
+     $                   1, 1, 'N', A, LDA, WORK, INFO )
+         END IF
          IF( INFO.NE.0 ) THEN
             INFO = 200 + INFO
             RETURN
+         END IF
+*        For JTYPE=16 (dchkst 21) damp off-diagonals to keep the tridiag
+*        diagonally dominant (mirror dchkst.f:879-887).
+         IF( JTYPE.EQ.16 ) THEN
+            DO 42 I = 2, N
+               TVAL = ABS( A( I-1, I ) ) /
+     $                SQRT( ABS( A( I-1, I-1 ) * A( I, I ) ) )
+               IF( TVAL.GT.HALF ) THEN
+                  A( I-1, I ) = HALF *
+     $                  SQRT( ABS( A( I-1, I-1 ) * A( I, I ) ) )
+                  A( I, I-1 ) = A( I-1, I )
+               END IF
+   42       CONTINUE
          END IF
          DO 40 I = 1, N
             BD( I ) = A( I, I )
