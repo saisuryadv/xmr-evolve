@@ -19,7 +19,7 @@
 *     .. Parameters ..
       INTEGER            MAXN, MAXSIZ, NTYPES, LWORK, LIWORK
       PARAMETER          ( MAXN = 200, MAXSIZ = 20, NTYPES = 16,
-     $                     LWORK  = 4*MAXN*MAXN + 40*MAXN + 4096,
+     $                     LWORK  = 5*MAXN*MAXN + 40*MAXN + 4096,
      $                     LIWORK = 20*MAXN + 4096 )
       INTEGER            NIN, NOUT
       PARAMETER          ( NIN = 5, NOUT = 6 )

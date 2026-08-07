@@ -10,8 +10,9 @@
 *     Kahan (TGK) matrix -- rather than an L D L^T factorization.  At the
 *     root the eigenvectors / child RRRs are obtained with the TGK-input
 *     paths of DLAR1V_TGK / DLARRF_TGK (REP = 'T'); every node at depth
-*     >= 1 is an ordinary L D L^T child and uses REP = 'L', which is
-*     byte-for-byte the stegr_ID behaviour.
+*     >= 1 is an ordinary L D L^T child and uses REP = 'L'.  DLARRB
+*     retains the advisor algorithm with an added bounded-progress guard;
+*     its positive INFO is propagated to the driver for safe fallback.
 *
 *  Usage / calling convention (set up by the driver DBDSVDMR3)
 *  ----------------------------------------------------------
@@ -47,24 +48,26 @@
 *     ..
 *     .. Local Scalars ..
       CHARACTER          REP
-      LOGICAL            NOMGS
+      LOGICAL            DONE1, DONE2, NOMGS
       INTEGER            I, IBEGIN, IEND, IINDC1, IINDC2, IINDR, IINDWK,
      $                   IINFO, IM, IN, INDERR, INDGAP, INDLD, INDLLD,
-     $                   INDWRK, ITER, ITMP1, ITMP2, J, JBLK, K, KTOT,
+     $                   INDWRK, ITER, ITER2, ITMP1, ITMP2, J, JBLK, K,
+     $                   K2, KTOT, KTOT2,
      $                   NCLUS, NDEPTH, NDONE, NEWCLS, NEWFRS, NEWFTT,
      $                   NEWLST, NEWSIZ, OLDCLS, OLDFST, OLDIEN, OLDLST,
      $                   OLDNCL, P, PARITY, Q, WBEGIN, WEND, ZFROM, ZTO
-      DOUBLE PRECISION   EPS, GAP, LAMBDA, MGSTOL, MINGMA, MINRGP,
-     $                   NRMINV, RELGAP, RELTOL, RESID, RQCORR, SIGMA,
-     $                   TMP, ZTZ
+      DOUBLE PRECISION   EPS, GAP, GAP2, LAMBDA, LAMBDA2, MGSTOL,
+     $                   MINGMA, MINGMA2, MINRGP, NRMINV, NRMINV2,
+     $                   RELGAP, RELTOL, RESID, RESID2, RQCORR,
+     $                   RQCORR2, SIGMA, TMP, TMP2, ZTZ, ZTZ2
 *     ..
 *     .. External Functions ..
       DOUBLE PRECISION   DDOT, DLAMCH, DNRM2
       EXTERNAL           DDOT, DLAMCH, DNRM2
 *     ..
 *     .. External Subroutines ..
-      EXTERNAL           DAXPY, DCOPY, DLAR1V_TGK, DLARRB, DLARRF_TGK,
-     $                   DLASET, DSCAL, DSTEIN
+      EXTERNAL           DAXPY, DCOPY, DLAR1V_TGK, DLAR1V2_TGK, DLARRB,
+     $                   DLARRF_TGK, DLASET, DSCAL, DSTEIN
 *     ..
 *     .. Intrinsic Functions ..
       INTRINSIC          ABS, DBLE, MAX, MIN, SQRT
@@ -219,6 +222,10 @@
      $                         WORK( INDGAP+1 ), WORK( INDERR+1 ),
      $                         WORK( INDWRK+IN ), IWORK( IINDWK ),
      $                         IINFO )
+                  IF( IINFO.NE.0 ) THEN
+                     INFO = 3
+                     RETURN
+                  END IF
                END IF
 *
 *              Classify eigenvalues of the current representation (RRR)
@@ -311,7 +318,7 @@
                            NDONE = NDONE + NEWSIZ
                         END IF
                      END IF
-                  ELSE
+                  ELSE IF( NEWSIZ.GT.1 ) THEN
                      KTOT = NEWFTT
                      DO 100 K = NEWFRS, NEWLST
                         ITER = 0
@@ -381,9 +388,167 @@
   130                   CONTINUE
                         NDONE = NDONE + NEWSIZ
                      END IF
+                  ELSE
+*                    Defer isolated eigenvectors until this complete parent
+*                    RRR has been classified.  Consecutive marked vectors
+*                    can then run through two independent DLAR1V recurrences
+*                    together without changing either lane's FP order.
+                     IWORK( NEWFTT ) = -1
                   END IF
                   NEWFRS = J + 1
   140          CONTINUE
+*
+*              Process the isolated eigenvectors belonging to this parent
+*              representation.  Pair adjacent lanes when possible; an odd
+*              tail follows the original scalar path verbatim.  The second
+*              4*IN scratch lane ends at WORK(13*N), exactly within the
+*              private DLARRV_TGK workspace supplied by DBDSVDMR3.
+*
+               K = OLDFST
+  141          CONTINUE
+               IF( K.LE.OLDLST ) THEN
+                  KTOT = WBEGIN + K - 1
+                  IF( IWORK( KTOT ).NE.-1 ) THEN
+                     K = K + 1
+                     GO TO 141
+                  END IF
+                  K2 = K + 1
+                  IF( K2.LE.OLDLST ) THEN
+                     KTOT2 = WBEGIN + K2 - 1
+                  ELSE
+                     KTOT2 = 0
+                  END IF
+                  IF( KTOT2.GT.0 .AND. IWORK( KTOT2 ).EQ.-1 ) THEN
+                     ITER = 0
+                     ITER2 = 0
+                     DONE1 = .FALSE.
+                     DONE2 = .FALSE.
+  142                CONTINUE
+                     LAMBDA = WORK( K )
+                     LAMBDA2 = WORK( K2 )
+                     IF( .NOT.DONE1 .AND. .NOT.DONE2 ) THEN
+                        CALL DLAR1V2_TGK( REP, IN, 1, IN,
+     $                       LAMBDA, LAMBDA2, D( IBEGIN ), L( IBEGIN ),
+     $                       WORK( INDLD+1 ), WORK( INDLLD+1 ),
+     $                       W( WBEGIN+K-1 ), W( WBEGIN+K2-1 ),
+     $                       GERSCH( 2*OLDIEN+1 ),
+     $                       Z( IBEGIN, KTOT ), Z( IBEGIN, KTOT2 ),
+     $                       ZTZ, ZTZ2, MINGMA, MINGMA2,
+     $                       IWORK( IINDR+KTOT ),
+     $                       IWORK( IINDR+KTOT2 ),
+     $                       ISUPPZ( 2*KTOT-1 ),
+     $                       ISUPPZ( 2*KTOT2-1 ), WORK( INDWRK ),
+     $                       WORK( INDWRK+4*IN ) )
+                     ELSE IF( .NOT.DONE1 ) THEN
+                        CALL DLAR1V_TGK( REP, IN, 1, IN, LAMBDA,
+     $                       D( IBEGIN ), L( IBEGIN ), WORK( INDLD+1 ),
+     $                       WORK( INDLLD+1 ), W( WBEGIN+K-1 ),
+     $                       GERSCH( 2*OLDIEN+1 ), Z( IBEGIN, KTOT ),
+     $                       ZTZ, MINGMA, IWORK( IINDR+KTOT ),
+     $                       ISUPPZ( 2*KTOT-1 ), WORK( INDWRK ) )
+                     ELSE
+                        CALL DLAR1V_TGK( REP, IN, 1, IN, LAMBDA2,
+     $                       D( IBEGIN ), L( IBEGIN ), WORK( INDLD+1 ),
+     $                       WORK( INDLLD+1 ), W( WBEGIN+K2-1 ),
+     $                       GERSCH( 2*OLDIEN+1 ), Z( IBEGIN, KTOT2 ),
+     $                       ZTZ2, MINGMA2, IWORK( IINDR+KTOT2 ),
+     $                       ISUPPZ( 2*KTOT2-1 ),
+     $                       WORK( INDWRK+4*IN ) )
+                     END IF
+                     IF( .NOT.DONE1 ) THEN
+                        TMP = ONE / ZTZ
+                        NRMINV = SQRT( TMP )
+                        RESID = ABS( MINGMA )*NRMINV
+                        RQCORR = MINGMA*TMP
+                        IF( K.EQ.IN ) THEN
+                           GAP = WORK( INDGAP+K-1 )
+                        ELSE IF( K.EQ.1 ) THEN
+                           GAP = WORK( INDGAP+K )
+                        ELSE
+                           GAP = MIN( WORK( INDGAP+K-1 ),
+     $                           WORK( INDGAP+K ) )
+                        END IF
+                        ITER = ITER + 1
+                        DONE1 = .TRUE.
+                        IF( RESID.GT.TOL*GAP .AND. ABS( RQCORR ).GT.
+     $                      FOUR*EPS*ABS( LAMBDA ) ) THEN
+                           WORK( K ) = LAMBDA + RQCORR
+                           IF( ITER.LT.MAXITR ) DONE1 = .FALSE.
+                        END IF
+                     END IF
+                     IF( .NOT.DONE2 ) THEN
+                        TMP2 = ONE / ZTZ2
+                        NRMINV2 = SQRT( TMP2 )
+                        RESID2 = ABS( MINGMA2 )*NRMINV2
+                        RQCORR2 = MINGMA2*TMP2
+                        IF( K2.EQ.IN ) THEN
+                           GAP2 = WORK( INDGAP+K2-1 )
+                        ELSE IF( K2.EQ.1 ) THEN
+                           GAP2 = WORK( INDGAP+K2 )
+                        ELSE
+                           GAP2 = MIN( WORK( INDGAP+K2-1 ),
+     $                            WORK( INDGAP+K2 ) )
+                        END IF
+                        ITER2 = ITER2 + 1
+                        DONE2 = .TRUE.
+                        IF( RESID2.GT.TOL*GAP2 .AND. ABS( RQCORR2 ).GT.
+     $                      FOUR*EPS*ABS( LAMBDA2 ) ) THEN
+                           WORK( K2 ) = LAMBDA2 + RQCORR2
+                           IF( ITER2.LT.MAXITR ) DONE2 = .FALSE.
+                        END IF
+                     END IF
+                     IF( .NOT.DONE1 .OR. .NOT.DONE2 ) GO TO 142
+                     IWORK( KTOT ) = 1
+                     NDONE = NDONE + 1
+                     ZFROM = ISUPPZ( 2*KTOT-1 )
+                     ZTO = ISUPPZ( 2*KTOT )
+                     CALL DSCAL( ZTO-ZFROM+1, NRMINV,
+     $                    Z( IBEGIN+ZFROM-1, KTOT ), 1 )
+                     IWORK( KTOT2 ) = 1
+                     NDONE = NDONE + 1
+                     ZFROM = ISUPPZ( 2*KTOT2-1 )
+                     ZTO = ISUPPZ( 2*KTOT2 )
+                     CALL DSCAL( ZTO-ZFROM+1, NRMINV2,
+     $                    Z( IBEGIN+ZFROM-1, KTOT2 ), 1 )
+                     K = K + 2
+                  ELSE
+                     ITER = 0
+  143                CONTINUE
+                     LAMBDA = WORK( K )
+                     CALL DLAR1V_TGK( REP, IN, 1, IN, LAMBDA,
+     $                    D( IBEGIN ), L( IBEGIN ), WORK( INDLD+1 ),
+     $                    WORK( INDLLD+1 ), W( WBEGIN+K-1 ),
+     $                    GERSCH( 2*OLDIEN+1 ), Z( IBEGIN, KTOT ),
+     $                    ZTZ, MINGMA, IWORK( IINDR+KTOT ),
+     $                    ISUPPZ( 2*KTOT-1 ), WORK( INDWRK ) )
+                     TMP = ONE / ZTZ
+                     NRMINV = SQRT( TMP )
+                     RESID = ABS( MINGMA )*NRMINV
+                     RQCORR = MINGMA*TMP
+                     IF( K.EQ.IN ) THEN
+                        GAP = WORK( INDGAP+K-1 )
+                     ELSE IF( K.EQ.1 ) THEN
+                        GAP = WORK( INDGAP+K )
+                     ELSE
+                        GAP = MIN( WORK( INDGAP+K-1 ),
+     $                        WORK( INDGAP+K ) )
+                     END IF
+                     ITER = ITER + 1
+                     IF( RESID.GT.TOL*GAP .AND. ABS( RQCORR ).GT.
+     $                   FOUR*EPS*ABS( LAMBDA ) ) THEN
+                        WORK( K ) = LAMBDA + RQCORR
+                        IF( ITER.LT.MAXITR ) GO TO 143
+                     END IF
+                     IWORK( KTOT ) = 1
+                     NDONE = NDONE + 1
+                     ZFROM = ISUPPZ( 2*KTOT-1 )
+                     ZTO = ISUPPZ( 2*KTOT )
+                     CALL DSCAL( ZTO-ZFROM+1, NRMINV,
+     $                    Z( IBEGIN+ZFROM-1, KTOT ), 1 )
+                     K = K + 1
+                  END IF
+                  GO TO 141
+               END IF
   150       CONTINUE
             NDEPTH = NDEPTH + 1
             GO TO 40

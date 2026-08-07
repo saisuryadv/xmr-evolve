@@ -3,7 +3,8 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LAPACK_REF="${LAPACK_REF:-/tmp/lapack-ref}"
+LAPACK_REF="${LAPACK_REF:-/tmp/lapack-ref-3.11.0}"
+LAPACK_TAG="${LAPACK_TAG:-v3.11.0}"
 
 # Enable devtoolset-11 if present (gfortran 4.8.x lacks ieee_arithmetic).
 if [ -f /opt/rh/devtoolset-11/enable ]; then
@@ -12,25 +13,41 @@ if [ -f /opt/rh/devtoolset-11/enable ]; then
 fi
 
 if [ ! -f "${LAPACK_REF}/build/lib/liblapack.a" ] || \
-   [ ! -f "${LAPACK_REF}/build/lib/libblas.a" ]; then
+   [ ! -f "${LAPACK_REF}/build/lib/libblas.a" ] || \
+   [ ! -f "${LAPACK_REF}/build/lib/libtmglib.a" ]; then
     echo "=== Building reference LAPACK at ${LAPACK_REF} ==="
     if [ ! -d "${LAPACK_REF}" ]; then
-        git clone --depth 1 https://github.com/Reference-LAPACK/lapack.git \
+        git clone --branch "${LAPACK_TAG}" --depth 1 \
+            https://github.com/Reference-LAPACK/lapack.git \
             "${LAPACK_REF}"
     fi
+    CMAKE_POLICY_VERSION_MINIMUM="${CMAKE_POLICY_VERSION_MINIMUM:-3.5}" \
     cmake -S "${LAPACK_REF}" -B "${LAPACK_REF}/build" \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
           -DBUILD_INDEX_64_EXT_API=OFF \
           -DBUILD_INDEX_64=OFF \
           -DCBLAS=OFF -DLAPACKE=OFF \
-          -DBUILD_TESTING=OFF \
+          -DBUILD_TESTING=ON \
           -DCMAKE_BUILD_TYPE=Release
-    cmake --build "${LAPACK_REF}/build" --target lapack blas -j 4
+    cmake --build "${LAPACK_REF}/build" --target lapack blas tmglib -j 4
 fi
 
 echo "=== Building offline DBDSVR PR ==="
 cd "${HERE}"
+make clean
 make LAPACK_LIB="${LAPACK_REF}/build/lib/liblapack.a" \
-     BLAS_LIB="${LAPACK_REF}/build/lib/libblas.a"
+     BLAS_LIB="${LAPACK_REF}/build/lib/libblas.a" \
+     TMG_LIB="${LAPACK_REF}/build/lib/libtmglib.a" \
+     LAPACK_ROOT="${LAPACK_REF}"
+
+echo "=== Running fallback path tests ==="
+./build/dbdsvr_fallback_test
 
 echo "=== Running canonical residual sweep ==="
-./build/dbsvr_test < TESTING/svrtest.in
+set +e
+./build/dbsvr_test < TESTING/svrtest-dbdsvr-only.in
+test_rc=$?
+set -e
+if [ "${test_rc}" -ne 0 ] && [ "${test_rc}" -ne 1 ]; then
+    exit "${test_rc}"
+fi

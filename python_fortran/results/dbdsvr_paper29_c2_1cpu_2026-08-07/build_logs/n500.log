@@ -1,0 +1,18 @@
+make: Entering directory '/work/xmr-evolve/python_fortran/lapack_pr_dbdsvr'
+rm -rf build
+make: Leaving directory '/work/xmr-evolve/python_fortran/lapack_pr_dbdsvr'
+make: Entering directory '/work/xmr-evolve/python_fortran/lapack_pr_dbdsvr'
+gfortran-12 -O2 -g -std=f2008 -cpp -DBENCH_MAXN=500 \
+	-DBENCH_NTYPES=29 -DPAPER29 -c TESTING/dbdsv_benchmark.f90 -o build/TESTING/dbdsv_paper29_benchmark.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c TESTING/EIG/dbsvrmg_paper29.f -o build/TESTING/EIG/dbsvrmg_paper29.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c /tmp/lapack-ref-3.11.0/TESTING/EIG/dbdt04.f -o build/lref/TESTING/EIG/dbdt04.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c /tmp/lapack-ref-3.11.0/TESTING/EIG/dort01.f -o build/lref/TESTING/EIG/dort01.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c SRC/dbdsvr.f -o build/SRC/dbdsvr.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c SRC/dbdsvdmr3.f -o build/SRC/dbdsvdmr3.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c SRC/dbdtgk.f -o build/SRC/dbdtgk.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c SRC/dlar1v_tgk.f -o build/SRC/dlar1v_tgk.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c SRC/dlarrf_tgk.f -o build/SRC/dlarrf_tgk.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c SRC/dlarrv_tgk.f -o build/SRC/dlarrv_tgk.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -c SRC/stegr_ID/dlarrb.f -o build/SRC/stegr_ID/dlarrb.o
+gfortran-12 -O2 -g -std=legacy -ffree-line-length-none -o build/dbdsv_paper29_benchmark build/TESTING/dbdsv_paper29_benchmark.o build/TESTING/EIG/dbsvrmg_paper29.o build/lref/TESTING/EIG/dbdt04.o build/lref/TESTING/EIG/dort01.o build/SRC/dbdsvr.o build/SRC/dbdsvdmr3.o build/SRC/dbdtgk.o build/SRC/dlar1v_tgk.o build/SRC/dlarrf_tgk.o build/SRC/dlarrv_tgk.o build/SRC/stegr_ID/dlarrb.o /tmp/lapack-ref-3.11.0/build/lib/libtmglib.a /tmp/lapack-ref-3.11.0/build/lib/liblapack.a /tmp/lapack-ref-3.11.0/build/lib/libblas.a
+make: Leaving directory '/work/xmr-evolve/python_fortran/lapack_pr_dbdsvr'

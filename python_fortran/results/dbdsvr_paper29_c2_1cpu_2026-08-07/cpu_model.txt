@@ -1,0 +1,1 @@
+model name	: AMD EPYC 9454 48-Core Processor

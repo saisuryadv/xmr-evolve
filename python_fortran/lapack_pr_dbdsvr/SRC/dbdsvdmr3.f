@@ -2,9 +2,11 @@
      $                   M, WORK, LWORK, IWORK, LIWORK, INFO )
 *
 *  -- New driver for the bidiagonal SVD via TGK-rooted MR^3 --
-*     Does not modify stegr_ID; calls the unmodified stegr_ID routines
-*     for all tree nodes below the root via DLARRV_TGK, plus standard
-*     LAPACK DLASQ1, DLAMCH, DLANST, DLARNV, DSCAL, DSWAP.
+*     Uses the advisor's stegr_ID tree logic below the root via
+*     DLARRV_TGK.  The bundled DLARRB has a bounded-progress guard so an
+*     invalid bracket radius returns INFO instead of looping forever.
+*     Standard LAPACK dependencies include DLASQ1, DLAMCH, DLANST,
+*     DLARNV, DSCAL, and DSWAP.
 *
 *  Purpose
 *  =======
@@ -68,7 +70,7 @@
       INTEGER            ISEED( 4 )
 *     ..
 *     .. Local Scalars ..
-      LOGICAL            WANTZ, LQUERY, UPPER
+      LOGICAL            DIAGB, WANTZ, LQUERY, UPPER
       INTEGER            I, IDBL, IEBL, IINFO, INDBL, INDE2, INDGSC,
      $                   INDISP, INDISUP, INDIWK, INDIXW, INDTGK, INDWK,
      $                   IQ, J, JBLK, K, KB, KZU, KZV, L, LIWMIN, LWMIN,
@@ -86,7 +88,7 @@
      $                   DSWAP, XERBLA
 *     ..
 *     .. Intrinsic Functions ..
-      INTRINSIC          ABS, DBLE, MAX, MOD, SQRT
+      INTRINSIC          ABS, DBLE, MAX, MOD, SIGN, SQRT
 *     ..
 *     .. Executable Statements ..
 *
@@ -129,9 +131,39 @@
          M = 1
          S( 1 ) = ABS( D( 1 ) )
          IF( WANTZ ) THEN
-            U( 1, 1 ) = ONE
+            U( 1, 1 ) = SIGN( ONE, D( 1 ) )
             VT( 1, 1 ) = ONE
          END IF
+         RETURN
+      END IF
+*
+*     An exactly diagonal bidiagonal has an exact canonical SVD.  Taking
+*     it through the TGK path would normalize 2-by-2 eigenvectors by
+*     1/sqrt(2) and then multiply them by sqrt(2), needlessly turning
+*     exact identity/permutation vectors into one-ULP approximations.
+*     Besides removing that roundoff, this path avoids the MR^3 setup for
+*     the diagonal cases that occur in the LAPACK test suite.
+*
+      DIAGB = .TRUE.
+      DO 5 I = 1, N - 1
+         IF( E( I ).NE.ZERO ) DIAGB = .FALSE.
+    5 CONTINUE
+      IF( DIAGB ) THEN
+         DO 8 I = 1, N
+            S( I ) = ABS( D( I ) )
+    8    CONTINUE
+         IF( WANTZ ) THEN
+            DO 12 J = 1, N
+               DO 10 I = 1, N
+                  U( I, J ) = ZERO
+                  VT( I, J ) = ZERO
+   10          CONTINUE
+               U( J, J ) = SIGN( ONE, D( J ) )
+               VT( J, J ) = ONE
+   12       CONTINUE
+         END IF
+         CALL DBSORT( N, S, U, LDU, VT, LDVT, WANTZ )
+         M = N
          RETURN
       END IF
 *

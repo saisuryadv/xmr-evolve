@@ -1,0 +1,54 @@
+{
+  "definition": "speedup = DBDSDC seconds / DBDSVR seconds",
+  "suite": "paper29",
+  "range": "A",
+  "sizes": [
+    500,
+    1000,
+    2000,
+    3000
+  ],
+  "varieties_per_size": 29,
+  "points": 116,
+  "info_failures": 0,
+  "mfound_mismatches": 0,
+  "dbdsvr_wins": 50,
+  "median_speedup": 0.43009031357823635,
+  "minimum_speedup": 0.05780973582971211,
+  "maximum_speedup": 65.01948639770374,
+  "dbdsdc_fallbacks": 8,
+  "by_size": {
+    "500": {
+      "cases": 29,
+      "dbdsvr_wins": 12,
+      "median_speedup": 0.4275740057381163,
+      "minimum_speedup": 0.06961935325296596,
+      "maximum_speedup": 11.681248991471328,
+      "dbdsdc_fallbacks": 2
+    },
+    "1000": {
+      "cases": 29,
+      "dbdsvr_wins": 12,
+      "median_speedup": 0.3384683113119846,
+      "minimum_speedup": 0.05780973582971211,
+      "maximum_speedup": 13.344790657531496,
+      "dbdsdc_fallbacks": 2
+    },
+    "2000": {
+      "cases": 29,
+      "dbdsvr_wins": 13,
+      "median_speedup": 0.4413825299601652,
+      "minimum_speedup": 0.07035289536170326,
+      "maximum_speedup": 39.24255502588682,
+      "dbdsdc_fallbacks": 2
+    },
+    "3000": {
+      "cases": 29,
+      "dbdsvr_wins": 13,
+      "median_speedup": 0.5372223597512953,
+      "minimum_speedup": 0.07292891618526473,
+      "maximum_speedup": 65.01948639770374,
+      "dbdsdc_fallbacks": 2
+    }
+  }
+}

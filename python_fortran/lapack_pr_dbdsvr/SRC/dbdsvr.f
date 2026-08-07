@@ -44,6 +44,15 @@
 *>
 *>  RANGE = 'V' or 'I' is realized by post-filtering the full spectrum
 *>  from DBDSVDMR3 (which always returns all N singular values).
+*>
+*>  DBDSVR tries DBDSVDMR3 first for every matrix order.  If DBDSVDMR3
+*>  reports a positive INFO, returns an incomplete spectrum, or produces
+*>  a NaN or infinity in the requested output, DBDSVR restores the input
+*>  and retries with DBDSDC.  DBDSDC results are normalized to the same
+*>  internal ordering before RANGE filtering, so either successful path
+*>  is transparent.  This result-based fallback avoids a size cutoff:
+*>  solver-only probes showed that the historical large TIMEOUT cases
+*>  were evaluator timeouts rather than DBDSVDMR3 failing to return.
 *> \endverbatim
 *
 *  Arguments:
@@ -161,7 +170,9 @@
 *> \param[in] LWORK
 *> \verbatim
 *>          LWORK is INTEGER
-*>          LWORK >= max( 1, 2*N*N + 34*N ) (matches DBDSVDMR3).  If
+*>          If JOBZ='V', LWORK >= max( 1, 5*N*N + 37*N ).
+*>          If JOBZ='N', LWORK >= max( 1, 2*N*N + 37*N ).  These bounds
+*>          cover both DBDSVDMR3 and the DBDSDC fallback.  If
 *>          LWORK = -1, a workspace query is performed: the optimal
 *>          size is returned in WORK(1) and no work is done.
 *> \endverbatim
@@ -169,6 +180,10 @@
 *> \param[out] IWORK
 *> \verbatim
 *>          IWORK is INTEGER array, dimension (LIWORK)
+*>          On successful exit for N > 1, IWORK(2) records the path:
+*>             1: DBDSVDMR3
+*>             2: DBDSVDMR3 returned positive INFO, then DBDSDC succeeded
+*>             3: DBDSVDMR3 output audit failed, then DBDSDC succeeded
 *> \endverbatim
 *>
 *> \param[in] LIWORK
@@ -183,9 +198,8 @@
 *>          INFO is INTEGER
 *>          = 0:  successful exit.
 *>          < 0:  if INFO = -i, the i-th argument had an illegal value.
-*>          > 0:  DBDSVDMR3 reported an internal error
-*>                (INFO = 1: DLASQ1 failure; INFO = 2: DLARRV_TGK
-*>                failure).
+*>          > 0:  every backend attempted by the routing policy failed
+*>                to compute the SVD.
 *> \endverbatim
 *
 *  Authors:
@@ -224,18 +238,22 @@
       PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
 *     ..
 *     .. Local Scalars ..
-      LOGICAL            ALLSV, INDSV, LOWER, LQUERY, VALSV, WANTZ
+      LOGICAL            ALLSV, BADOUT, INDSV, LOWER, LQUERY, VALSV,
+     $                   WANTZ
+      CHARACTER          COMPC
       INTEGER            I, IDCOPY, IECOPY, ISFULL, IUFULL, IVTFULL,
-     $                   IWRK, J, LWMIN, LIWMIN, MFOUND, NEED,
-     $                   IWKENG, IIWENG, ILO, IHI, NCOL
-      DOUBLE PRECISION   SVAL
+     $                   IWRK, J, LWMIN, LIWMIN, MFOUND, FALLWHY,
+     $                   IWKENG, IIWENG, ILO, IHI, NCOL, PATH
+      DOUBLE PRECISION   OVFL, SVAL
 *     ..
 *     .. External Functions ..
       LOGICAL            LSAME
-      EXTERNAL           LSAME
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           DLAMCH, LSAME
 *     ..
 *     .. External Subroutines ..
-      EXTERNAL           DBDSVDMR3, DCOPY, DLASET, XERBLA
+      EXTERNAL           DBDSDC, DBDSVDMR3, DCOPY, DLASET, DSWAP,
+     $                   XERBLA
 *     ..
 *     .. Intrinsic Functions ..
       INTRINSIC          ABS, MAX, MIN
@@ -286,16 +304,15 @@
 *       * LDU*N = N*N for a private copy of U (when WANTZ)
 *       * LDVT*N = N*N for a private copy of VT (when WANTZ)
 *       * 2*N*N + 34*N for the DBDSVDMR3 engine itself
-*     Total (WANTZ): 4*N*N + 37*N.  For JOBZ='N' we still budget the
-*     larger of DBDSVDMR3's requirement and this to keep sizing
-*     branch-free; the caller supplied buffer is not modified beyond
-*     the used slice.
+*     The DBDSDC fallback additionally needs 3*N*N + 4*N doubles after
+*     its explicit U and VT arrays.  Total (WANTZ): 5*N*N + 7*N; retain
+*     the larger linear allowance from DBDSVDMR3 for small N.
 *
       IF( N.EQ.0 ) THEN
          LWMIN  = 1
          LIWMIN = 1
       ELSE IF( WANTZ ) THEN
-         LWMIN  = MAX( 1, 4*N*N + 37*N )
+         LWMIN  = MAX( 1, 5*N*N + 37*N )
          LIWMIN = MAX( 1, 20*N )
       ELSE
          LWMIN  = MAX( 1, 2*N*N + 37*N )
@@ -327,6 +344,7 @@
       IF( N.EQ.0 ) RETURN
 *
       IF( N.EQ.1 ) THEN
+         IWORK( 2 ) = 0
          SVAL = ABS( D( 1 ) )
          IF( ALLSV .OR. INDSV ) THEN
             NS = 1
@@ -368,7 +386,10 @@
       END IF
       WORK( IECOPY + N - 1 ) = ZERO
 *
-*     Compute the full spectrum via the MR^3 engine.
+*     Compute the full spectrum with DBDSVDMR3 for every N.  A positive
+*     INFO, incomplete spectrum, or nonfinite requested output triggers a
+*     restored-input DBDSDC retry.  The O(N**2) output audit is no more
+*     expensive asymptotically than returning all singular vectors.
 *
       IWKENG = LWORK - IWRK + 1
       IIWENG = LIWORK
@@ -391,7 +412,74 @@
      $                   WORK( IWRK ), IWKENG,
      $                   IWORK, IIWENG, INFO )
       END IF
-      IF( INFO.NE.0 ) RETURN
+      IF( INFO.LT.0 ) RETURN
+*
+      FALLWHY = 0
+      IF( INFO.GT.0 ) THEN
+         FALLWHY = 2
+      ELSE
+         OVFL = DLAMCH( 'Overflow' )
+         BADOUT = MFOUND.NE.N
+         IF( .NOT.BADOUT ) THEN
+            DO 12 I = 1, N
+               SVAL = WORK( ISFULL + I - 1 )
+               IF( .NOT.( SVAL.EQ.SVAL .AND.
+     $                     ABS( SVAL ).LE.OVFL ) ) BADOUT = .TRUE.
+   12       CONTINUE
+            IF( WANTZ ) THEN
+               DO 14 J = 1, N
+                  DO 13 I = 1, N
+                     SVAL = WORK( IUFULL + (J-1)*N + I - 1 )
+                     IF( .NOT.( SVAL.EQ.SVAL .AND.
+     $                           ABS( SVAL ).LE.OVFL ) ) BADOUT = .TRUE.
+                     SVAL = WORK( IVTFULL + (J-1)*N + I - 1 )
+                     IF( .NOT.( SVAL.EQ.SVAL .AND.
+     $                           ABS( SVAL ).LE.OVFL ) ) BADOUT = .TRUE.
+   13             CONTINUE
+   14          CONTINUE
+            END IF
+         END IF
+         IF( BADOUT ) FALLWHY = 3
+      END IF
+*
+      IF( FALLWHY.EQ.0 ) THEN
+         PATH = 1
+      ELSE
+*        DBDSVDMR3 destroys its staged inputs.  Restore them before the
+*        DBDSDC retry.
+         CALL DCOPY( N, D, 1, WORK( IDCOPY ), 1 )
+         CALL DCOPY( N-1, E, 1, WORK( IECOPY ), 1 )
+         WORK( IECOPY + N - 1 ) = ZERO
+         INFO = 0
+         IF( WANTZ ) THEN
+            COMPC = 'I'
+         ELSE
+            COMPC = 'N'
+         END IF
+         CALL DBDSDC( UPLO, COMPC, N, WORK( IDCOPY ),
+     $                WORK( IECOPY ), WORK( IUFULL ), MAX( 1, N ),
+     $                WORK( IVTFULL ), MAX( 1, N ), WORK( IWRK ),
+     $                IWORK, WORK( IWRK ), IWORK, INFO )
+         IF( INFO.NE.0 ) RETURN
+*
+*        DBDSDC returns descending singular values, while DBDSVDMR3
+*        returns ascending values.  Normalize DBDSDC's result so the
+*        common RANGE filtering and packing below is unchanged.
+*
+         CALL DCOPY( N, WORK( IDCOPY ), 1, WORK( ISFULL ), 1 )
+         DO 18 I = 1, N / 2
+            CALL DSWAP( 1, WORK( ISFULL + I - 1 ), 1,
+     $                  WORK( ISFULL + N - I ), 1 )
+            IF( WANTZ ) THEN
+               CALL DSWAP( N, WORK( IUFULL + (I-1)*N ), 1,
+     $                     WORK( IUFULL + (N-I)*N ), 1 )
+               CALL DSWAP( N, WORK( IVTFULL + I - 1 ), N,
+     $                     WORK( IVTFULL + N - I ), N )
+            END IF
+   18    CONTINUE
+         PATH = FALLWHY
+      END IF
+      IWORK( 2 ) = PATH
 *
 *     Filter and pack the requested slice into S and Z.
 *
