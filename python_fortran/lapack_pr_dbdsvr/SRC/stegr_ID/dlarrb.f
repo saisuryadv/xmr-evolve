@@ -94,9 +94,11 @@
 *  IWORK   (workspace) INTEGER array, dimension (2*N)
 *          Workspace.
 *
-*****Reminder to Inder --- INFO is never set in this subroutine ******
 *  INFO    (output) INTEGER
-*          Error flag.
+*          = 0: successful exit.
+*          = 1: a bracket expansion was nonfinite or made no progress.
+*          = 2: a bracket expansion exceeded MAXEXP iterations.
+*          = 3: interval refinement exceeded MAXREF passes.
 *
 *  Further Details
 *  ===============
@@ -108,15 +110,21 @@
 *  =====================================================================
 *
 *     .. Parameters ..
+      INTEGER            MAXEXP, MAXREF, NSTURM
+      PARAMETER          ( MAXEXP = 256, MAXREF = 256, NSTURM = 4 )
       DOUBLE PRECISION   ZERO, ONE, TWO, HALF, TEN
       PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0, TWO = 2.0D0,
      $                   HALF = 0.5D0, TEN = 10.0D0 )
 *     ..
 *     .. Local Scalars ..
-      INTEGER            CNT, I, II, I1, I2, J, K, KK, NEXT, NLEFT,
-     $                   NINT, NRIGHT, OLNINT, P, PREV
+      INTEGER            B, BAFTER, CNT, I, II, I1, I2, ITER, J, K,
+     $                   KK, NB, NEXT, NEXP, NLEFT, NINT, NRIGHT,
+     $                   OLNINT, P, PREV
       DOUBLE PRECISION   DPLUS, EPS, ERROR, FAC, GAP, LEFT, MID, RIGHT,
-     $                   S, TMP, WIDTH
+     $                   OVFL, S, TMP, WIDTH
+      INTEGER            BCNT( NSTURM ), BI( NSTURM ),
+     $                   BNEXT( NSTURM ), BNRGHT( NSTURM )
+      DOUBLE PRECISION   BMID( NSTURM )
 *     ..
 *     .. External Functions ..
       DOUBLE PRECISION   DLAMCH
@@ -133,6 +141,7 @@
 *
       INFO = 0
       EPS = DLAMCH( 'Precision' )
+      OVFL = DLAMCH( 'Overflow' )
       DO 5 I = 1, 2*N
          IWORK( I ) = 0
    5  CONTINUE
@@ -178,6 +187,7 @@
          II = I - OFFSET
          IF( IWORK( 2*I-1 ).EQ.1 ) THEN
             FAC = ONE
+            NEXP = 0
             LEFT = W( II ) - WERR( II )
 *
 *           Do while( CNT(LEFT).GT.I-1 )
@@ -220,7 +230,21 @@
      $             CNT = CNT + 1
                END IF
                IF( CNT.GT.I-1 ) THEN
-                  LEFT = LEFT - WERR( II )*FAC
+                  TMP = LEFT - WERR( II )*FAC
+*                 A zero, NaN, or overflowing step cannot enlarge the
+*                 bracket.  Return a positive INFO instead of repeating
+*                 this Sturm count forever.
+                  IF( .NOT.( TMP.LT.LEFT .AND.
+     $                ABS( TMP ).LE.OVFL ) ) THEN
+                     INFO = 1
+                     RETURN
+                  END IF
+                  NEXP = NEXP + 1
+                  IF( NEXP.GT.MAXEXP ) THEN
+                     INFO = 2
+                     RETURN
+                  END IF
+                  LEFT = TMP
                   FAC = TWO*FAC
                   GO TO 40
                END IF
@@ -228,6 +252,7 @@
             NLEFT = CNT + 1
             I1 = MIN( I1, NLEFT )
             FAC = ONE
+            NEXP = 0
             RIGHT = W( II ) + WERR( II )
 *
 *           Do while( CNT(RIGHT).LT.I )
@@ -266,7 +291,19 @@
      $             CNT = CNT + 1
                END IF
             IF( CNT.LT.I ) THEN
-               RIGHT = RIGHT + WERR( II )*FAC
+               TMP = RIGHT + WERR( II )*FAC
+*              Apply the same progress/finite checks to the upper bracket.
+               IF( .NOT.( TMP.GT.RIGHT .AND.
+     $             ABS( TMP ).LE.OVFL ) ) THEN
+                  INFO = 1
+                  RETURN
+               END IF
+               NEXP = NEXP + 1
+               IF( NEXP.GT.MAXEXP ) THEN
+                  INFO = 2
+                  RETURN
+               END IF
+               RIGHT = TMP
                FAC = TWO*FAC
                GO TO 60
             END IF
@@ -296,19 +333,49 @@
       IF( I.LE.N .AND. IWORK( 2*I-1 ).NE.-1 )
      $   WORK( 2*I-1 ) = WORK( 2*PREV )
 *
-*     Do while( NINT.GT.0 )
+*     Do while( NINT.GT.0 ).  In exact arithmetic each pass halves every
+*     active interval; cap the passes so NaN/non-progress cannot spin.
 *
+      ITER = 0
    80 CONTINUE
+      ITER = ITER + 1
+      IF( ITER.GT.MAXREF ) THEN
+         INFO = 3
+         RETURN
+      END IF
       PREV = I1 - 1
       OLNINT = NINT
       I = I1
-      DO 100 P = 1, OLNINT
+      P = 1
+   85 CONTINUE
+*
+*     Snapshot up to NSTURM intervals from the pass's original linked
+*     list, then interleave their independent Sturm recurrences.  The
+*     interval updates below remain in their original order.  A split can
+*     only insert an interval inside the current [I,NRIGHT] range, so it
+*     cannot change the saved bounds or successor of a later original
+*     interval in this pass.
+*
+      NB = MIN( NSTURM, OLNINT-P+1 )
+      BAFTER = I
+      DO 87 B = 1, NB
+         BI( B ) = BAFTER
+         K = 2*BAFTER
+         BMID( B ) = HALF*( WORK( K-1 ) + WORK( K ) )
+         BNEXT( B ) = IWORK( K-1 )
+         BNRGHT( B ) = IWORK( K )
+         BAFTER = BNEXT( B )
+   87 CONTINUE
+      CALL DLARRB_STURM4( N, D, LLD, NB, BMID, BCNT )
+*
+      DO 100 B = 1, NB
+         I = BI( B )
          K = 2*I
          LEFT = WORK( K-1 )
          RIGHT = WORK( K )
-         NEXT = IWORK( K-1 )
-         NRIGHT = IWORK( K )
-         MID = HALF*( LEFT + RIGHT )
+         NEXT = BNEXT( B )
+         NRIGHT = BNRGHT( B )
+         MID = BMID( B )
          WIDTH = RIGHT - MID
          TMP = MAX( ABS( LEFT ), ABS( RIGHT ) )
 *
@@ -346,40 +413,10 @@
          END IF
          PREV = I
 *
-*        Perform one bisection step
+*        Perform one bisection step.  BCNT(B) is exactly the scalar Sturm
+*        count for MID; only independent recurrences were interleaved.
 *
-         S = -MID
-         CNT = 0
-         DO 90 J = 1, N - 1
-            DPLUS = D( J ) + S
-            S = S*LLD( J ) / DPLUS - MID
-            IF( DPLUS.LT.ZERO )
-     $         CNT = CNT + 1
-   90    CONTINUE
-         DPLUS = D( N ) + S
-         IF( DPLUS.LT.ZERO )
-     $      CNT = CNT + 1
-         IF( .NOT.( S.GT.ZERO .OR. S.LT.ONE ) ) THEN
-*
-*           Runs a slower version of the above loop if a NaN is detected
-*
-           CNT = 0
-           S = -MID
-           DO 95 J = 1, N - 1
-              DPLUS = D( J ) + S
-              IF( DPLUS.LT.ZERO )
-     $           CNT = CNT + 1
-              TMP = LLD( J ) / DPLUS
-              IF( TMP.EQ.ZERO ) THEN
-                 S = LLD( J ) - MID
-              ELSE
-                 S = S*TMP - MID
-              END IF
-   95      CONTINUE
-           DPLUS = D( N ) + S
-           IF( DPLUS.LT.ZERO )
-     $       CNT = CNT + 1
-         END IF
+         CNT = BCNT( B )
          CNT = MAX( I-1, MIN( NRIGHT, CNT ) )
          IF( CNT.EQ.I-1 ) THEN
             WORK( K-1 ) = MID
@@ -407,6 +444,9 @@
          END IF
          I = NEXT
   100 CONTINUE
+      I = BAFTER
+      P = P + NB
+      IF( P.LE.OLNINT ) GO TO 85
       IF( NINT.GT.0 )
      $   GO TO 80
       DO 110 I = IFIRST, ILAST
@@ -425,4 +465,151 @@
 *
 *     End of DLARRB
 *
+      END
+
+      SUBROUTINE DLARRB_STURM4( N, D, LLD, NB, X, CNT )
+*
+*     Evaluate one to four independent Sturm counts while preserving the
+*     scalar operation order of each recurrence.  Interleaving exposes the
+*     otherwise serial floating-point divisions to an out-of-order CPU.
+*
+      INTEGER            N, NB, CNT( * )
+      DOUBLE PRECISION   D( * ), LLD( * ), X( * )
+      INTEGER            C1, C2, C3, C4, J
+      DOUBLE PRECISION   DP1, DP2, DP3, DP4, S1, S2, S3, S4
+*
+      C1 = 0
+      S1 = -X( 1 )
+      IF( NB.EQ.1 ) THEN
+         DO 10 J = 1, N - 1
+            DP1 = D( J ) + S1
+            S1 = S1*LLD( J ) / DP1 - X( 1 )
+            IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+   10    CONTINUE
+         DP1 = D( N ) + S1
+         IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+         CNT( 1 ) = C1
+      ELSE IF( NB.EQ.2 ) THEN
+         C2 = 0
+         S2 = -X( 2 )
+         DO 20 J = 1, N - 1
+            DP1 = D( J ) + S1
+            DP2 = D( J ) + S2
+            S1 = S1*LLD( J ) / DP1 - X( 1 )
+            S2 = S2*LLD( J ) / DP2 - X( 2 )
+            IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+            IF( DP2.LT.0.0D0 ) C2 = C2 + 1
+   20    CONTINUE
+         DP1 = D( N ) + S1
+         DP2 = D( N ) + S2
+         IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+         IF( DP2.LT.0.0D0 ) C2 = C2 + 1
+         CNT( 1 ) = C1
+         CNT( 2 ) = C2
+      ELSE IF( NB.EQ.3 ) THEN
+         C2 = 0
+         C3 = 0
+         S2 = -X( 2 )
+         S3 = -X( 3 )
+         DO 30 J = 1, N - 1
+            DP1 = D( J ) + S1
+            DP2 = D( J ) + S2
+            DP3 = D( J ) + S3
+            S1 = S1*LLD( J ) / DP1 - X( 1 )
+            S2 = S2*LLD( J ) / DP2 - X( 2 )
+            S3 = S3*LLD( J ) / DP3 - X( 3 )
+            IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+            IF( DP2.LT.0.0D0 ) C2 = C2 + 1
+            IF( DP3.LT.0.0D0 ) C3 = C3 + 1
+   30    CONTINUE
+         DP1 = D( N ) + S1
+         DP2 = D( N ) + S2
+         DP3 = D( N ) + S3
+         IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+         IF( DP2.LT.0.0D0 ) C2 = C2 + 1
+         IF( DP3.LT.0.0D0 ) C3 = C3 + 1
+         CNT( 1 ) = C1
+         CNT( 2 ) = C2
+         CNT( 3 ) = C3
+      ELSE
+         C2 = 0
+         C3 = 0
+         C4 = 0
+         S2 = -X( 2 )
+         S3 = -X( 3 )
+         S4 = -X( 4 )
+         DO 40 J = 1, N - 1
+            DP1 = D( J ) + S1
+            DP2 = D( J ) + S2
+            DP3 = D( J ) + S3
+            DP4 = D( J ) + S4
+            S1 = S1*LLD( J ) / DP1 - X( 1 )
+            S2 = S2*LLD( J ) / DP2 - X( 2 )
+            S3 = S3*LLD( J ) / DP3 - X( 3 )
+            S4 = S4*LLD( J ) / DP4 - X( 4 )
+            IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+            IF( DP2.LT.0.0D0 ) C2 = C2 + 1
+            IF( DP3.LT.0.0D0 ) C3 = C3 + 1
+            IF( DP4.LT.0.0D0 ) C4 = C4 + 1
+   40    CONTINUE
+         DP1 = D( N ) + S1
+         DP2 = D( N ) + S2
+         DP3 = D( N ) + S3
+         DP4 = D( N ) + S4
+         IF( DP1.LT.0.0D0 ) C1 = C1 + 1
+         IF( DP2.LT.0.0D0 ) C2 = C2 + 1
+         IF( DP3.LT.0.0D0 ) C3 = C3 + 1
+         IF( DP4.LT.0.0D0 ) C4 = C4 + 1
+         CNT( 1 ) = C1
+         CNT( 2 ) = C2
+         CNT( 3 ) = C3
+         CNT( 4 ) = C4
+      END IF
+*
+*     Match the original guarded recurrence exactly if a fast recurrence
+*     produced NaN.  This path is exceptional; the normal path above is
+*     the performance target.
+*
+      IF( .NOT.( S1.GT.0.0D0 .OR. S1.LT.1.0D0 ) )
+     $   CALL DLARRB_STURM_SLOW( N, D, LLD, X( 1 ), CNT( 1 ) )
+      IF( NB.GE.2 ) THEN
+         IF( .NOT.( S2.GT.0.0D0 .OR. S2.LT.1.0D0 ) )
+     $      CALL DLARRB_STURM_SLOW( N, D, LLD, X( 2 ), CNT( 2 ) )
+      END IF
+      IF( NB.GE.3 ) THEN
+         IF( .NOT.( S3.GT.0.0D0 .OR. S3.LT.1.0D0 ) )
+     $      CALL DLARRB_STURM_SLOW( N, D, LLD, X( 3 ), CNT( 3 ) )
+      END IF
+      IF( NB.GE.4 ) THEN
+         IF( .NOT.( S4.GT.0.0D0 .OR. S4.LT.1.0D0 ) )
+     $      CALL DLARRB_STURM_SLOW( N, D, LLD, X( 4 ), CNT( 4 ) )
+      END IF
+      RETURN
+      END
+
+      SUBROUTINE DLARRB_STURM_SLOW( N, D, LLD, X, CNT )
+*
+*     NaN-safe scalar recurrence, identical to DLARRB's original slow
+*     path.  It is split out only so each lane of DLARRB_STURM4 can use it.
+*
+      INTEGER            N, CNT
+      DOUBLE PRECISION   D( * ), LLD( * ), X
+      INTEGER            J
+      DOUBLE PRECISION   DPLUS, S, TMP
+*
+      CNT = 0
+      S = -X
+      DO 10 J = 1, N - 1
+         DPLUS = D( J ) + S
+         IF( DPLUS.LT.0.0D0 ) CNT = CNT + 1
+         TMP = LLD( J ) / DPLUS
+         IF( TMP.EQ.0.0D0 ) THEN
+            S = LLD( J ) - X
+         ELSE
+            S = S*TMP - X
+         END IF
+   10 CONTINUE
+      DPLUS = D( N ) + S
+      IF( DPLUS.LT.0.0D0 ) CNT = CNT + 1
+      RETURN
       END

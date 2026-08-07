@@ -1,0 +1,30 @@
+type,dmatgen_id,name,construction
+1,110,ones spectrum,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+2,111,"uniform spectrum, ε apart",prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+3,112,"uniform spectrum, ε¹ᐟ⁴ apart",prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+4,113,uniform spectrum from ε to 1,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+5,114,"uniform spectrum from ε to 1, signed",prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+6,115,geometric spectrum from ε to 1,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+7,116,"geometric spectrum from ε to 1, signed",prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+8,117,random spectrum,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+9,118,clustered at 1,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+10,119,clustered at ±1,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+11,120,clustered at ε,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+12,121,clustered at ±ε,prescribed spectrum then symmetric-tridiagonal reduction and Cholesky lift
+13,200,ABCON0,symmetric tridiagonal then Gershgorin-shifted Cholesky lift
+14,201,ABCON1,symmetric tridiagonal then Gershgorin-shifted Cholesky lift
+15,202,ABCON2,symmetric tridiagonal then Gershgorin-shifted Cholesky lift
+16,203,ABCON3,symmetric tridiagonal then Gershgorin-shifted Cholesky lift
+17,210,random bidiagonal,direct bidiagonal
+18,220,GRADP,direct graded bidiagonal
+19,221,GRADM,direct graded bidiagonal
+20,222,Wilkinson+,symmetric tridiagonal then Gershgorin-shifted Cholesky lift
+21,223,Wilkinson−,symmetric tridiagonal then Gershgorin-shifted Cholesky lift
+22,224,Wilkinson W,direct bidiagonal
+23,225,double Wilkinson W,direct bidiagonal
+24,230,Clement,symmetric tridiagonal then Gershgorin-shifted Cholesky lift
+25,240,GRO0,direct bidiagonal with α = ε
+26,241,GRO1,direct bidiagonal with α = ε
+27,242,GRO2,direct bidiagonal with α = ε
+28,243,GRO3,direct bidiagonal with α = ε
+29,244,bidiagonal Wilkinson+,direct shifted-Wilkinson bidiagonal
